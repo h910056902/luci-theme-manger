@@ -628,6 +628,27 @@
 .kpc-cell-page .kpc-ev em{font-style:normal;color:#344054;min-width:0}
 .kpc-cell-page .kpc-ev.err em{color:#a33a0c}
 
+/* 质量分布直方图（RSRP / SINR 分档） */
+.kpc-cell-page .kpc-hist{margin-bottom:14px}
+.kpc-cell-page .kpc-hist:last-of-type{margin-bottom:0}
+.kpc-cell-page .kpc-hist-h{display:flex;align-items:baseline;gap:8px;margin-bottom:7px;font-size:.78rem;color:#475467;flex-wrap:wrap}
+.kpc-cell-page .kpc-hist-h b{font-weight:600;color:#1f2d3d;font-size:.82rem}
+.kpc-cell-page .kpc-hist-h span{color:#98a2b3;font-size:.72rem}
+.kpc-cell-page .kpc-hist-h em{margin-left:auto;font-style:normal;font-size:.72rem;color:#8a93a0;
+	font-variant-numeric:tabular-nums}
+.kpc-cell-page .kpc-hist-row{display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:.73rem}
+.kpc-cell-page .kpc-hist-k{flex:0 0 96px;color:#667085;white-space:nowrap}
+.kpc-cell-page .kpc-hist-bar{flex:1;height:12px;border-radius:3px;background:#f2f4f7;overflow:hidden}
+.kpc-cell-page .kpc-hist-bar > i{display:block;height:100%;border-radius:3px;transition:width .5s ease;min-width:2px}
+.kpc-cell-page .kpc-hist-v{flex:0 0 86px;text-align:right;color:#8a93a0;font-variant-numeric:tabular-nums}
+.kpc-cell-page .kpc-hist-v b{font-weight:600;color:#1f2d3d}
+
+/* 邻区表：ΔRSRP 着色 / 服务小区参考行 */
+.kpc-cell-page .cell-table td.d-up{color:#1d8a5b;font-weight:600}
+.kpc-cell-page .cell-table td.d-dn{color:#c23b22}
+.kpc-cell-page .cell-table tr.is-serving td{background:#f2f8f7;font-weight:600}
+.kpc-cell-page .cell-table td .nb-sub{color:#98a2b3;font-size:.68rem}
+
 /* AT 调试台输出 */
 .kpc-cell-page .kpc-at-pre{margin:10px 0 0;padding:10px 12px;border-radius:9px;background:#0f1720;
 	color:#d7e3ea;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.74rem;
@@ -848,6 +869,21 @@
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>质量分布<span class="cell-live" id="kpc-dist-note">打开本页后开始统计</span></h3>
+		<div class="cell-sec">
+			<div class="kpc-hist">
+				<div class="kpc-hist-h"><b>RSRP 分档</b><span>dBm</span><em id="kpc-rsrp-sum">—</em></div>
+				<div id="kpc-hist-rsrp"><p class="cell-tip" style="margin:0">等待采样…</p></div>
+			</div>
+			<div class="kpc-hist">
+				<div class="kpc-hist-h"><b>SINR 分档</b><span>dB</span><em id="kpc-sinr-sum">—</em></div>
+				<div id="kpc-hist-sinr"><p class="cell-tip" style="margin:0">等待采样…</p></div>
+			</div>
+			<p class="cell-tip">统计窗口为最近 30 分钟采样（≤180 点），重启清零。RSRP 分档 ≥-85 / -85~-95 / -95~-105 / -105~-115 / &lt;-115；SINR 分档 ≥20 / 13~20 / 5~13 / 0~5 / &lt;0。右侧 P10/P90 表示 90% 的采样落在两者之间。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>告警<span class="cell-live" id="kpc-alert-note">—</span></h3>
 		<div class="cell-sec">
 			<div id="kpc-alerts"><p class="cell-tip" style="margin:0">等待采样…</p></div>
@@ -1024,14 +1060,17 @@
 	<fieldset class="cbi-section">
 		<h3>邻区扫描</h3>
 		<div class="cell-sec">
-			<div class="cell-actions" style="margin-top:0">
+			<div class="cell-actions" style="margin-top:0;flex-wrap:wrap;gap:10px">
 				<button class="cbi-button cbi-button-action" type="button" id="kpc-scan">扫描邻区</button>
-				<span class="cell-tip" id="kpc-scan-note" style="margin:0">邻区需主动扫描，约 1 秒。</span>
+				<label class="cell-tip" style="margin:0;display:inline-flex;align-items:center;gap:6px">
+					<input type="checkbox" id="kpc-nb-auto" checked> 停留本页签时每 30 秒自动扫描
+				</label>
+				<span class="cell-tip" id="kpc-scan-note" style="margin:0">—</span>
 			</div>
 			<div id="kpc-nb" class="cell-scroll" style="margin-top:12px">
 				<p class="cell-tip" style="margin:0">点击「扫描邻区」获取当前可用的相邻小区。</p>
 			</div>
-			<p class="cell-tip">低于 -120 dBm 的采样已丢弃。扫描结果仅供参考，实际小区选择由模块决定。</p>
+			<p class="cell-tip">ΔRSRP 为邻区相对服务小区的差值，越接近 0 说明越可能被切换过去。「历史最优 / 出现」来自本机累计统计（/tmp，重启清零）。低于 -120 dBm 已丢弃；模块只上报同频邻区，判断异频优劣需锁频后重测。</p>
 		</div>
 	</fieldset>
 </div>
@@ -1206,6 +1245,7 @@
 	/* ---- Tabs ---- */
 	var tabs = document.querySelectorAll('#kpc-tabs > li');
 	var panels = document.querySelectorAll('.cell-tabpanel');
+	var currentTab = 'overview';
 	function showTab(name) {
 		for (var i = 0; i < tabs.length; i++) {
 			tabs[i].className = (tabs[i].getAttribute('data-tab') === name) ? 'active' : '';
@@ -1213,6 +1253,10 @@
 		for (var j = 0; j < panels.length; j++) {
 			panels[j].hidden = (panels[j].getAttribute('data-panel') !== name);
 		}
+		currentTab = name;
+		// 切到趋势/邻区时立即取一次；延后到脚本执行完，确保 URL_BASE 已就绪
+		if (name === 'trend') window.setTimeout(function () { loadStats(); }, 0);
+		if (name === 'neighbor') window.setTimeout(function () { nbLoad(false); }, 0);
 	}
 	for (var i = 0; i < tabs.length; i++) {
 		tabs[i].addEventListener('click', function (ev) {
@@ -1582,6 +1626,7 @@
 				renderEvents(d.events || []);
 				var live = document.getElementById('kpc-live');
 				if (live) live.textContent = '已更新 ' + hhmmss(d.ts) + ' · 每 10 秒自动刷新';
+				if (currentTab === 'trend') loadStats();
 			}).catch(function () {
 				var note = document.getElementById('kpc-now-note');
 				if (note) note.textContent = '采样失败（连接中断）';
@@ -1789,65 +1834,163 @@
 		if (KP.state.ui.view === 'qos') qosLoad();
 	}, 5000);
 
-	/* ---- 邻区扫描 ---- */
-	var scanBtn = document.getElementById('kpc-scan');
-	scanBtn.addEventListener('click', function () {
-		var btn = this, note = document.getElementById('kpc-scan-note');
-		var box = document.getElementById('kpc-nb');
-		btn.disabled = true;
-		note.textContent = '正在扫描邻区…';
-		box.innerHTML = '<p class="cell-tip" style="margin:0">正在读取模块邻区信息，请稍候…</p>';
+	/* ---- 邻区扫描（表格升级 + 30 秒自动扫描） ---- */
+	function nbBindLock(box) {
+		var btns = box.querySelectorAll('[data-arfcn]');
+		for (var k = 0; k < btns.length; k++) {
+			btns[k].addEventListener('click', function () {
+				var arfcn = this.getAttribute('data-arfcn');
+				var md = (this.getAttribute('data-mode') || '').toUpperCase();
+				document.querySelector('#kpc-mode input[value="cell"]').checked = true;
+				syncMode();
+				if (md.indexOf('NR') >= 0 || md.indexOf('5G') >= 0) {
+					e5.value = arfcn; e4.value = '';
+				} else {
+					e4.value = arfcn; e5.value = '';
+				}
+				updatePreview();
+				showTab('lock');
+			});
+		}
+	}
 
+	function renderNeighbors(d) {
+		var note = document.getElementById('kpc-scan-note');
+		var box = document.getElementById('kpc-nb');
+		if (!box) return;
+		var sv = d.serving || {};
+		var list = d.cells || [];
+		if (note) {
+			note.textContent = '已更新 ' + (d.time || '') + ' · ' + list.length + ' 个邻区'
+				+ (sv.pci ? ' · 服务小区 PCI ' + sv.pci : '');
+		}
+		var h = '<table class="cell-table"><thead><tr>'
+			+ '<th>#</th><th>PCI</th><th>频点</th><th>同频</th>'
+			+ '<th>RSRP</th><th>RSRQ</th><th>SINR</th><th>ΔRSRP</th>'
+			+ '<th>信号</th><th>历史最优 / 次数</th><th>操作</th></tr></thead><tbody>';
+		if (sv.pci) {
+			var sp = Number(sv.rsrp) || 0;
+			h += '<tr class="is-serving"><td>—</td><td class="mono">' + esc(sv.pci)
+				+ ' <span class="nb-sub">服务</span></td>'
+				+ '<td class="mono">' + esc(sv.earfcn || '-') + '</td>'
+				+ '<td><span class="cell-pill on">当前</span></td>'
+				+ '<td>' + esc(sv.rsrp) + ' dBm</td><td>—</td><td>' + esc(sv.sinr) + ' dB</td><td>0</td>'
+				+ '<td><div class="cell-bar" style="width:80px"><i style="width:'
+				+ Math.max(5, Math.min(100, Math.floor((sp + 140) * 100 / 60)))
+				+ '%;background:#34d399"></i></div></td><td>—</td><td>—</td></tr>';
+		}
+		if (!list.length) {
+			h += '<tr><td colspan="11"><span class="cell-tip">未发现可用邻区。可能信号过弱，或附近没有同频小区。</span></td></tr>';
+		}
+		for (var i = 0; i < list.length; i++) {
+			var c = list[i];
+			var r = Number(c.rsrp) || -140;
+			var dl = (c.delta === null || c.delta === undefined) ? null : Number(c.delta);
+			var dcls = dl === null ? '' : (dl >= 0 ? 'd-up' : 'd-dn');
+			var dtxt = dl === null ? '—' : ((dl > 0 ? '+' : '') + dl);
+			var bar = r >= -95 ? '#34d399' : (r >= -105 ? '#fbbf24' : '#f87171');
+			h += '<tr><td>' + (i + 1) + '</td>'
+				+ '<td class="mono">' + esc(c.pci) + ' <span class="nb-sub">' + esc(c.pci_hex || '') + '</span></td>'
+				+ '<td class="mono">' + esc(c.earfcn) + '</td>'
+				+ '<td>' + (c.same_freq ? '<span class="cell-pill on">同频</span>' : '<span class="cell-pill">异频</span>') + '</td>'
+				+ '<td>' + esc(c.rsrp) + ' dBm</td><td>' + esc(c.rsrq) + ' dB</td><td>' + esc(c.sinr) + ' dB</td>'
+				+ '<td class="' + dcls + '">' + esc(dtxt) + '</td>'
+				+ '<td><div class="cell-bar" style="width:80px"><i style="width:' + esc(c.pct)
+				+ '%;background:' + bar + '"></i></div></td>'
+				+ '<td>' + esc(c.best === undefined ? '-' : c.best) + ' / ' + esc(c.seen || 1) + '</td>'
+				+ '<td><button class="cbi-button cbi-button-neutral" type="button" data-arfcn="' + esc(c.earfcn)
+				+ '" data-mode="' + esc(c.mode) + '">锁定此频点</button></td></tr>';
+		}
+		h += '</tbody></table>';
+		box.innerHTML = h;
+		nbBindLock(box);
+	}
+
+	function nbLoad(busy) {
+		var btn = document.getElementById('kpc-scan');
+		var note = document.getElementById('kpc-scan-note');
+		var box = document.getElementById('kpc-nb');
+		if (!box) return;
+		if (busy) {
+			if (btn) btn.disabled = true;
+			if (note) note.textContent = '正在扫描邻区…';
+			box.innerHTML = '<p class="cell-tip" style="margin:0">正在读取模块邻区信息，请稍候…</p>';
+		}
 		fetch(URL_BASE + '?action=neighbor&t=' + Date.now(), { credentials: 'same-origin' })
-			.then(function (r) { return r.json(); }).then(function (d) {
-				btn.disabled = false;
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (btn) btn.disabled = false;
 				if (!d || d.code !== 0) {
-					note.textContent = '';
+					if (note) note.textContent = '';
 					box.innerHTML = '<div class="alert-message error">' + esc((d && d.msg) || '扫描失败') + '</div>';
 					return;
 				}
-				var list = d.cells || [];
-				note.textContent = '已更新 ' + (d.time || '') + ' · ' + list.length + ' 个邻区（缓存 10 秒）';
-				if (!list.length) {
-					box.innerHTML = '<p class="cell-tip" style="margin:0">未发现可用邻区。可能信号过弱或附近无同频小区。</p>';
-					return;
-				}
-				var h = '<table class="cell-table"><thead><tr><th>#</th><th>制式</th><th>频点</th><th>PCI</th>'
-					+ '<th>RSRP</th><th>RSRQ</th><th>SINR</th><th>信号</th><th>操作</th></tr></thead><tbody>';
-				for (var i = 0; i < list.length; i++) {
-					var c = list[i];
-					h += '<tr><td>' + (i + 1) + '</td><td>' + esc(c.mode) + '</td><td>' + esc(c.earfcn)
-						+ '</td><td>' + esc(c.pci) + '</td><td>' + esc(c.rsrp) + ' dBm</td><td>' + esc(c.rsrq)
-						+ ' dB</td><td>' + esc(c.sinr) + ' dB</td>'
-						+ '<td><div class="cell-bar" style="width:80px"><i style="width:' + esc(c.pct) + '%;background:#34d399"></i></div></td>'
-						+ '<td><button class="cbi-button cbi-button-neutral" type="button" data-arfcn="' + esc(c.earfcn)
-						+ '" data-mode="' + esc(c.mode) + '">锁定此频点</button></td></tr>';
-				}
-				h += '</tbody></table>';
-				box.innerHTML = h;
-
-				var btns = box.querySelectorAll('[data-arfcn]');
-				for (var k = 0; k < btns.length; k++) {
-					btns[k].addEventListener('click', function () {
-						var arfcn = this.getAttribute('data-arfcn');
-						var md = (this.getAttribute('data-mode') || '').toUpperCase();
-						document.querySelector('#kpc-mode input[value="cell"]').checked = true;
-						syncMode();
-						if (md.indexOf('NR') >= 0 || md.indexOf('5G') >= 0) {
-							e5.value = arfcn; e4.value = '';
-						} else {
-							e4.value = arfcn; e5.value = '';
-						}
-						updatePreview();
-						showTab('lock');
-					});
-				}
-			}).catch(function (e) {
-				btn.disabled = false;
-				note.textContent = '';
+				renderNeighbors(d);
+			})
+			.catch(function (e) {
+				if (btn) btn.disabled = false;
+				if (note) note.textContent = '';
 				box.innerHTML = '<div class="alert-message error">扫描请求失败：' + esc(e) + '</div>';
 			});
-	});
+	}
+
+	var scanBtn = document.getElementById('kpc-scan');
+	if (scanBtn) scanBtn.addEventListener('click', function () { nbLoad(true); });
+
+	setInterval(function () {
+		if (document.hidden || currentTab !== 'neighbor') return;
+		var cb = document.getElementById('kpc-nb-auto');
+		if (cb && !cb.checked) return;
+		nbLoad(false);
+	}, 30000);
+
+	/* ---- 质量分布直方图 ---- */
+	var HIST_COLORS = ['#34d399', '#7bd88f', '#fbbf24', '#fb923c', '#f87171'];
+	var HIST_LABELS = {
+		dBm: ['优秀 ≥-85', '良好 -85~-95', '一般 -95~-105', '较差 -105~-115', '极差 <-115'],
+		dB: ['优秀 ≥20', '良好 13~20', '一般 5~13', '较差 0~5', '极差 <0']
+	};
+
+	function renderHist(boxId, d, unit) {
+		var box = document.getElementById(boxId);
+		if (!box) return;
+		if (!d || !d.total) {
+			box.innerHTML = '<p class="cell-tip" style="margin:0">暂无采样（打开本页后每 10 秒采一点）</p>';
+			return;
+		}
+		var labels = HIST_LABELS[unit] || HIST_LABELS.dB;
+		var h = '';
+		for (var i = 0; i < 5; i++) {
+			var p = d.pct[i] || 0;
+			h += '<div class="kpc-hist-row"><span class="kpc-hist-k">' + labels[i] + '</span>'
+				+ '<span class="kpc-hist-bar"><i style="width:' + p + '%;background:' + HIST_COLORS[i] + '"></i></span>'
+				+ '<span class="kpc-hist-v"><b>' + p + '%</b> · ' + (d.bins[i] || 0) + '</span></div>';
+		}
+		box.innerHTML = h;
+	}
+
+	function loadStats() {
+		fetch(URL_BASE + '?action=stats&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				renderHist('kpc-hist-rsrp', d.rsrp, 'dBm');
+				renderHist('kpc-hist-sinr', d.sinr, 'dB');
+				var rs = document.getElementById('kpc-rsrp-sum');
+				var ss = document.getElementById('kpc-sinr-sum');
+				if (rs && d.rsrp && d.rsrp.s) {
+					rs.textContent = '均值 ' + d.rsrp.s.avg + ' · P10 ' + d.rsrp.s.p10
+						+ ' · P90 ' + d.rsrp.s.p90 + ' · n=' + d.rsrp.s.n;
+				}
+				if (ss && d.sinr && d.sinr.s) {
+					ss.textContent = '均值 ' + d.sinr.s.avg + ' · P10 ' + d.sinr.s.p10
+						+ ' · P90 ' + d.sinr.s.p90 + ' · n=' + d.sinr.s.n;
+				}
+				var note = document.getElementById('kpc-dist-note');
+				if (note) note.textContent = '采样 ' + (d.points || 0) + ' 点 · 已更新 ' + hhmmss(d.ts);
+			})
+			.catch(function () {});
+	}
 })();
 //]]>
 </script>
