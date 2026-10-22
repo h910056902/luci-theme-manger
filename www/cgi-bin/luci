@@ -966,6 +966,109 @@ do
 		}
 	end
 
+	-- ===== TA → 距离（通用换算，支持标定覆盖） =====
+	-- 协议默认（3GPP TS 38.211 §4.3.1、TS 38.213 §4.2）：
+	--   NR  每步往返 16×64×Tc/2^μ → 单向 78.125/2^μ 米（μ=0/1/2/3 对应 SCS 15/30/60/120 kHz）
+	--   LTE 每步往返 16×Ts        → 单向 78.125 米（等价 μ=0）
+	-- 但模块上报的单位并不标准化，所以留了标定口子：
+	--   uci kpnet.ta.step  = 米/单位（实测标定后写入，优先级最高）
+	--   uci kpnet.ta.scs   = NR 子载波间隔（默认 30 kHz，n78/n41/n79 常见）
+	local TA_BASE_M = 78.125
+
+	local function kp_ta_step(mode)
+		local sys = require "luci.sys"
+		local ov = tonumber(kp_trim(sys.exec("uci -q get kpnet.ta.step 2>/dev/null")))
+		if ov and ov > 0.1 and ov < 10000 then return ov, "calibrated" end
+		local m = tostring(mode or ""):upper()
+		if m:find("LTE", 1, true) or m:find("4G", 1, true) then
+			return TA_BASE_M, "lte"
+		end
+		local scs = tonumber(kp_trim(sys.exec("uci -q get kpnet.ta.scs 2>/dev/null"))) or 30
+		local mu = 0
+		if scs >= 120 then mu = 3
+		elseif scs >= 60 then mu = 2
+		elseif scs >= 30 then mu = 1 end
+		return TA_BASE_M / (2 ^ mu), "nr"
+	end
+
+	local function kp_ta_estimate(raw, mode)
+		local v = tonumber(raw)
+		if not v or v < 0 then return nil end
+		local step, src = kp_ta_step(mode)
+		local dist = v * step
+		local function rr(x) return math.floor(x + 0.5) end
+		return {
+			raw = v, step_m = string.format("%.1f", step), source = src,
+			meters = rr(dist),
+			low = math.max(0, rr(dist - step)),
+			high = rr(dist + step),
+			text = string.format("≈ %d m（±%d m，估算）", rr(dist), rr(step)),
+		}
+	end
+
+	-- 服务小区全量（含 NCI / TA / 服务域 / MCC-MNC）
+	-- 三条 AT 串行约 3 秒，调用方必须缓存，不能进 poll 主链路
+	local function kp_cell_detail()
+		local snap = kp_cell_snapshot()
+		local d = { code = 0, ts = os.time(), serving = snap }
+		if not snap then return d end
+
+		local tac, nci, cand
+		local rtxt = kp_at_text(kp_at("atsdcpe", "AT+C5GREG?", 1200))
+		for line in rtxt:gmatch("[^\r\n]+") do
+			local rest = line:match("^%+C5GREG:%s*(.+)$")
+			if rest then
+				local _, _, t, c, _, tail = rest:match('^(%d+),(%d+),"([^"]*)","([^"]*)",(%d+),(.*)$')
+				if t then tac, nci = t, c end
+				-- 厂商扩展位：只认纯整数 token，取最后一个 ≤1282 的当 TA 候选
+				if tail then
+					for tok in tail:gmatch("[^,]+") do
+						tok = kp_trim(tok)
+						if tok:match("^%d+$") then
+							local nv = tonumber(tok)
+							if nv and nv <= 1282 then cand = nv end
+						end
+					end
+				end
+			end
+		end
+		d.tac = tac or snap.tac
+		d.nci = nci
+		if cand then
+			d.ta = kp_ta_estimate(cand, snap.mode)
+			if d.ta then
+				d.ta.field = "C5GREG.tail"
+				d.ta.unverified = true
+			end
+		end
+
+		-- ^HCSQ 的编码各家不一，这里只透传原始值，不当 dBm 用
+		local htxt = kp_at_text(kp_at("atsdcpe", "AT^HCSQ?", 1200))
+		d.hcsq_raw = kp_trim(htxt:match("%^HCSQ:%s*([^\r\n]+)") or "")
+
+		-- 服务域 + MCC/MNC：SYSINFOEX 给域，MONSC 给网络号
+		local stxt = kp_at_text(kp_at("atsdcpe", "AT^SYSINFOEX", 1200))
+		-- 回显行在前，不能锚定行首
+		d.domain = stxt:match('%^SYSINFOEX:[^"\r\n]*"([^"]+)"') or ""
+
+		local mtxt = kp_at_text(kp_at("atsdcpe", "AT^MONSC", 1200))
+		local mline = mtxt:match("%^MONSC:%s*([^\r\n]+)")
+		if mline then
+			local f = {}
+			for v in mline:gmatch("[^,]+") do f[#f + 1] = kp_trim(v) end
+			if #f >= 4 then
+				d.mcc, d.mnc = f[2], f[3]
+			end
+			if #f >= 7 then
+				-- 第 7 段是十六进制 PCI，与服务小区交叉校验
+				local h = tonumber(f[7], 16)
+				if h then d.pci_hex = string.format("%X", h) end
+			end
+		end
+
+		return d
+	end
+
 	-- 采一个点：追加历史、检测事件、返回 (当前点, 最近 90 点, 事件表)
 	local function kp_cell_sample()
 		local snap = kp_cell_snapshot()
@@ -1611,8 +1714,8 @@ do
 
 		local actions = kind == "cellular"
 			and { neighbor = true, lock_apply = true, lock_clear = true, poll = true,
-			      stats = true, diag = true, at = true, devices = true,
-			      qos_apply = true, qos_reset = true }
+			      stats = true, cell = true, ta_cal = true, diag = true, at = true,
+			      devices = true, qos_apply = true, qos_reset = true }
 			or  { sms_send = true }
 		if not actions[action] then return false end
 
@@ -1641,6 +1744,46 @@ do
 				return true
 			end
 			kp_write_json({ code = 0, ts = snap.t, cell = snap, hist = hist, events = evts })
+			return true
+		end
+
+		if action == "cell" then
+			-- 5 秒缓存：本动作要跑 3~4 条 AT，不能被 10 秒轮询直接打
+			local CACHE = "/tmp/kpc-cell-detail.json"
+			local mtime = nil
+			pcall(function() mtime = require("nixio.fs").stat(CACHE).mtime end)
+			if mtime and (os.time() - (tonumber(mtime) or 0)) < 5 then
+				local c = kp_json_read(CACHE)
+				if type(c) == "table" and c.code == 0 then
+					kp_write_json(c)
+					return true
+				end
+			end
+			local data = kp_cell_detail()
+			kp_json_write(CACHE, data)
+			kp_write_json(data)
+			return true
+		end
+
+		if action == "ta_cal" then
+			-- 标定：给定 TA 读数与实际距离，反推「米/单位」并写入 UCI
+			local ta = tonumber(kp_trim(form.ta))
+			local meters = tonumber(kp_trim(form.meters))
+			if not ta or ta <= 0 or not meters or meters <= 0 then
+				kp_write_json({ code = 1, msg = "需要 ta 与 meters 两个正数" })
+				return true
+			end
+			local step = meters / ta
+			if step < 0.5 or step > 5000 then
+				kp_write_json({ code = 1, msg = "标定结果异常（0.5~5000 米/单位之外），请检查输入" })
+				return true
+			end
+			local sys = require "luci.sys"
+			sys.call("uci set kpnet.ta.step='" .. string.format("%.3f", step) .. "' 2>/dev/null")
+			sys.call("uci commit kpnet 2>/dev/null")
+			os.remove("/tmp/kpc-cell-detail.json")
+			kp_write_json({ code = 0, step_m = math.floor(step * 100 + 0.5) / 100,
+				msg = string.format("已标定：%.2f 米/单位（TA=%s → %sm）", step, tostring(ta), tostring(meters)) })
 			return true
 		end
 

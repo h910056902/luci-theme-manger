@@ -15,6 +15,9 @@ rm -f /tmp/kpc-nb.json
 echo "== action=stats =="
 curl -s -m 15 -H "Cookie: sysauth=$SID" "$B?action=stats" | head -c 1000
 echo
+echo "== action=cell =="
+curl -s -m 30 -H "Cookie: sysauth=$SID" "$B?action=cell" | head -c 1200
+echo
 echo "== action=neighbor =="
 curl -s -m 25 -H "Cookie: sysauth=$SID" "$B?action=neighbor" | head -c 1400
 echo

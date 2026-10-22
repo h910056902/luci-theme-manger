@@ -789,6 +789,10 @@
 				<div class="cell-kv"><span>下行带宽</span><strong><% if cell.dlbw ~= "" then %><%=string.format("%.0f", (tonumber(cell.dlbw) or 0) / 1000)%><small>MHz</small><% else %>-<% end %></strong></div>
 				<div class="cell-kv"><span>上行带宽</span><strong><% if cell.ulbw ~= "" then %><%=string.format("%.0f", (tonumber(cell.ulbw) or 0) / 1000)%><small>MHz</small><% else %>-<% end %></strong></div>
 				<div class="cell-kv"><span>签约带宽 下行 / 上行</span><strong><% if cell.ambr_dl ~= "" then %><%=string.format("%.0f", (tonumber(cell.ambr_dl) or 0) / 1000)%> / <%=string.format("%.0f", (tonumber(cell.ambr_ul) or 0) / 1000)%><small>Mbps</small><% else %>-<% end %></strong></div>
+				<div class="cell-kv is-key"><span>小区标识 NCI</span><strong id="kc-nci">-</strong></div>
+				<div class="cell-kv is-key"><span>时间提前量 TA</span><strong id="kc-ta">-</strong><span id="kc-ta-d">-</span></div>
+				<div class="cell-kv"><span>服务域</span><strong id="kc-domain">-</strong></div>
+				<div class="cell-kv"><span>网络 PLMN</span><strong id="kc-plmn">-</strong></div>
 			</div>
 		</div>
 	</fieldset>
@@ -1634,6 +1638,33 @@
 	}
 	setInterval(pollTrend, 10000);
 	pollTrend();
+
+	/* ---- 服务小区全量：NCI / TA（距离估算）/ 服务域 / PLMN ---- */
+	function loadCellDetail() {
+		fetch(URL_BASE + '?action=cell&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				var nci = d.nci ? String(d.nci).replace(/^0+/, '') : '';
+				setKv('kc-nci', nci || '-', '');
+				setKv('kc-domain', d.domain || '-', '');
+				setKv('kc-plmn', (d.mcc && d.mnc) ? (d.mcc + '-' + d.mnc) : '-', '');
+				var tv = document.getElementById('kc-ta');
+				var td = document.getElementById('kc-ta-d');
+				if (d.ta) {
+					if (tv) tv.textContent = String(d.ta.raw);
+					if (td) {
+						td.textContent = d.ta.text + (d.ta.source === 'calibrated' ? ' · 已标定' : ' · 参考值');
+					}
+				} else {
+					if (tv) tv.textContent = '-';
+					if (td) td.textContent = '模块未上报 TA';
+				}
+			})
+			.catch(function () {});
+	}
+	loadCellDetail();
+	setInterval(function () { if (!document.hidden) loadCellDetail(); }, 30000);
 
 	document.getElementById('kpc-diag').addEventListener('click', function () {
 		window.location.href = URL_BASE + '?action=diag&t=' + Date.now();
