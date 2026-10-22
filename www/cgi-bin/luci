@@ -955,12 +955,21 @@ do
 		if type(st) ~= "table" then return nil end
 		local function s(k) return kp_trim(st[k]) end
 		local function n(k) return tonumber(kp_trim(st[k])) or 0 end
+		-- 字段名各家不同：本机实测是 download/upload/sim_mon/sim_flow，
+		-- 老代码写的 flow_dl/flow_ul/mon_flow/total_flow 实际不存在 → 恒为 0
+		local function pick(...)
+			for _, k in ipairs({ ... }) do
+				local v = kp_trim(st[k])
+				if v ~= "" then return tonumber(v) or 0 end
+			end
+			return 0
+		end
 		return {
 			mode = s("mode"), band = s("band"), earfcn = s("earfcn"),
 			pci = s("pci"), cid = s("cell"), tac = s("tac"),
 			rsrp = n("rsrp"), rsrq = n("rsrq"), sinr = n("sinr"), cqi = n("CQI"),
-			dl = n("flow_dl"), ul = n("flow_ul"),
-			mon = n("mon_flow"), total = n("total_flow"),
+			dl = pick("download", "flow_dl"), ul = pick("upload", "flow_ul"),
+			mon = pick("sim_mon", "mon_flow"), total = pick("sim_flow", "total_flow"),
 			temp = n("model_temp"), sim = s("simno"), iccid = s("iccid"),
 			model = s("model"), rev = s("revision"),
 		}
@@ -1156,11 +1165,19 @@ do
 		local dt = (last and type(last.t) == "number") and (now - last.t) or 0
 
 		-- 吞吐速率（字节/秒）：用累计计数器做差
+		-- 护栏：上一包计数为 0（历史脏点/刚重启）时不计算，避免出现巨额尖峰；
+		--       超过 200 MB/s 的结果直接丢弃（模块不可能达到，属计数跳变）
 		snap.dlr, snap.ulr = 0, 0
 		if last and dt > 0 and dt <= 600 then
 			local ldl, lul = tonumber(last.dl) or 0, tonumber(last.ul) or 0
-			if snap.dl >= ldl then snap.dlr = math.floor((snap.dl - ldl) / dt) end
-			if snap.ul >= lul then snap.ulr = math.floor((snap.ul - lul) / dt) end
+			if ldl > 0 and snap.dl >= ldl then
+				local v = (snap.dl - ldl) / dt
+				if v <= 209715200 then snap.dlr = math.floor(v) end
+			end
+			if lul > 0 and snap.ul >= lul then
+				local v = (snap.ul - lul) / dt
+				if v <= 209715200 then snap.ulr = math.floor(v) end
+			end
 		end
 		snap.t = now
 
