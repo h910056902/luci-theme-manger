@@ -83,9 +83,9 @@ https://github.com/$Repo/releases/download/$Tag/$stableName
 
 ## 本次构建
 
-- 版本：`$Version`
-- 大小：`$devBytes` 字节
-- MD5：``$localMd5``
+- 版本：$Version
+- 大小：$devBytes 字节
+- MD5：$localMd5
 - 架构：``all``（OpenWrt 21.02 / opkg）
 - 构建时间：$(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 
