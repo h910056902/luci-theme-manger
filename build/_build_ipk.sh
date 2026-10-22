@@ -4,7 +4,8 @@
 set -e
 
 PKG=nradio-luci-8080
-VER=20261022-1
+# 版本号可由第一个参数注入；默认「日期-1」
+VER=${1:-$(date +%Y%m%d)-1}
 D=/overlay/nradio-apps/openwrt-luci-8080
 W=/tmp/ipkbuild
 OUT=/tmp/${PKG}_${VER}_all.ipk
