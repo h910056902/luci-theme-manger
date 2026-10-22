@@ -1035,6 +1035,19 @@
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>距离估算<span class="cell-live" id="kpc-dist-verdict">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>TA 估算</span><strong id="kc-dist-ta">-</strong></div>
+				<div class="cell-kv is-key"><span>路损估算</span><strong id="kc-dist-pl">-</strong></div>
+				<div class="cell-kv"><span>一致性</span><strong id="kc-dist-ok">-</strong></div>
+				<div class="cell-kv"><span>计算参数</span><strong id="kc-dist-cfg" style="font-size:.8rem">-</strong></div>
+			</div>
+			<p class="cell-tip">TA 由往返时延量化得到（步长 39~78 m 级），NLOS 只会偏大；路损按<strong>每 RE 功率</strong>与路损指数反推，受天线倾角、遮挡、实际发射功率影响很大。两路相差 3 倍以上时标为「不可信」——此时不要采信任何一个数字。参数可用 uci 调整：<code>kpnet.rf.eirp_re</code>（默认 20 dBm）、<code>kpnet.rf.n</code>（默认 3.3）、<code>kpnet.ta.step</code>（标定后的米/单位）。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>优化建议</h3>
 		<div class="cell-sec">
 			<% for i, a in ipairs(advice) do %>
@@ -1074,7 +1087,7 @@
 			<div id="kpc-nb" class="cell-scroll" style="margin-top:12px">
 				<p class="cell-tip" style="margin:0">点击「扫描邻区」获取当前可用的相邻小区。</p>
 			</div>
-			<p class="cell-tip">ΔRSRP 为邻区相对服务小区的差值，越接近 0 说明越可能被切换过去。「历史最优 / 出现」来自本机累计统计（/tmp，重启清零）。低于 -120 dBm 已丢弃；模块只上报同频邻区，判断异频优劣需锁频后重测。</p>
+			<p class="cell-tip">ΔRSRP 为邻区相对服务小区的差值，越接近 0 说明越可能被切换过去。「距离(估)」以服务小区距离为锚点、按 ΔRSRP 与路损指数反算，只保留相对关系，绝对项互相抵消；锚点不可信时整列都不准。TA 只属于服务小区，不能套到邻区上。「历史最优 / 出现」来自本机累计统计（/tmp，重启清零）。低于 -120 dBm 已丢弃；模块只上报同频邻区，判断异频优劣需锁频后重测。</p>
 		</div>
 	</fieldset>
 </div>
@@ -1651,14 +1664,39 @@
 				setKv('kc-plmn', (d.mcc && d.mnc) ? (d.mcc + '-' + d.mnc) : '-', '');
 				var tv = document.getElementById('kc-ta');
 				var td = document.getElementById('kc-ta-d');
+				var plText = d.pl ? fmtDist(d.pl.meters) : '—';
+				var check = d.ta && d.ta.check;
 				if (d.ta) {
 					if (tv) tv.textContent = String(d.ta.raw);
 					if (td) {
-						td.textContent = d.ta.text + (d.ta.source === 'calibrated' ? ' · 已标定' : ' · 参考值');
+						td.textContent = d.ta.text + ' · 路损 ' + plText
+							+ (check ? (' · ' + check.text) : '');
 					}
 				} else {
 					if (tv) tv.textContent = '-';
-					if (td) td.textContent = '模块未上报 TA';
+					if (td) td.textContent = '模块未上报 TA · 路损 ' + plText;
+				}
+
+				// 「网优」页签的距离估算卡片
+				var e1 = document.getElementById('kc-dist-ta');
+				var e2 = document.getElementById('kc-dist-pl');
+				var e3 = document.getElementById('kc-dist-ok');
+				var e4 = document.getElementById('kc-dist-cfg');
+				if (e1) e1.textContent = d.ta ? d.ta.text : '无 TA';
+				if (e2) e2.textContent = d.pl ? ('≈ ' + fmtDist(d.pl.meters)) : '无法计算';
+				if (e3) {
+					e3.textContent = check ? check.text : '无法校验';
+					e3.style.color = (check && !check.consistent) ? '#c23b22' : '';
+				}
+				if (e4) {
+					e4.textContent = d.pl
+						? (d.pl.freq + ' MHz · EIRP ' + d.pl.eirp + ' dBm · n=' + d.pl.n + ' · PL ' + d.pl.pl + ' dB')
+						: '—';
+				}
+				var vd = document.getElementById('kpc-dist-verdict');
+				if (vd) {
+					vd.textContent = (check && !check.consistent) ? '不可信' : (check ? '可参考' : '—');
+					vd.style.color = (check && !check.consistent) ? '#c23b22' : '';
 				}
 			})
 			.catch(function () {});
@@ -1885,6 +1923,13 @@
 		}
 	}
 
+	function fmtDist(m) {
+		var n = Number(m);
+		if (!n || !isFinite(n) || n <= 0) return '—';
+		if (n < 1000) return Math.round(n) + ' m';
+		return (n / 1000).toFixed(n < 10000 ? 1 : 0) + ' km';
+	}
+
 	function renderNeighbors(d) {
 		var note = document.getElementById('kpc-scan-note');
 		var box = document.getElementById('kpc-nb');
@@ -1897,7 +1942,7 @@
 		}
 		var h = '<table class="cell-table"><thead><tr>'
 			+ '<th>#</th><th>PCI</th><th>频点</th><th>同频</th>'
-			+ '<th>RSRP</th><th>RSRQ</th><th>SINR</th><th>ΔRSRP</th>'
+			+ '<th>RSRP</th><th>RSRQ</th><th>SINR</th><th>ΔRSRP</th><th>距离(估)</th>'
 			+ '<th>信号</th><th>历史最优 / 次数</th><th>操作</th></tr></thead><tbody>';
 		if (sv.pci) {
 			var sp = Number(sv.rsrp) || 0;
@@ -1906,12 +1951,13 @@
 				+ '<td class="mono">' + esc(sv.earfcn || '-') + '</td>'
 				+ '<td><span class="cell-pill on">当前</span></td>'
 				+ '<td>' + esc(sv.rsrp) + ' dBm</td><td>—</td><td>' + esc(sv.sinr) + ' dB</td><td>0</td>'
+				+ '<td>—</td>'
 				+ '<td><div class="cell-bar" style="width:80px"><i style="width:'
 				+ Math.max(5, Math.min(100, Math.floor((sp + 140) * 100 / 60)))
 				+ '%;background:#34d399"></i></div></td><td>—</td><td>—</td></tr>';
 		}
 		if (!list.length) {
-			h += '<tr><td colspan="11"><span class="cell-tip">未发现可用邻区。可能信号过弱，或附近没有同频小区。</span></td></tr>';
+			h += '<tr><td colspan="12"><span class="cell-tip">未发现可用邻区。可能信号过弱，或附近没有同频小区。</span></td></tr>';
 		}
 		for (var i = 0; i < list.length; i++) {
 			var c = list[i];
@@ -1926,6 +1972,7 @@
 				+ '<td>' + (c.same_freq ? '<span class="cell-pill on">同频</span>' : '<span class="cell-pill">异频</span>') + '</td>'
 				+ '<td>' + esc(c.rsrp) + ' dBm</td><td>' + esc(c.rsrq) + ' dB</td><td>' + esc(c.sinr) + ' dB</td>'
 				+ '<td class="' + dcls + '">' + esc(dtxt) + '</td>'
+				+ '<td>' + fmtDist(c.dist) + '</td>'
 				+ '<td><div class="cell-bar" style="width:80px"><i style="width:' + esc(c.pct)
 				+ '%;background:' + bar + '"></i></div></td>'
 				+ '<td>' + esc(c.best === undefined ? '-' : c.best) + ' / ' + esc(c.seen || 1) + '</td>'

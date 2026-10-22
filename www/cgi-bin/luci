@@ -1006,21 +1006,16 @@ do
 		}
 	end
 
-	-- 服务小区全量（含 NCI / TA / 服务域 / MCC-MNC）
-	-- 三条 AT 串行约 3 秒，调用方必须缓存，不能进 poll 主链路
-	local function kp_cell_detail()
-		local snap = kp_cell_snapshot()
-		local d = { code = 0, ts = os.time(), serving = snap }
-		if not snap then return d end
-
+	-- 从 AT+C5GREG? 里取 TA 候选 / TAC / NCI
+	-- 返回：ta_candidate, tac, nci
+	local function kp_read_c5greg()
+		local txt = kp_at_text(kp_at("atsdcpe", "AT+C5GREG?", 1200))
 		local tac, nci, cand
-		local rtxt = kp_at_text(kp_at("atsdcpe", "AT+C5GREG?", 1200))
-		for line in rtxt:gmatch("[^\r\n]+") do
+		for line in txt:gmatch("[^\r\n]+") do
 			local rest = line:match("^%+C5GREG:%s*(.+)$")
 			if rest then
 				local _, _, t, c, _, tail = rest:match('^(%d+),(%d+),"([^"]*)","([^"]*)",(%d+),(.*)$')
 				if t then tac, nci = t, c end
-				-- 厂商扩展位：只认纯整数 token，取最后一个 ≤1282 的当 TA 候选
 				if tail then
 					for tok in tail:gmatch("[^,]+") do
 						tok = kp_trim(tok)
@@ -1032,6 +1027,77 @@ do
 				end
 			end
 		end
+		return cand, tac, nci
+	end
+
+	-- ===== RSRP 路损 → 距离（第二路估算，用于与 TA 交叉校验） =====
+	-- 关键：必须用「每 RE 功率」而不是基站总功率，否则会差 30 dB 量级。
+	-- 可调参数（uci，缺省时用默认值）：
+	--   kpnet.rf.eirp_re  每 RE 等效全向辐射功率 dBm，默认 20
+	--   kpnet.rf.n        路损指数，默认 3.3（城区）；郊区 2.7~3.0
+	local LTE_BAND_MHZ = {
+		["1"] = 2100, ["3"] = 1800, ["5"] = 850, ["8"] = 900,
+		["34"] = 2015, ["38"] = 2595, ["39"] = 1895, ["40"] = 2350, ["41"] = 2555,
+	}
+
+	local function kp_rf_cfg()
+		local sys = require "luci.sys"
+		local eirp = tonumber(kp_trim(sys.exec("uci -q get kpnet.rf.eirp_re 2>/dev/null")))
+		local n = tonumber(kp_trim(sys.exec("uci -q get kpnet.rf.n 2>/dev/null")))
+		if not eirp or eirp <= 0 then eirp = 20 end
+		if not n or n < 1.5 or n > 6 then n = 3.3 end
+		return { eirp = eirp, n = n }
+	end
+
+	-- NR-ARFCN → MHz（3GPP TS 38.104 Table 5.4.2.1-1）
+	local function kp_nr_freq_mhz(arfcn)
+		local v = tonumber(arfcn)
+		if not v or v <= 0 then return nil end
+		if v < 600000 then return v * 0.005 end
+		if v < 2016667 then return 3000 + (v - 600000) * 0.015 end
+		return 24250.08 + (v - 2016667) * 0.06
+	end
+
+	local function kp_pl_distance(rsrp, freq_mhz, cfg)
+		local r = tonumber(rsrp)
+		if not r or r == 0 or r > -30 then return nil end
+		cfg = cfg or kp_rf_cfg()
+		local f = tonumber(freq_mhz) or 3500
+		local pl = cfg.eirp - r
+		local fspl1 = 32.44 + 20 * math.log10(f)
+		local d_km = 10 ^ ((pl - fspl1) / (10 * cfg.n))
+		if d_km <= 0 or d_km > 100 then return nil end
+		return {
+			meters = math.floor(d_km * 1000 + 0.5),
+			pl = math.floor(pl * 10 + 0.5) / 10,
+			freq = math.floor(f + 0.5),
+			eirp = cfg.eirp, n = string.format("%.1f", cfg.n),
+		}
+	end
+
+	-- 两路估算的一致性：相差 ≥3 倍判为不可信
+	local function kp_dist_check(ta, pl)
+		if not ta or not pl or pl.meters <= 0 or ta.meters <= 0 then return nil end
+		local hi = math.max(ta.meters, pl.meters)
+		local lo = math.min(ta.meters, pl.meters)
+		local ratio = hi / lo
+		return {
+			ratio = math.floor(ratio * 10 + 0.5) / 10,
+			consistent = ratio < 3,
+			text = (ratio >= 3)
+				and string.format("两路相差 %.1f 倍，不可信", ratio)
+				or string.format("两路接近（%.1f 倍），可参考", ratio),
+		}
+	end
+
+	-- 服务小区全量（含 NCI / TA / 服务域 / MCC-MNC）
+	-- 三条 AT 串行约 3 秒，调用方必须缓存，不能进 poll 主链路
+	local function kp_cell_detail()
+		local snap = kp_cell_snapshot()
+		local d = { code = 0, ts = os.time(), serving = snap }
+		if not snap then return d end
+
+		local cand, tac, nci = kp_read_c5greg()
 		d.tac = tac or snap.tac
 		d.nci = nci
 		if cand then
@@ -1065,6 +1131,13 @@ do
 				if h then d.pci_hex = string.format("%X", h) end
 			end
 		end
+
+		-- 第二路估算：RSRP 路损反推，并与 TA 做一致性判定
+		local cfg = kp_rf_cfg()
+		local freq = kp_nr_freq_mhz(snap.earfcn) or LTE_BAND_MHZ[tostring(snap.band or "")]
+		if not freq and tostring(snap.mode or ""):upper():find("NR", 1, true) then freq = 3500 end
+		d.pl = kp_pl_distance(snap.rsrp, freq, cfg)
+		if d.ta then d.ta.check = kp_dist_check(d.ta, d.pl) end
 
 		return d
 	end
@@ -1919,6 +1992,28 @@ do
 				band = tostring(snap.band or ""),
 				sinr = tonumber(snap.sinr) or 0,
 			} or nil
+			-- 邻区距离：以服务小区距离为锚点，按 ΔRSRP 换算（绝对项互相抵消）
+			-- 锚点优先 TA，其次服务小区路损；都拿不到就不给距离
+			local cfg = kp_rf_cfg()
+			local anchor = nil
+			local taRaw = kp_read_c5greg()
+			if taRaw then
+				local te = kp_ta_estimate(taRaw, snap and snap.mode)
+				if te then anchor = te.meters end
+			end
+			if not anchor then
+				local e = kp_pl_distance(snap and snap.rsrp,
+					kp_nr_freq_mhz(snap and snap.earfcn or "") or 3500, cfg)
+				if e then anchor = e.meters end
+			end
+			for _, c in ipairs(data.cells) do
+				local dl = tonumber(c.delta)
+				if dl and anchor then
+					-- ΔRSRP 为负（比服务小区弱）→ 距离更远，所以取 -dl
+					c.dist = math.floor(anchor * 10 ^ (-dl / (10 * cfg.n)) + 0.5)
+				end
+			end
+			data.anchor = anchor
 			kp_write_json(data)
 			return true
 		end
