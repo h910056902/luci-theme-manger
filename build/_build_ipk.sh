@@ -25,11 +25,23 @@ for d in bootstrap router3d; do
 done
 
 echo "== 收集系统级脚本（监听地址同步） =="
+# 注意：这两个脚本落在系统路径，不在 8080 实例目录下
 for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen; do
-    if [ -f "$D/$f" ]; then
-        mkdir -p "$R/${f%/*}"
-        cp "$D/$f" "$R/$f"
-        chmod 755 "$R/$f"
+    src=""
+    if [ -f "/$f" ]; then
+        src="/$f"
+    elif [ -f "$D/$f" ]; then
+        src="$D/$f"
+    fi
+    if [ -n "$src" ]; then
+        # 落到包根（$W/data），不是实例目录（$R）
+        dst="$W/data/$f"
+        mkdir -p "${dst%/*}"
+        cp "$src" "$dst"
+        chmod 755 "$dst"
+        echo "  + $src -> /$f"
+    else
+        echo "  ! 缺少 $f"
     fi
 done
 
