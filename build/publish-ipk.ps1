@@ -16,7 +16,7 @@ param(
     [string]$Version = ((Get-Date -Format "yyyyMMdd") + "-1"),
     [string]$Router = "192.168.66.1",
     [string]$UserName = "root",
-    [string]$Password = "admin",
+    [string]$Password = $env:ROUTER_PW,
     [string]$Repo = "h910056902/luci-theme-manger",
     [string]$Tag = "latest",
     [string]$HostKey = "SHA256:66RpOE4kXKmaxFdKh4czcTQI5gME54QWVKjxu1/yNhs",
@@ -26,6 +26,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if (-not $Password) { throw "请先设置环境变量 ROUTER_PW（路由器 root 密码），不要把密码写进脚本" }
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $outDir = Join-Path $repoRoot "build\out"
 $pkg = "nradio-luci-8080"

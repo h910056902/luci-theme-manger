@@ -10,10 +10,11 @@
 param(
     [string]$Router = "192.168.66.1",
     [string]$UserName = "root",
-    [string]$Password = "admin"
+    [string]$Password = $env:ROUTER_PW
 )
 
 $ErrorActionPreference = "Stop"
+if (-not $Password) { throw "请先设置环境变量 ROUTER_PW（路由器 root 密码），不要把密码写进脚本" }
 $plink = "C:\Program Files\PuTTY\plink.exe"
 $pscp = "C:\Program Files\PuTTY\pscp.exe"
 

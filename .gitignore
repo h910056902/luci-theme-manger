@@ -10,3 +10,10 @@ build/out/
 # 本地截图/临时渲染
 preview/*.png
 
+# 凭据与抓包产物（绝不入库）
+cookies.txt
+*.cookie
+_askpass*
+*.session
+
+
