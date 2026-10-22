@@ -1,0 +1,98 @@
+{
+  "code": 0,
+  "ts": 1792484000,
+  "uptime": 147820,
+  "ncpu": 4,
+  "load": [1.69, 1.74, 1.73],
+  "cpu": { "pct": 23 },
+  "mem": { "total": 1040826368, "available": 461348864, "free": 180076544, "cached": 328982528, "buffers": 18874368, "slab": 73400320, "swap_total": 0, "swap_free": 0 },
+  "storage": { "total": 17177772032, "used": 1384026112, "pct": 8, "root": { "total": 17177772032, "used": 1384026112, "pct": 8 }, "tmp": { "total": 260206336, "used": 5242880, "pct": 2 } },
+  "thermal": [63, 63, 59],
+  "conntrack": { "count": 1320, "max": 65536 },
+  "arp": 109,
+  "arp_top": [
+    { "mac": "02:19:18:cc:d6:72", "n": 100, "first": "10.14.6.165" },
+    { "mac": "fc:83:c6:18:42:fa", "n": 3, "first": "192.168.66.245" }
+  ],
+  "route": { "default": "default via 10.0.0.1 dev eth3", "gw": "10.0.0.1", "dev": "eth3" },
+  "net": { "dev": "eth3", "rx_total": 12884901888, "tx_total": 2147483648, "rx_bps": 1572864, "tx_bps": 262144, "lan_rx_bps": 4194304, "lan_tx_bps": 1048576 },
+  "ip": { "v4": "10.23.217.92", "v6": "2408:8956:7e40:b927:ea:98:32:d3", "dns": "211.136.17.107, 211.136.20.203" },
+  "cell": { "mode": "NR SA", "band": "78", "earfcn": "627264", "pci": "129", "rsrp": "-89", "rsrq": "-5", "sinr": "24", "isp": "46001", "simno": "2", "simcount": "3" },
+  "wifi": { "total": 15, "bands": [ { "dev": "rai0", "n": 12 }, { "dev": "ra0", "n": 1 } ] },
+  "ssids": [
+    { "dev": "ra0", "ssid": "2G_OPEN_0", "ch": "8", "mode": "Master", "n": 1, "sig": -47, "q": 62, "enc": "WPA2 PSK (CCMP)" },
+    { "dev": "rai0", "ssid": "5G_OPEN_0", "ch": "149", "mode": "Master", "n": 12, "sig": -58, "q": 55, "enc": "WPA2 PSK (CCMP)" }
+  ],
+  "dhcp": [
+    { "mac": "a4:5e:60:11:22:33", "ip": "192.168.66.100", "host": "laptop" },
+    { "mac": "dc:a6:32:44:55:66", "ip": "192.168.66.101", "host": "nas" },
+    { "mac": "00:11:22:33:44:55", "ip": "192.168.66.102", "host": "" }
+  ],
+  "routes": [
+    { "dest": "default", "gw": "10.0.0.1", "dev": "eth3", "metric": "", "down": false },
+    { "dest": "10.0.0.0/8", "gw": "", "dev": "eth3", "metric": "", "down": false },
+    { "dest": "172.17.0.0/16", "gw": "", "dev": "docker0", "metric": "", "down": true },
+    { "dest": "172.18.0.0/16", "gw": "", "dev": "br-2709470b9471", "metric": "", "down": true },
+    { "dest": "172.26.1.0/24", "gw": "", "dev": "docker-lan", "metric": "", "down": false },
+    { "dest": "192.168.66.0/24", "gw": "", "dev": "br-lan", "metric": "", "down": false }
+  ],
+  "fw": {
+    "total": 215,
+    "input": "ACCEPT",
+    "chains": [
+      { "name": "INPUT", "policy": "ACCEPT", "rules": 11 },
+      { "name": "FORWARD", "policy": "ACCEPT", "rules": 9 },
+      { "name": "OUTPUT", "policy": "ACCEPT", "rules": 3 },
+      { "name": "openclash_wan_input", "policy": "-", "refs": 1, "rules": 14 },
+      { "name": "openclash_dns_hijack", "policy": "-", "refs": 2, "rules": 2 }
+    ],
+    "top": [
+      { "chain": "openclash_wan_input", "target": "ACCEPT", "pkts": 778811, "bytes": 903921738 },
+      { "chain": "INPUT", "target": "ACCEPT", "pkts": 76728, "bytes": 13375781 },
+      { "chain": "INPUT", "target": "openclash_wan_input", "pkts": 1267, "bytes": 82318 },
+      { "chain": "INPUT", "target": "REJECT", "pkts": 528, "bytes": 674784 }
+    ]
+  },
+  "proc": {
+    "total": 189,
+    "user": 93,
+    "zombie": 1,
+    "rss": 518758400,
+    "top_mem": [
+      { "pid": 6615, "cmd": "clash", "rss": 111149056 },
+      { "pid": 8811, "cmd": "1panel", "rss": 91226112 },
+      { "pid": 15528, "cmd": "openlist", "rss": 70254592 },
+      { "pid": 11610, "cmd": "dockerd", "rss": 39383040 },
+      { "pid": 13108, "cmd": "containerd", "rss": 39026688 },
+      { "pid": 4122, "cmd": "rsyslogd", "rss": 12582912 },
+      { "pid": 10237, "cmd": "cellular_init", "rss": 8388608 },
+      { "pid": 10189, "cmd": "atsd", "rss": 6291456 }
+    ]
+  },
+  "log": {
+    "total": 276,
+    "err": 0,
+    "warn": 0,
+    "info": 190,
+    "recent": [
+      { "ts": "16:05:12", "lv": "info", "sev": 6, "msg": "c2000max-sim-status: status refreshed: card=中国联通 · SIM卡2 · slot=2 stage=online" },
+      { "ts": "16:05:09", "lv": "info", "sev": 6, "msg": "netifd: Interface 'cpe' is setting up now" },
+      { "ts": "16:05:08", "lv": "info", "sev": 6, "msg": "cellular_init: init done, band=78 arfcn=627264" },
+      { "ts": "16:05:02", "lv": "notice", "sev": 5, "msg": "atserver-sniffer: session keepalive ok" },
+      { "ts": "16:04:58", "lv": "info", "sev": 6, "msg": "dnsmasq-dhcp: DHCPACK(br-lan) 192.168.66.100 a4:5e:60:11:22:33 laptop" },
+      { "ts": "16:04:51", "lv": "warn", "sev": 4, "msg": "atsd_cpe: siocgifflags() retry 2" },
+      { "ts": "16:04:47", "lv": "info", "sev": 6, "msg": "hostapd: rai0: STA dc:a6:32:44:55:66 IEEE 802.11: associated" },
+      { "ts": "16:04:40", "lv": "info", "sev": 6, "msg": "crond[18042]: USER root pid 24270 cmd /usr/bin/mwrt-ledsched apply" }
+    ]
+  },
+  "klog": [
+    { "t": 248, "lv": "info", "msg": "mt7993 0000:01:00.0: mtk_wsys_unregister_mld_sta_entry(): mld_sta_idx=0, band=1, cnt=0" },
+    { "t": 247, "lv": "info", "msg": "mt7993 0000:01:00.0: mtk_wsys_register_mld_sta_entry(): mld_sta_idx=0, band=1, cnt=1" },
+    { "t": 196, "lv": "warn", "msg": "7992@WARN.MLME,BN1,PeerAssocReqCmmSanity() 1621: IE_WLAN_EXTENSION: no handler for extension_id:107" },
+    { "t": 180, "lv": "info", "msg": "usb 1-1: new high-speed USB device number 2 using xhci-mtk" },
+    { "t": 152, "lv": "info", "msg": "eth3: link up, 1000 Mbps, full duplex" },
+    { "t": 120, "lv": "info", "msg": "mtk_soc_eth 15100000.ethernet: generated random MAC address" },
+    { "t": 96, "lv": "err", "msg": "atsd: probe of atsd failed with error -16" },
+    { "t": 88, "lv": "info", "msg": "usbcore: registered new interface driver option" }
+  ]
+}

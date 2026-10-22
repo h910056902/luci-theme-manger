@@ -1,0 +1,522 @@
+/* ==========================================================================
+   OpenClash · Glass — 现代极简毛玻璃 redesign
+   --------------------------------------------------------------------------
+   Scope : this file is loaded ONLY on admin/services/openclash/ (all sub-routes)
+           (conditional <%- if %> in the nradio theme header), so even
+           "global" selectors here can never affect official pages.
+   Covers: Overview (.oc cards) + settings/config/subscribe/log (.cbi forms)
+   Design: frosted glass, generous whitespace, calm hairline borders,
+           layered shadows, clear type hierarchy.
+   Goals : 1) 信息降噪 — 核心状态与实时速率成为视觉主角
+           2) 操作流程前置 — 高频操作更醒目
+           3) 响应式 — 窄屏/iframe 自动单列
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Design tokens
+   nradio 主题的 body 底色是 #111111（官方深色底），OpenClash 页面天然运行在
+   深色环境上 —— 因此以「深色玻璃」为主基调，浅色仅作暗色模式的反向兜底。
+   -------------------------------------------------------------------------- */
+:root {
+  --glass-bg:        rgba(255,255,255,.055);
+  --glass-bg-soft:   rgba(255,255,255,.035);
+  --glass-bg-strong: rgba(255,255,255,.085);
+  --glass-border:    rgba(255,255,255,.10);
+  --glass-hairline:  rgba(255,255,255,.075);
+  --glass-blur:      blur(20px) saturate(160%);
+
+  --sh-glass-1: 0 1px 2px rgba(0,0,0,.30);
+  --sh-glass-2: 0 6px 24px rgba(0,0,0,.36), 0 1px 3px rgba(0,0,0,.24);
+  --sh-glass-3: 0 16px 48px rgba(0,0,0,.48);
+
+  --r-lg: 20px;
+  --r-md: 14px;
+  --r-sm: 10px;
+  --r-pill: 999px;
+
+  --accent:      #0a84ff;
+  --accent-soft: rgba(10,132,255,.20);
+  --ok:      #30d158;
+  --warn:    #ff9f0a;
+  --danger:  #ff453a;
+
+  --ink-1: #f2f4f8;   /* primary text   */
+  --ink-2: #a8b0be;   /* secondary text */
+  --ink-3: #6f7787;   /* muted text     */
+
+  --ease: cubic-bezier(.32,.72,0,1);
+}
+
+/* 浅色环境（若用户切到 light）反向兜底 */
+html:not([data-darkmode=true]) {
+  --glass-bg:        rgba(255,255,255,.68);
+  --glass-bg-soft:   rgba(255,255,255,.45);
+  --glass-bg-strong: rgba(255,255,255,.85);
+  --glass-border:    rgba(255,255,255,.75);
+  --glass-hairline:  rgba(15,23,42,.07);
+  --sh-glass-1: 0 1px 2px rgba(15,23,42,.04), 0 2px 8px rgba(15,23,42,.04);
+  --sh-glass-2: 0 8px 32px rgba(15,23,42,.07), 0 2px 8px rgba(15,23,42,.04);
+  --ink-1: #10141c;
+  --ink-2: #5b6472;
+  --ink-3: #9aa3b0;
+}
+
+/* --------------------------------------------------------------------------
+   1. Page shell — 只给「包含 .oc 的那层容器」铺背景，不改布局
+      （openclash 内容包在 fieldset.cbi-section > .oc 里，.main-content
+        是外层包装、尺寸可能为 0，不能作为样式承载者）
+   -------------------------------------------------------------------------- */
+.oc {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(10,132,255,.10), transparent 60%),
+    linear-gradient(180deg, #16181d 0%, #111214 100%);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  box-sizing: border-box;
+  /* 约束内部容器宽度，避免右侧被裁切 */
+  overflow-x: hidden;
+}
+html:not([data-darkmode=true]) .oc {
+  background:
+    radial-gradient(1200px 600px at 15% -10%, rgba(0,122,255,.05), transparent 60%),
+    linear-gradient(180deg, #f7f8fa 0%, #eef1f6 100%);
+}
+
+/* OpenClash 自带的容器宽度是 95%/98%，在宽屏下会与 .oc 的 padding 冲突 */
+.oc .main-cards-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. OpenClash dashboard cards — frosted glass
+   -------------------------------------------------------------------------- */
+/* 注意：openclash 的 .main-card 用 grid-template-rows 固定行高 +
+   overflow:visible，所以**不要改动它的 padding/gap**，否则内容会溢出到
+   相邻卡片上。这里只强化外观（背景/边框/圆角/阴影）。 */
+.oc .main-card {
+  background: var(--glass-bg) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--sh-glass-2) !important;
+  overflow: hidden !important;   /* 防止玻璃圆角处内容外露 */
+}
+
+.oc .sub-card {
+  background: var(--glass-bg-soft) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: none !important;
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease),
+              background .18s ease;
+}
+.oc .sub-card:hover {
+  background: var(--glass-bg-strong) !important;
+  box-shadow: var(--sh-glass-2) !important;
+  transform: translateY(-2px);
+}
+
+/* 卡片标题：小、轻、上层次（降噪） */
+.oc .card-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: .02em;
+  color: var(--ink-2) !important;
+  text-transform: none;
+}
+/* 卡片主体数值：大、稳、主角 */
+.oc .card-value,
+.oc .value-indicator {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: var(--ink-1) !important;
+  letter-spacing: -.01em;
+}
+
+/* --------------------------------------------------------------------------
+   3. 信息降噪 — 8 个统计项分三级权重
+      顺序: Up / Down / Up Total / Down Total / Connect / Ram / CPU / Load Avg
+      1-2 实时速率(主角) · 3-4 累计流量(次) · 5-8 系统资源(弱)
+   -------------------------------------------------------------------------- */
+/* 统计项：不动 padding（它自带 10px 6px，与固定行高配合） */
+
+/* 主角：实时速率 */
+.oc .sub-card.stat-item:nth-child(1) .stat-value,
+.oc .sub-card.stat-item:nth-child(2) .stat-value {
+  font-size: 21px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.025em;
+  color: var(--ink-1) !important;
+}
+.oc .sub-card.stat-item:nth-child(1),
+.oc .sub-card.stat-item:nth-child(2) {
+  background: var(--glass-bg-strong) !important;
+  box-shadow: var(--sh-glass-1) !important;
+}
+.oc .sub-card.stat-item:nth-child(1) .stat-label,
+.oc .sub-card.stat-item:nth-child(2) .stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent) !important;
+}
+
+/* 次级：累计流量 */
+.oc .sub-card.stat-item:nth-child(3) .stat-value,
+.oc .sub-card.stat-item:nth-child(4) .stat-value {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: var(--ink-1) !important;
+}
+
+/* 弱化：系统资源，退到背景里 */
+.oc .sub-card.stat-item:nth-child(n+5) .stat-value {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--ink-2) !important;
+}
+.oc .sub-card.stat-item:nth-child(n+5) .stat-label {
+  font-size: 10px !important;
+  color: var(--ink-3) !important;
+}
+.oc .sub-card.stat-item:nth-child(n+5) {
+  background: transparent !important;
+  border-color: var(--glass-hairline) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. 操作流程前置 — 让「快捷操作」成为最显眼的可点区域
+   -------------------------------------------------------------------------- */
+/* 注意：.dashboard-btn 自带 flex:1 + height:42px，是它在 flex 容器里的
+   等分布局设计，这里**不改 padding/width/min-height**，只统一配色与质感。 */
+.oc .dashboard-btn,
+.oc .cbi-button-option {
+  border: none !important;
+  border-radius: var(--r-pill) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  letter-spacing: -.01em;
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(0,122,255,.28), var(--sh-glass-1) !important;
+  transition: transform .14s var(--ease), box-shadow .14s var(--ease),
+              background .14s ease;
+}
+.oc .dashboard-btn:hover,
+.oc .cbi-button-option:hover {
+  background: #0060df !important;
+  box-shadow: 0 6px 20px rgba(0,122,255,.36) !important;
+  transform: translateY(-1px);
+}
+.oc .dashboard-btn:active,
+.oc .cbi-button-option:active { transform: scale(.97); }
+
+/* 圆形图标按钮：玻璃质感 */
+.oc .icon-btn {
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50% !important;
+  background: var(--glass-bg-strong) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: var(--accent) !important;
+  box-shadow: var(--sh-glass-1) !important;
+  transition: transform .14s var(--ease), background .14s ease;
+}
+.oc .icon-btn:hover {
+  background: var(--glass-bg-strong) !important;
+  transform: scale(1.08);
+}
+
+/* --------------------------------------------------------------------------
+   4b. 简化显示 — 隐藏「空公告栏」
+       OpenClash 的 .announcement-banner 自带蓝色渐变底，但 #announcement-content
+       为空时仍会渲染成一条刺眼的空蓝色长条。仅在内容为空时折叠它，
+       有真实公告时保持原样。
+   -------------------------------------------------------------------------- */
+.oc .announcement-card:has(#announcement-content:empty) {
+  display: none !important;
+}
+/* 兜底：没有 :has() 支持时，空内容也压平高度 */
+.oc .announcement-banner:has(#announcement-content:empty) {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   4c. 简化显示 — 收敛卡片中「为空/占位」的控件，减少视觉噪音
+   -------------------------------------------------------------------------- */
+/* 收集数据中的占位提示弱化 */
+.oc .value-indicator { color: var(--ink-2) !important; }
+
+/* --------------------------------------------------------------------------
+   5. 其余 tab — CBI 表单统一玻璃化
+      (settings / config / config-subscribe / config-overwrite / log)
+      ⚠️ 不加 fieldset：openclash 的 .oc 就在 <fieldset class="cbi-section">
+         内部，给 fieldset 上背景会与 .oc 的渐变互相叠加导致错位。
+   -------------------------------------------------------------------------- */
+.cbi-section:not(:has(.oc)),
+.cbi-map:not(:has(.oc)),
+table.table {
+  background: var(--glass-bg) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--sh-glass-2) !important;
+  margin: 0 0 16px !important;
+}
+
+.cbi-section > h3,
+.cbi-map > h3 {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: var(--ink-1) !important;
+  letter-spacing: -.01em;
+  padding: 0 0 10px !important;
+  margin: 0 0 10px !important;
+  background: transparent !important;
+  border-bottom: 1px solid var(--glass-hairline) !important;
+}
+
+/* 表单行：发丝分隔，去掉斑马纹噪音 */
+.cbi-value { border-top: 1px solid var(--glass-hairline) !important; }
+.cbi-value:first-child { border-top: none !important; }
+.cbi-value-title,
+.cbi-value label {
+  font-size: 13px !important;
+  color: var(--ink-1) !important;
+  font-weight: 500;
+}
+.cbi-value-description,
+.cbi-value-descr {
+  font-size: 12px !important;
+  color: var(--ink-3) !important;
+  line-height: 1.45;
+}
+
+/* 输入控件 */
+input[type="text"], input[type="number"], input[type="password"],
+select, textarea, .cbi-input-text, .cbi-input-password {
+  font-size: 15px !important;
+  border-radius: var(--r-sm) !important;
+  border: 1px solid var(--glass-hairline) !important;
+  background: var(--glass-bg-strong) !important;
+  padding: 8px 12px !important;
+  min-height: 36px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3.5px var(--accent-soft) !important;
+  outline: none !important;
+}
+
+/* 主按钮 */
+.cbi-button,
+input[type="submit"],
+input[type="button"],
+button.cbi-button {
+  border: none !important;
+  border-radius: var(--r-sm) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  min-height: 36px;
+  box-shadow: var(--sh-glass-1) !important;
+  transition: transform .14s var(--ease), filter .14s ease;
+}
+.cbi-button-apply,
+.cbi-button-save,
+input.cbi-button,
+input[type="submit"] {
+  background: var(--accent) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(0,122,255,.26) !important;
+}
+.cbi-button-apply:hover,
+input[type="submit"]:hover { filter: brightness(1.06); }
+.cbi-button:active { transform: scale(.98); }
+
+.cbi-button-neutral,
+.cbi-button-reset,
+.cbi-button-remove,
+input[type="button"] {
+  background: var(--glass-bg-strong) !important;
+  color: var(--accent) !important;
+}
+.cbi-button-danger {
+  background: rgba(255,59,48,.12) !important;
+  color: var(--danger) !important;
+}
+
+/* 分段控件（tab 切换）— 胶囊容器 */
+.cbi-tab > ul,
+.cbi-tab-menu > ul,
+.tabs > ul {
+  display: flex; gap: 3px;
+  padding: 3px !important;
+  margin: 0 0 14px !important;
+  background: rgba(15,23,42,.045) !important;
+  border: none !important;
+  border-radius: var(--r-md) !important;
+  box-shadow: none !important;
+  overflow-x: auto;
+}
+.cbi-tab > ul > li > a,
+.cbi-tab-menu > ul > li > a {
+  border: none !important;
+  border-radius: 11px !important;
+  background: transparent !important;
+  color: var(--ink-2) !important;
+  font-size: 13px !important;
+  font-weight: 500;
+  padding: 7px 15px !important;
+  box-shadow: none !important;
+  transition: all .15s var(--ease);
+}
+.cbi-tab > ul > li.cbi-tab-active > a,
+.cbi-tab-menu > ul > li.on > a {
+  background: #fff !important;
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--sh-glass-1) !important;
+}
+
+/* 表格：发丝线，去厚重边框 */
+table.table { border-collapse: separate; border-spacing: 0; }
+table.table th {
+  background: transparent !important;
+  color: var(--ink-2) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: .03em;
+  border-bottom: 1px solid var(--glass-hairline) !important;
+  padding: 9px 12px !important;
+}
+table.table td {
+  border-bottom: 1px solid var(--glass-hairline) !important;
+  padding: 9px 12px !important;
+  font-size: 13px;
+}
+table.table tr:last-child td { border-bottom: none !important; }
+table.table tr:hover td { background: rgba(0,122,255,.04) !important; }
+
+/* 日志区：等宽 + 玻璃容器 */
+#oclog, textarea, pre, .cbi-code {
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--glass-hairline) !important;
+  background: var(--glass-bg-strong) !important;
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace !important;
+  font-size: 12.5px !important;
+  line-height: 1.55;
+  padding: 12px 14px !important;
+}
+
+/* 状态徽标：药丸 */
+.status-led, .status-badge,
+.cbi-value > span[class*="status"] {
+  border-radius: var(--r-pill) !important;
+  padding: 3px 11px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border: none !important;
+}
+
+/* 分隔线 */
+hr { border: none !important; border-top: 1px solid var(--glass-hairline) !important; margin: 16px 0 !important; }
+
+/* --------------------------------------------------------------------------
+   5b. 可读性修复 — OpenClash 用内联 style="color:red" 写警告文字，
+       纯红 #f00 在深色底上对比不足且刺眼，统一改为 iOS 系统红/橙层级。
+   -------------------------------------------------------------------------- */
+.cbi-section [style*="color:red"],
+.cbi-section [style*="color: red"],
+.cbi-section font[color="red"] {
+  color: #ff6b6b !important;
+  font-weight: 500;
+}
+/* 次要提示（灰色小字）提亮 */
+.cbi-value-description,
+.cbi-value-descr { color: var(--ink-2) !important; }
+/* 正文链接 */
+.cbi-section a {
+  color: var(--accent) !important;
+  text-decoration: none;
+}
+.cbi-section a:hover { text-decoration: underline; }
+
+/* --------------------------------------------------------------------------
+   6. 响应式 — 窄屏与 iframe 内自动单列
+   -------------------------------------------------------------------------- */
+@media (max-width: 1280px) {
+  .oc .main-cards-container {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .oc .main-card { grid-column: 1 !important; }
+}
+
+@media (max-width: 900px) {
+  .main-content { padding: 12px 12px 24px !important; }
+  .oc .main-card { padding: 12px !important; }
+  .oc .card-row.dual-cards,
+  .oc .card-row.full-width { grid-template-columns: 1fr !important; }
+  .oc .sub-card.stat-item:nth-child(1) .stat-value,
+  .oc .sub-card.stat-item:nth-child(2) .stat-value { font-size: 18px !important; }
+}
+
+@media (max-width: 600px) {
+  .main-content { padding: 8px 8px 20px !important; }
+  /* 只收圆角；不动 padding —— .main-card 依赖自身 padding 与固定行高配合 */
+  .oc .main-card,
+  .cbi-section, .cbi-map, fieldset, table.table {
+    border-radius: var(--r-md) !important;
+  }
+  /* stats-grid 在窄屏改为 2 列，避免 8 个格子挤成一条 */
+  .oc .card-row.stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+}
+
+/* --------------------------------------------------------------------------
+   7. 暗色模式
+   -------------------------------------------------------------------------- */
+/* 深色为主基调（见第 0 节），这里只处理 OpenClash 自带的 data-darkmode 切到
+   「更浅」时的边界情况，以及交互态微调。 */
+html[data-darkmode=true] .oc {
+  --glass-bg:        rgba(255,255,255,.05);
+  --glass-bg-strong: rgba(255,255,255,.09);
+}
+html[data-darkmode=true] .cbi-tab > ul { background: rgba(255,255,255,.06) !important; }
+html[data-darkmode=true] .cbi-tab > ul > li.cbi-tab-active > a { background: rgba(255,255,255,.12) !important; }
+html[data-darkmode=true] .oc .icon-btn:hover { background: rgba(255,255,255,.14) !important; }
+html:not([data-darkmode=true]) .cbi-tab > ul { background: rgba(15,23,42,.045) !important; }
+html:not([data-darkmode=true]) .cbi-tab > ul > li.cbi-tab-active > a { background: #fff !important; }
+
+/* --------------------------------------------------------------------------
+   8. 动效与无障碍守卫
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+a:focus-visible, button:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* 滚动条：细、隐、悬浮才显 */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.16) !important;
+  border-radius: var(--r-pill);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.28) !important; }
+::-webkit-scrollbar-track { background: transparent; }

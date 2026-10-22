@@ -1,0 +1,89 @@
+<%+header%>
+<link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
+<script>document.body.classList.add('kpc-dash');</script>
+<%
+	local sys   = require "luci.sys"
+	local util  = require "luci.util"
+	local disp  = require "luci.dispatcher"
+	local board = util.ubus("system", "board") or {}
+	local ver   = require "luci.version"
+	local uname = require("nixio").uname() or {}
+
+	local hostname = sys.hostname() or "?"
+	local model    = board.model or board.system or "NRadio"
+	local kernel   = uname.release or "-"
+
+	local function dur(s)
+		s = math.floor(tonumber(s) or 0)
+		local d = math.floor(s / 86400)
+		local h = math.floor((s % 86400) / 3600)
+		local m = math.floor((s % 3600) / 60)
+		if d > 0 then return d .. " 天 " .. h .. " 小时" end
+		if h > 0 then return h .. " 小时 " .. m .. " 分" end
+		return m .. " 分"
+	end
+-%>
+
+<h2 name="content">状态总览</h2>
+<div class="cbi-map-descr">
+	<%=pcdata(model)%> · <%=pcdata(hostname)%> · 固件 <%=pcdata(ver.distversion or "-")%> · 内核 <%=pcdata(kernel)%> · 已运行 <span id="d2-uptime"><%=dur(sys.uptime())%></span>
+</div>
+
+<div class="d2-top" id="d2-top">
+	<span class="d2-verdict" id="d2-verdict"><i class="d2-dot"></i>读取中</span>
+	<span id="d2-kpis" style="display:contents"></span>
+	<span class="d2-sp"></span>
+	<span class="d2-updated" id="d2-updated">--</span>
+</div>
+
+<div class="d2">
+
+	<fieldset class="cbi-section d2-4">
+		<h3>设备与上行</h3>
+		<div class="d2-rows" id="d2-device"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-4">
+		<h3>资源占用</h3>
+		<div class="d2-rows" id="d2-res"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-4">
+		<h3>无线与终端</h3>
+		<div class="d2-rows" id="d2-wifi"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-7">
+		<h3>路由表<span class="d2-cnt" id="cnt-routes">--</span></h3>
+		<div id="d2-routes"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-5">
+		<h3>防火墙<span class="d2-cnt" id="cnt-fw">--</span></h3>
+		<div id="d2-fw"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-6">
+		<h3>进程（按内存）<span class="d2-cnt" id="cnt-proc">--</span></h3>
+		<div id="d2-proc"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-6">
+		<h3>系统日志<span class="d2-cnt" id="cnt-log">--</span></h3>
+		<div class="d2-log" id="d2-log"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+	<fieldset class="cbi-section d2-12">
+		<h3>内核日志<span class="d2-cnt" id="cnt-klog">--</span></h3>
+		<div class="d2-log d2-klog" id="d2-klog"><div class="d2-empty">读取中…</div></div>
+	</fieldset>
+
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+<!--KPC-DASH2-JS-->
+//]]>
+</script>
+
+<%+footer%>

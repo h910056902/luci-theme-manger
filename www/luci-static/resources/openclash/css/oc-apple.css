@@ -1,0 +1,327 @@
+/* ==========================================================================
+   OpenClash · Apple Skin (Aqua / iOS-style) — nradio theme ADAPTED build
+   --------------------------------------------------------------------------
+   Scope  : ONLY elements carrying `.oc` (OpenClash's own root class).
+            The official nradio theme is NEVER touched.
+   Method : Re-declare OpenClash's own design tokens (oc.css uses CSS vars),
+            so the whole dashboard restyles itself without fighting layout.
+   Target : luci-app-openclash 0.47.156 on OpenWrt 21.02 / nradio theme
+   Load   : conditionally, only on admin/services/openclash/* routes
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Design tokens — Apple system palette (light)
+   -------------------------------------------------------------------------- */
+.oc {
+  /* Surfaces */
+  --bg-white: #ffffff;
+  --bg-light: #f9f9f9;
+  --bg-gray:  #f2f2f7;            /* iOS grouped background */
+  --text-primary:   #1c1c1e;
+  --text-secondary: #8e8e93;
+  --text-title:     #1c1c1e;
+
+  /* Brand / semantic */
+  --primary-color:   #007aff;     /* Apple Blue */
+  --btn-primary-hover: #0060df;
+  --success-color: #34c759;       /* Apple Green */
+  --success-dark:  #248a3d;
+  --info-color:    #007aff;
+  --debug-color:   #8e8e93;
+  --tip-color:     #ff9500;       /* Apple Orange */
+  --error-color:   #ff3b30;       /* Apple Red */
+  --warning-color: #ff9500;
+  --watchdog-color:#af52de;       /* Apple Purple */
+  --fatal-color:   #ff3b30;
+  --text-on-primary: #ffffff;
+
+  /* Primary alpha ramp */
+  --primary-a5:  rgba(0,122,255,.05);
+  --primary-a10: rgba(0,122,255,.10);
+  --primary-a20: rgba(0,122,255,.20);
+  --primary-a30: rgba(0,122,255,.30);
+  --primary-a40: rgba(0,122,255,.40);
+  --primary-a50: rgba(0,122,255,.50);
+  --primary-a60: rgba(0,122,255,.60);
+
+  /* Success / warning / error alpha ramp */
+  --success-a5:  rgba(52,199,89,.05);
+  --success-a10: rgba(52,199,89,.12);
+  --success-a20: rgba(52,199,89,.20);
+  --success-a50: rgba(52,199,89,.50);
+  --warning-a10: rgba(255,149,0,.12);
+  --error-a10: rgba(255,59,48,.10);
+  --error-a12: rgba(255,59,48,.12);
+  --error-a18: rgba(255,59,48,.18);
+  --error-a20: rgba(255,59,48,.20);
+  --error-a50: rgba(255,59,48,.50);
+
+  /* Borders & separators — iOS hairline */
+  --border-color:  #c7c7cc;
+  --border-light:  rgba(60,60,67,.16);
+  --divider:       rgba(60,60,67,.14);
+  --hover-bg:      #f2f2f7;
+  --select-hover:  #e5e5ea;
+  --radio-hover-bg:#f0f6ff;
+
+  /* Switch (iOS toggle) */
+  --switch-off-bg:     #e5e5ea;
+  --switch-knob-bg:    #ffffff;
+  --switch-knob-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16);
+
+  /* Radius — iOS continuous curvature */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* Elevation — two-layer shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.04), 0 1px 8px rgba(0,0,0,.04);
+  --shadow-md: 0 2px 6px rgba(0,0,0,.05), 0 8px 20px rgba(0,0,0,.06);
+
+  /* Sizing rhythm */
+  --control-height: 36px;
+  --card-padding: 12px 14px;
+  --card-outer-padding: 14px;
+  --content-gap: 14px;
+  --card-grid-gap: 10px;
+  --tight-gap: 8px;
+
+  /* Type — SF first, CJK fallbacks */
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+               "Helvetica Neue", "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+
+  /* Accent bits used by cards / buttons */
+  --card-btn-bg:   #007aff;
+  --card-bg-start: #ffffff;
+  --card-accent:   #007aff;
+  --card-shadow:   0 8px 24px -8px rgba(0,0,0,.18);
+
+  --scrollbar-thumb: rgba(60,60,67,.28);
+  --scrollbar-thumb-hover: rgba(60,60,67,.45);
+  --overlay-bg: rgba(0,0,0,.4);
+  --editor-bg:  #f9f9f9;
+}
+
+/* --------------------------------------------------------------------------
+   0b. Dark mode — follow OpenClash's own html[data-darkmode=true] switch
+   -------------------------------------------------------------------------- */
+html[data-darkmode=true] .oc {
+  --bg-white: #1c1c1e;
+  --bg-light: #2c2c2e;
+  --bg-gray:  #2c2c2e;
+  --text-primary:   #ffffff;
+  --text-secondary: #98989d;
+  --text-title:     #ffffff;
+  --border-color:  #48484a;
+  --border-light:  rgba(84,84,88,.65);
+  --divider:       rgba(84,84,88,.5);
+  --hover-bg:      #3a3a3c;
+  --select-hover:  #48484a;
+  --primary-color: #0a84ff;
+  --btn-primary-hover: #3395ff;
+  --success-color: #30d158;
+  --success-dark:  #248a3d;
+  --error-color:   #ff453a;
+  --tip-color:     #ff9f0a;
+  --warning-color: #ff9f0a;
+  --watchdog-color:#bf5af2;
+  --switch-off-bg: #48484a;
+  --switch-knob-bg:#f9fafb;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.4);
+  --shadow-md: 0 2px 8px rgba(0,0,0,.5);
+  --card-bg-start: #1c1c1e;
+  --card-shadow:  0 8px 24px -8px rgba(0,0,0,.6);
+  --editor-bg:    #1c1c1e;
+  --scrollbar-thumb: rgba(142,142,147,.5);
+  --scrollbar-thumb-hover: rgba(142,142,147,.7);
+}
+
+/* --------------------------------------------------------------------------
+   1. Page shell — give the grid room to breathe inside the nradio theme.
+      Scoped with :has() so it can NEVER leak to other pages.
+   -------------------------------------------------------------------------- */
+.main-content:has(.oc) {
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  padding-top: 10px !important;
+  overflow-x: visible !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Cards — iOS grouped list
+   -------------------------------------------------------------------------- */
+.oc .main-card {
+  border-radius: var(--radius-lg) !important;
+  border: .5px solid var(--border-light) !important;
+  box-shadow: var(--shadow-sm) !important;
+  background: var(--bg-white) !important;
+}
+
+.oc .sub-card {
+  border-radius: var(--radius-md) !important;
+  border: .5px solid var(--border-light) !important;
+  box-shadow: none !important;
+  background: var(--bg-gray) !important;
+  transition: transform .18s cubic-bezier(.32,.72,0,1),
+              box-shadow .18s cubic-bezier(.32,.72,0,1),
+              background .18s ease;
+}
+.oc .sub-card:hover {
+  background: #eef0f5 !important;
+  border-color: rgba(0,122,255,.35) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px);
+}
+html[data-darkmode=true] .oc .sub-card:hover { background: #3a3a3c !important; }
+
+/* 统计块：数字更挺拔 */
+.oc .sub-card.stat-item {
+  border-radius: var(--radius-md) !important;
+}
+.oc .stat-value {
+  font-weight: 600;
+  letter-spacing: -.02em;
+  color: var(--text-primary);
+}
+.oc .stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  letter-spacing: .01em;
+}
+
+/* 卡片标题：iOS section header 感 */
+.oc .card-title {
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: -.01em;
+  color: var(--text-primary);
+}
+
+/* --------------------------------------------------------------------------
+   3. Buttons — filled / tinted / plain
+   -------------------------------------------------------------------------- */
+.oc .dashboard-btn,
+.oc .cbi-button-option {
+  border: none !important;
+  border-radius: var(--radius-pill, 999px) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  letter-spacing: -.01em;
+  padding: 7px 16px !important;
+  min-height: var(--control-height);
+  background: var(--primary-color) !important;
+  color: var(--text-on-primary) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: transform .14s cubic-bezier(.32,.72,0,1),
+              background .14s ease, filter .14s ease;
+}
+.oc .dashboard-btn:hover,
+.oc .cbi-button-option:hover {
+  background: var(--btn-primary-hover) !important;
+  filter: brightness(1.04);
+}
+.oc .dashboard-btn:active,
+.oc .cbi-button-option:active {
+  transform: scale(.97);
+  filter: brightness(.94);
+}
+
+/* 圆形图标按钮 */
+.oc .icon-btn {
+  border-radius: 50% !important;
+  border: .5px solid var(--border-light) !important;
+  background: var(--bg-white) !important;
+  color: var(--primary-color) !important;
+  box-shadow: var(--shadow-sm) !important;
+  transition: transform .14s cubic-bezier(.32,.72,0,1), background .14s ease;
+}
+.oc .icon-btn:hover {
+  background: #f0f0f5 !important;
+  transform: scale(1.06);
+}
+html[data-darkmode=true] .oc .icon-btn:hover { background: #3a3a3c !important; }
+
+/* --------------------------------------------------------------------------
+   4. Inputs / selects — filled style, >=16px prevents iOS zoom
+   -------------------------------------------------------------------------- */
+.oc select,
+.oc input[type="text"],
+.oc input[type="number"],
+.oc input[type="password"] {
+  font-size: 16px !important;
+  border-radius: var(--radius-sm) !important;
+  border: .5px solid var(--border-light) !important;
+  background: var(--bg-white) !important;
+  min-height: var(--control-height);
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+.oc select:focus,
+.oc input:focus {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 3.5px rgba(0,122,255,.15) !important;
+  outline: none !important;
+}
+
+/* iOS switch feel for checkboxes rendered by OpenClash */
+.oc input[type="checkbox"] {
+  border-radius: 999px !important;
+  transition: background .22s cubic-bezier(.32,.72,0,1);
+}
+.oc input[type="checkbox"]:checked {
+  background: var(--success-color) !important;
+  border-color: var(--success-color) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. Progress / value indicators
+   -------------------------------------------------------------------------- */
+.oc .subscription-progress-fill,
+.oc .meter > div,
+.oc .bar > div {
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, #4da2ff, var(--primary-color)) !important;
+}
+.oc .value-indicator {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.oc .version-text {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   6. Links / help
+   -------------------------------------------------------------------------- */
+.oc .help-link {
+  color: var(--primary-color) !important;
+  text-decoration: none;
+}
+.oc .help-link:hover { text-decoration: underline; }
+
+/* --------------------------------------------------------------------------
+   7. Scrollbar — overlay style (scoped to OpenClash panes)
+   -------------------------------------------------------------------------- */
+.oc ::-webkit-scrollbar { width: 8px; height: 8px; }
+.oc ::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb) !important;
+  border-radius: 999px;
+}
+.oc ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover) !important; }
+.oc ::-webkit-scrollbar-track { background: transparent; }
+
+/* --------------------------------------------------------------------------
+   8. Motion / a11y guardrails
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .oc *, .oc *::before, .oc *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+@media (pointer: coarse) {
+  .oc .dashboard-btn,
+  .oc .cbi-button-option { min-height: 44px; padding: 10px 20px !important; }
+}

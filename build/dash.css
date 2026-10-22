@@ -1,0 +1,88 @@
+/* ===== 状态驾驶舱（阶段二十一）===== */
+.dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.dash > .cbi-section{margin:0!important;min-width:0}
+.dash-12{grid-column:span 12}.dash-7{grid-column:span 7}.dash-5{grid-column:span 5}
+.dash-6{grid-column:span 6}.dash-4{grid-column:span 4}.dash-8{grid-column:span 8}
+@media (max-width:1000px){.dash > *{grid-column:span 12!important}}
+
+/* 顶部驾驶舱 */
+.dash-hero{position:relative;overflow:hidden;border-radius:16px;padding:18px 22px;color:#eef2f8;
+	background:linear-gradient(120deg,#10182b 0%,#1a2740 55%,#173f3d 100%);
+	box-shadow:0 18px 36px -28px rgba(13,20,35,.85);display:flex;flex-wrap:wrap;
+	align-items:center;gap:16px 22px}
+.dash-hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+	background:radial-gradient(60% 120% at 0% 0%,rgba(124,92,252,.28),transparent 55%),
+	           radial-gradient(50% 110% at 100% 100%,rgba(43,255,198,.18),transparent 60%)}
+.dash-hero > *{position:relative;z-index:1}
+.dash-id{display:flex;align-items:center;gap:13px;flex:1 1 300px;min-width:0}
+.dash-ic{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:inline-flex;
+	align-items:center;justify-content:center;font-size:17px;color:#0e1626;
+	background:linear-gradient(135deg,#2bffc6,#7c5cfc);box-shadow:0 6px 16px -8px rgba(43,255,198,.9)}
+.dash-id-t{min-width:0}
+.dash-name{font-size:19px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-sub{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px;font-size:11.5px;color:#a9b8cc}
+.dash-dot{width:5px;height:5px;border-radius:50%;background:#2bffc6;box-shadow:0 0 6px rgba(43,255,198,.7)}
+.dash-sep{color:#4d5a70}
+.dash-verdict{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+	font-size:12px;font-weight:600;background:rgba(52,211,153,.14);color:#5eead4;
+	border:1px solid rgba(52,211,153,.28)}
+.dash-verdict.is-warn{background:rgba(251,191,36,.14);color:#fbbf24;border-color:rgba(251,191,36,.3)}
+.dash-verdict.is-bad{background:rgba(248,113,113,.16);color:#f87171;border-color:rgba(248,113,113,.32)}
+.dash-kpis{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.dash-kpi{flex:1 1 120px;min-width:0;padding:9px 11px;border-radius:12px;
+	background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.06)}
+.dash-kpi > span{display:block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#8891a5}
+.dash-kpi > b{display:block;font-size:17px;font-weight:600;line-height:1.2;margin-top:2px;
+	font-variant-numeric:tabular-nums;color:#eef0f6}
+.dash-kpi > b small{font-size:10px;color:#8891a5;font-weight:500;margin-left:2px}
+.dash-kpi > i{display:block;height:4px;border-radius:2px;background:rgba(127,127,140,.22);margin-top:6px;overflow:hidden}
+.dash-kpi > i > u{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#10b981,#34d399)}
+.dash-kpi.is-warn > b{color:#fbbf24}.dash-kpi.is-bad > b{color:#f87171}
+.dash-kpi.is-warn > i > u{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.dash-kpi.is-bad > i > u{background:linear-gradient(90deg,#ef4444,#f87171)}
+
+/* 卡片内行 */
+.dash-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #f2f4f7;font-size:.8rem}
+.dash-row:last-child{border-bottom:0}
+.dash-row > .k{color:#667085;flex:0 0 96px}
+.dash-row > .v{color:#1f2d3d;font-weight:500;min-width:0;flex:1;
+	white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.dash-row > .t{font-size:.72rem;color:#98a2b3;flex:0 0 auto}
+.dash-tag{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;
+	font-size:11px;font-weight:500;background:#f2f4f7;color:#667085;border:1px solid #e7eaee}
+.dash-tag.on{background:rgba(52,211,153,.13);color:#1d8a5b;border-color:rgba(52,211,153,.32)}
+.dash-tag.warn{background:rgba(240,160,32,.13);color:#b26a00;border-color:rgba(240,160,32,.32)}
+.dash-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+
+/* 双行指标 */
+.dash-duo{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.dash-duo .dash-row{border-bottom:0}
+.dash-duo .dash-row + .dash-row{border-left:1px solid #f2f4f7}
+
+/* 进程 Top */
+.dash-top{padding:6px 16px 12px}
+.dash-top .it{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:.78rem}
+.dash-top .it .nm{flex:0 0 130px;color:#1f2d3d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-top .it .bar{flex:1;height:6px;border-radius:3px;background:#eef1f4;overflow:hidden}
+.dash-top .it .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#388087,#2bffc6)}
+.dash-top .it .vl{flex:0 0 62px;text-align:right;color:#475467;font-variant-numeric:tabular-nums}
+
+/* 快捷入口 */
+.dash-links{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:14px 16px}
+@media (max-width:760px){.dash-links{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dash-link{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;
+	border:1px solid #e7eaee;background:linear-gradient(135deg,#fbfdfe,#fff);text-decoration:none;
+	color:#344054;font-size:.8rem;transition:all .18s ease}
+.dash-link:hover{border-color:#388087;background:#f2f8f7;color:#2f6e74;text-decoration:none;transform:translateY(-1px)}
+.dash-link i{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+	font-size:12px;color:#fff;background:linear-gradient(135deg,#388087,#2bffc6);flex:0 0 auto}
+.dash-link span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-link em{margin-left:auto;font-style:normal;font-size:.7rem;color:#98a2b3}
+
+.dash-note{padding:0 16px 12px;font-size:.72rem;color:#98a2b3}
+.dash-empty{padding:16px;text-align:center;color:#98a2b3;font-size:.78rem}
+
+/* 与旧版总览增强隔离：本页使用驾驶舱布局 */
+body.kpc-dash #maincontent > .container{display:block!important}
+body.kpc-dash #maincontent > .container > h2{display:flex!important}
+body.kpc-dash .mwrt-ov-hero{display:none!important}

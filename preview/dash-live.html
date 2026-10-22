@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+	
+<head>
+	<meta charset="utf-8">
+	<title>
+		nradio.in - 总览
+		- LuCI</title>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport" />
+	<meta name="format-detection" content="telephone=no, email=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="x5-fullscreen" content="true">
+	<meta name="full-screen" content="yes">
+	<meta name="x5-page-mode" content="app">
+	<meta name="browsermode" content="application">
+	<meta name="msapplication-tap-highlight" content="no">
+	<meta name="msapplication-TileColor" content="#5e72e4">
+
+	<meta name="application-name" content="nradio.in - LuCI">
+	<meta name="apple-mobile-web-app-title" content="nradio.in - LuCI">
+	<link rel="apple-touch-icon" sizes="60x60" href="../www/luci-static/bootstrap/icon/apple-icon-60x60.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="../www/luci-static/bootstrap/icon/apple-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="144x144" href="../www/luci-static/bootstrap/icon/apple-icon-144x144.png">
+	<link rel="icon" type="image/png" sizes="192x192"  href="../www/luci-static/bootstrap/icon/android-icon-192x192.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="../www/luci-static/bootstrap/icon/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="96x96" href="../www/luci-static/bootstrap/icon/favicon-96x96.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="../www/luci-static/bootstrap/icon/favicon-16x16.png">
+	<link rel="manifest" href="../www/luci-static/bootstrap/icon/manifest.json"  crossorigin="use-credentials">
+	<meta name="msapplication-TileColor" content="#5e72e4">
+	<meta name="msapplication-TileImage" content="/luci-static/bootstrap/icon/ms-icon-144x144.png">
+	<meta name="theme-color" content="#5e72e4">
+	<link rel="stylesheet" href="../www/luci-static/bootstrap/css/cascade.css?v=1.8.4">
+	<link rel="stylesheet" href="../www/luci-static/bootstrap/css/mwrt-menu-custom.css?v=1">
+	<link rel="stylesheet" href="../www/luci-static/bootstrap/css/mwrt-global-custom.css?v=1" media="(prefers-color-scheme: light)">
+	<style title="text/css">
+	
+		@media (prefers-color-scheme: dark) {
+			body {
+  background: #1e1e1e;
+  color: #cccccc;
+}
+
+.login-page .login-container .login-form {
+  background-color: #1e1e1e;
+}
+
+.login-page .login-container .login-form .brand {
+  color: #adb5bd;
+}
+
+.login-page .login-container .login-form .form-login .input-group::before {
+  color: #adb5bd;
+}
+
+.login-page .login-container .login-form .form-login .input-group .border {
+  border-bottom: 1px var(--dark-primary) solid;
+}
+
+.login-page .login-container .login-form .form-login .input-group input {
+  background-color: transparent !important;
+  color: #adb5bd;
+  border-bottom: #adb5bd 1px solid !important;
+  border-radius: 0;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none;
+}
+
+.login-page .login-container .login-form .form-login .input-group input:focus {
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.login-page .login-container .login-form .form-login .cbi-button-apply {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+}
+
+.login-page .login-container .login-form .form-login .cbi-button-apply:hover,
+.login-page .login-container .login-form .form-login .cbi-button-apply:focus {
+  opacity: .9;
+}
+
+.login-page .login-container footer,
+.login-page .login-container footer a {
+  color: #adb5bd;
+}
+
+header::after {
+  background-color: #1e1e1e !important;
+}
+
+.main .main-left {
+  background-color: #333333 !important;
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.15);
+}
+
+.main .main-left .sidenav-header .brand {
+  color: #ccc;
+}
+
+.main .main-left .nav .slide .slide-menu .active a {
+  color: #fff !important;
+}
+
+.main .main-left .nav .slide .slide-menu li a {
+  color: #cccccc;
+}
+
+.main .main-left .nav .slide .slide-menu li a::after {
+  background-color: var(--dark-primary) !important;
+  box-shadow: 0 0 1px #000  !important;
+}
+
+.main .main-left .nav .slide .slide-menu li a:hover {
+  background: none !important;
+}
+
+.main .main-left .nav .slide .menu:hover,
+.main .main-left .nav .slide .menu.active {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+  color: #fff !important;
+  box-shadow: 0 0 1px #000 !important;
+}
+
+.main .main-left .nav .slide .menu[data-title=Status]:before {
+  color: var(--dark-primary) !important;
+}
+
+.main .main-left .nav .slide .menu[data-title=Control]:before {
+  color: var(--dark-primary) !important;
+}
+
+.main .main-left .nav li a {
+  color: #cccccc !important;
+}
+
+.main .main-left .nav li a:hover {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+  color: #fff !important;
+}
+
+.main .main-left::-webkit-scrollbar-thumb {
+  background-color: #252526 !important;
+}
+
+.main .main-right {
+  background-color: #1e1e1e;
+}
+
+h2 {
+  color: #ccc;
+  background: #333333;
+}
+
+h3 {
+  color: #ccc;
+  border-bottom: 0;
+  background: #333333;
+}
+
+a:link,
+a:visited,
+a:active {
+  color: var(--dark_webkit-any-link);
+}
+
+a:-webkit-any-link:not(li a, .main-left a, .brand, .pull-right a, .alert-message a, .login-container footer a, .cbi-button) {
+  color: var(--dark_webkit-any-link) !important;
+  text-shadow: 1px 1px 2px #000 !important;
+}
+
+input:-webkit-autofill {
+  background-color: #3c3c3c !important;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+}
+
+.cbi-input-radio:checked {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+}
+
+.cbi-value-field .cbi-input-apply,
+.cbi-button-apply,
+.cbi-button-edit {
+  color: #fff !important;
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+  border-color: #483d8b !important;
+  border-color: var(--dark-primary) !important;
+}
+
+.cbi-section em {
+  color: var(--dark_webkit-any-link);
+  text-shadow: 1px 1px 2px #000;
+}
+
+header.bg-primary {
+  background-color: #1e1e1e !important;
+}
+
+.cbi-map-descr {
+  color: #ccc;
+}
+
+.cbi-section {
+  background: none;
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35);
+}
+
+.panel-title {
+  color: #ccc;
+  background-color: #333333;
+  border-bottom: 0px;
+}
+
+table>tbody>tr>td,
+table>tfoot>tr>td,
+table>thead>tr>td {
+  color: #ccc;
+}
+
+fieldset>table>tbody>tr:nth-of-type(2n) {
+  background-color: #252526;
+}
+
+table>tbody>tr>td,
+table>tfoot>tr>td,
+table>thead>tr>td {
+  border-top: 1px solid #252526;
+}
+
+#swaptotal>div>div,
+#swapfree>div>div,
+#memfree>div>div,
+#membuff>div>div,
+#conns>div>div,
+#memtotal>div>div {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+}
+
+#swaptotal>div>div>div>small,
+#swapfree>div>div>div>small,
+#memfree>div>div>div>small,
+#membuff>div>div>div>small,
+#conns>div>div>div>small,
+#memtotal>div>div>div>small {
+  color: #ccc !important;
+  text-shadow: 1px 1px 2px #000 !important;
+}
+
+.node-system-packages>.main .cbi-section-node:first-child .cbi-value-last {
+  line-height: 1.8em;
+}
+
+.node-system-packages>.main .cbi-section-node:first-child .cbi-value-last div[style="margin:3px 0; width:300px; height:10px; border:1px solid #000000; background-color:#80C080"] {
+  border: 1px solid #999999 !important;
+  background-color: transparent !important;
+}
+
+.node-system-packages>.main .cbi-section-node:first-child .cbi-value-last div[style="margin:3px 0; width:300px; height:10px; border:1px solid #000000; background-color:#80C080"] div {
+  background-color: #32325d !important;
+  background-color: var(--dark-primary) !important;
+}
+
+table>tbody>tr>th,
+table>tfoot>tr>th,
+table>thead>tr>th {
+  background-color: #252526;
+  border-top: none;
+  border-bottom: black 1px solid !important;
+}
+
+.cbi-rowstyle-2 {
+  background-color: #2c2c2c !important;
+}
+
+.cbi-rowstyle-1 {
+  background-color: #252526;
+}
+
+.cbi-section>h3:first-child,
+.panel-title {
+  color: #ccc;
+  border-bottom: 0;
+}
+
+.cbi-section-table .cbi-section-table-titles .cbi-section-table-cell {
+  background-color: #1e1e1f;
+}
+
+.cbi-button {
+  color: #ccc;
+  background-color: #2c2c2c;
+}
+
+.cbi-rowstyle-2 .cbi-button-up,
+.cbi-rowstyle-2 .cbi-button-down {
+  background-color: #252526 !important;
+}
+
+.cbi-section-node {
+  background: none;
+  border-radius: 0 0 .375rem .375rem;
+  padding: 0rem;
+}
+
+abbr {
+  color: #8898aa;
+}
+
+div>table>tbody>tr:nth-of-type(2n),
+div>.table>.tbody>.tr:nth-of-type(2n) {
+  background-color: #252526;
+}
+
+/* file selector button */
+::file-selector-button {
+  border: 1px solid darkseagreen !important;
+  background-color: darkseagreen !important;
+}
+
+/* Fix background color of table-titles */
+.cbi-section-node>.cbi-section-table>tbody>.cbi-section-table-titles th {
+  background-color: #1e1e1e;
+  border: none !important;
+}
+
+/* Fix background color of table-descr */
+.cbi-section-node>.cbi-section-table>tbody>.cbi-section-table-descr th {
+  background-color: #333333;
+  border: none !important;
+}
+
+/* Fix background color not change when the H tag is in the table rowstyle-1 */
+.cbi-section-node>.cbi-section-table>tbody>.cbi-rowstyle-1 th {
+  background-color: #252526;
+  border-top: 1px solid #252526;
+  border-bottom: none !important;
+}
+
+/* Fix background color not change when the H tag is in the table rowstyle-2 */
+.cbi-section-node>.cbi-section-table>tbody>.cbi-rowstyle-2 th {
+  background-color: #2c2c2c;
+  border-top: 1px solid #252526;
+  border-bottom: none !important;
+}
+
+/* Change the color of the H label in the table to make it more visible */
+th h1, td h1,
+th h2, td h2,
+th h3, td h3,
+th h4, td h4,
+th h5, td h5,
+th h6, td h6 {
+  background: var(--gray-dark);
+}
+
+/* Improved the background color of each itemes in "UNSAVED CHANGES" (dark mode only) */
+.uci-change-list del,
+.uci-change-legend-label del {
+  background-color: #fb74008c;
+}
+.uci-change-list var,
+.uci-change-legend-label var {
+  background-color: #333333;
+}
+.uci-change-list ins,
+.uci-change-legend-label ins {
+  background-color: #00ff0a45 !important;
+}
+
+#content_syslog {
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35);
+}
+
+#syslog {
+  color: #ccc;
+  background-color: #1e1e1e;
+}
+
+#iwsvg,
+#iwsvg2,
+#bwsvg {
+  overflow: hidden;
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35);
+  background-color: #1e1e1e !important;
+}
+
+.tabs {
+  background-color: #252526;
+}
+
+.tabs>li:hover,
+.tabs>li[class~="active"],
+.cbi-tabmenu>li:hover,
+.cbi-tabmenu>li[class~="cbi-tab"] {
+  border-bottom: .18751rem solid var(--dark-primary);
+  background-color: #3c3c3c;
+}
+
+.tabs>li>a,
+.cbi-tabmenu>li>a {
+  color: #ccc !important;
+}
+
+.cbi-tabmenu>li>a:hover,
+.cbi-tabmenu>li:hover>a,
+.cbi-tabmenu>.cbi-tab>a,
+.tabs>li>a:hover,
+.tabs>li:hover>a,
+.tabs>li[class~="active"]>a {
+  color: #fff !important;
+}
+
+.cbi-tabmenu>li {
+  background: #2d2d2d;
+}
+
+.cbi-tabmenu {
+  border-bottom: 0 solid #ddd !important;
+}
+
+.cbi-tab-descr {
+  color: #ccc;
+}
+
+.cbi-tabcontainer>.cbi-value:nth-of-type(2n),
+.cbi-tabcontainer>.cbi-value:nth-of-type(2n)>textarea {
+  background-color: #252526;
+}
+
+.cbi-value-title {
+  color: #ccc;
+}
+
+select,
+input {
+  color: #ccc;
+  background-color: transparent;
+  border: 1px solid #3c3c3c !important;
+  box-shadow: 0 3px 2px rgba(0,0,0,0.05);
+}
+
+select:not([multiple="multiple"]):hover,
+input:hover,
+input:focus {
+  border-color: #483d8b !important;
+  border-color: var(--dark-primary) !important;
+  background-color: transparent;
+  outline: 0;
+  box-shadow: none;
+}
+
+select {
+  background-color: #1e1e1e !important;
+}
+
+#cbi-dropbear h2,
+#cbi-dropbear .cbi-map-descr,
+#cbi-dropbear .cbi-map-descr abbr,
+#cbi-rc h2,
+#cbi-rc .cbi-map-descr,
+#cbi-distfeedconf h2,
+#cbi-distfeedconf .cbi-map-descr,
+#cbi-customfeedconf h2,
+#cbi-customfeedconf .cbi-map-descr,
+#cbi-download h2,
+#cbi-filelist h2 {
+  color: #ccc !important;
+}
+
+.cbi-value-field>ul>li .ifacebadge {
+  background-color: #3c3c3c;
+}
+
+.cbi-section-descr {
+  color: #ccc;
+}
+
+/*textarea for dark mode*/
+textarea {
+  border: 1px solid #3c3c3c !important;
+  background-color: #1e1e1e;
+  color: #ccc;
+}
+
+.cbi-section-remove:nth-of-type(2n),
+.cbi-section-node:nth-of-type(2n) {
+  background-color: #1e1e1e;
+}
+
+.node-system-packages>.main table tr td:nth-last-child(1) {
+  color: #ccc;
+}
+
+.node-system-packages>.main .cbi-value>pre {
+  background-color: #333;
+}
+
+.cbi-section-node .cbi-value {
+  padding: 1rem 1rem .3rem 1rem;
+}
+
+.ifacebox {
+  background-color: #1e1e1e;
+  border: 1px solid #1e1e1e;
+}
+
+.ifacebox-head {
+  color: #666;
+}
+
+.ifacebox-body {
+  background-color: #333;
+}
+
+.zonebadge strong {
+  color: #333;
+}
+
+.zonebadge>.ifacebadge {
+  background-color: #3c3c3c;
+}
+
+/* Fix firewall zone: "unspecified -or- create: " background color (dark mode only) */
+div[onclick$="._fwzone_new').checked=true"] {
+  border: 1px solid #3c3c3c;
+  background-color: transparent !important;
+}
+
+/* Improve the background color of "Any zone" and "Device" when ADD/EDIT Rules in Firewall > Traffic Rules (dark mode only) */
+label[for$=".src_any"],
+label[for$=".dest_empty"],
+label[for$=".dest_any"] {
+  background-color: #2888db !important;
+}
+
+/* Fix/add background color of wireless signal strength badge for dark mode */
+td>.ifacebadge,
+.td>.ifacebadge {
+  background-color: #3c3c3c;
+}
+
+/* Improved loading process gif color (dark mode only) */
+img[src="../www/luci-static/resources/icons/loading.gif"] {
+  filter: invert(1);
+}
+
+div.cbi-value var,
+td.cbi-value-field var,
+.td.cbi-value-field var {
+  color: #483d8b;
+  color: var(--dark_webkit-any-link);
+  text-shadow: 1px 1px 2px #000;
+}
+
+#diag-rc-output>pre {
+  color: #ccc;
+  background-color: #1e1e1e;
+}
+
+.node-services-vssr .block {
+  background-color: #1e1e1e !important;
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35) !important;
+}
+
+.node-services-vssr .block h4 {
+  color: #ccc !important;
+}
+
+.node-services-vssr .status-bar {
+  color: #ccc;
+  background: #333333f0;
+  box-shadow: #00000094 10px 10px 30px 5px;
+}
+
+.node-services-vssr .cbi-section-table-row {
+  color: #ccc;
+  background-color: #3c3c3c !important;
+  box-shadow: 0 0 5px 0 rgba(0,0,0,0.35);
+}
+
+.node-services-vssr .cbi-section-table-row.fast {
+  background: #483d8b !important;
+  background: var(--dark-primary) !important;
+  color: #fff;
+}
+
+.node-services-vssr .ssr-button {
+  color: #ccc;
+}
+
+.node-services-vssr .incon:nth-child(2) {
+  border-right: #1e1e1e 1px solid;
+}
+
+.main .main-right #maincontent .container p {
+  color: #ccc;
+}
+
+#xhr_poll_status>.label.success {
+  color: #ccc !important;
+  background-color: darkolivegreen !important;
+}
+
+/* Define the warning background-color breathe display animation (dark mode) */
+@keyframes warning-background-color-breathe-dark {
+  0%{
+    color: #fff;
+    background-color: darkorange;
+  }
+  50%{
+    color: #ccc;
+    background-color: #333333;
+  }
+  100%{
+    color: #fff;
+    background-color: darkorange;
+  }
+}
+.warning,
+.warning * {
+  animation: warning-background-color-breathe-dark 1.5s ease-in-out infinite !important;
+}
+
+.notice {
+  background-color: #483d8b !important;
+  background-color: var(--dark-primary) !important;
+}
+
+/* Improved the aleart-message background color during device restart (dark mode only) */
+.errorbox,
+.alert-message {
+  background-color: #333333;
+}
+
+.cbi-input-find,
+.cbi-input-save,
+.cbi-button-add,
+.cbi-button-save,
+.cbi-button-find,
+.cbi-input-reload,
+.cbi-button-reload {
+  background-color: darkseagreen !important;
+  border-color: darkseagreen !important;
+}
+
+.cbi-button-reset,
+.cbi-input-remove {
+  color: #fff !important;
+  background-color: darkorange !important;
+  border-color: darkorange !important;
+}
+
+.cbi-page-actions .cbi-button-apply,
+.cbi-section-actions .cbi-button-edit,
+.cbi-button-edit.important,
+.cbi-button-apply.important,
+.cbi-button-reload.important,
+.cbi-button-action.important {
+  border: 1px #483d8b solid !important;
+  border: 1px var(--dark-primary) solid !important;
+}
+
+fieldset[id^="cbi-apply-"] {
+  background-color: #333333;
+}
+
+#detail-bubble>div {
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  padding: 5px;
+  background: #252525;
+}
+
+/* Define the error text border breathe display animation (dark mode) */
+@keyframes error-border-breathe-dark {
+  0%{
+    border-color: darkorange;
+  }
+  50%{
+    border-color: transparent;
+  }
+  100%{
+    border-color: darkorange;
+  }
+}
+
+/* Add border for error text box, and border breathe display animation to make it more noticeable (dark mode) */
+.cbi-section-error>ul>li {
+  color: darkorange;
+  border: 2px solid darkorange ;
+  animation: error-border-breathe-dark 1.5s ease-in-out infinite;
+}
+
+.cbi-input-invalid,
+.cbi-value-error input {
+  color: darkorange;
+  border: 1px dashed darkorange !important;
+}
+
+.node-services-vssr .block h4 span {
+  color: #ccc !important;
+}
+
+/* luci-app-passwall */
+#cbi-passwall #add_link_div,
+#cbi-passwall #set_node_div {
+  background: #333333f0 !important;
+  box-shadow: #00000094 10px 10px 30px 5px !important;
+}
+
+/* luci-app-bypass */
+#cbi-bypass .status-bar {
+  color: #ccc;
+  background: #333333f0;
+  box-shadow: #00000094 10px 10px 30px 5px;
+}
+
+/* luci-app-clash */
+#cbi-clash .cbi-section .pure-u-1-4 .pure-g,
+#cbi-clash .cbi-section .siz .pure-g {
+  background-color: #1e1e1e !important;
+  box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35) !important;
+}
+
+/* luci-app-openclash */
+#cbi-openclash #eye-icon,
+#cbi-openclash img[title="刷新"] {
+  filter: invert(100%);
+}
+#cbi-openclash #cbi-openclash-config fieldset[control-id="ControlID-46"],
+#cbi-openclash .CodeMirror-merge-copybuttons-right,
+.CodeMirror-scroll {
+  background-color: #333333 !important;
+}
+#cbi-openclash .cbi-section .cbi-tabmenu li {
+  border-right: 1px solid #3c3c3c !important;
+}
+#cbi-openclash .CodeMirror-merge {
+  border: 1px solid transparent !important;
+}
+#cbi-openclash-config-clog .cbi-section {
+  border: 1px solid #3c3c3c !important;
+}
+#cbi-openclash .CodeMirror-gutters {
+  border-right: 1px solid #3c3c3c !important;
+  background-color: #1e1e1e !important;
+}
+
+/* luci-app-dockerman */
+#cbi-dockerd .img-con img {
+  filter: invert(0.4);
+}
+
+/* luci-app-istorex (interface config[NetworkPort]) */
+#cbi-nfs-mount  .app-container_status-label_bg {
+  background: #333333;
+}
+#cbi-nfs-mount td svg {
+  filter: invert(0.3);
+}
+#actioner .actioner-dns {
+  background-color: #333333;
+}
+#actioner .actioner-dns_header,
+#actioner .actioner-container_header {
+  border-bottom: 1px solid #cbcbcb !important;
+}
+#actioner .actioner-dns_footer {
+  border-top: 1px solid #cbcbcb !important;
+}
+
+/* luci-app-istorex (Network Guide) */
+#app #main #page .title,
+#app #main #page .desc {
+  color: #cccccc;
+  background-color: #333333;
+}
+#app #main #page .network-message li:not(span):not(a) {
+  color: #8d8d8d;
+}
+#app #main #page code {
+  background-color: #333333;
+}
+
+/* luci-app-istorex (Quick Start) */
+#app #main #page .network-container_flow-container,
+#app #main #page .app-container_status-container,
+#app #main #page .nas-container .nas-container_card .app-container,
+#app #main #page .app-container {
+  background-color: #333333;
+}
+#app #main #page .flow-data span,
+#app #main #page .app-container_status-label_block span,
+#app #main #page .app-container .item-label span:not(#app #main #page .app-container .progress-value span) {
+  color: #cccccc;
+}
+#app #main #page .app-container_status-info span,
+#app #main #page .app-container_status-info span,
+#app #main #page .app-container_title span {
+  color: #dddddd;
+}
+.app-container_body .app-container_status-label_bg {
+  background-color: #282828 !important;
+}
+#app #main #page .item-label_value .progress {
+  background-color: rgb(118, 118, 118);
+}
+#app #main #page .app-container_nas-menu button[class=""] {
+  background-color: #8b8b8b;
+}
+#app #main #page .app-container_nas-menu button[class="on"] {
+  background-color: #555555;
+}
+#app #main #page .app-container_title .DeviceBlock ul {
+  background-color: #cccccc;
+}
+#actioner div.action,
+#actioner div.actioner-container {
+  background-color: #3c3c3c;
+}
+#actioner div.action .title {
+  color: #cccccc;
+}
+#actioner div.action .desc {
+  color: #cbcbcb;
+}
+#actioner div.action div.roots span,
+#actioner div.action div.move span:not(span.tip),
+#actioner div.action div.left span,
+#actioner div.action div.input_row span,
+#actioner div.label-item label span {
+  color: #cbcbcb;
+}
+#actioner div.action span.tooltip-trigger svg path {
+  fill: #cbcbcb;
+}
+#actioner div.actioner-dns_body div.label-item_value select {
+  height: 43px;
+}
+#actioner div.actioner-container_footer div.close {
+  color: #ffffff;
+}
+#app #main div.app-container div.app-container_title span a svg path,
+#app #main #page span.disk_infoicon svg g {
+  fill: #8b8b8b;
+}
+
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .login-page .login-container .login-form {
+    -webkit-backdrop-filter: blur(var(--blur-radius-dark));
+    backdrop-filter: blur(var(--blur-radius-dark));
+    background-color: rgba(0, 0, 0, var(--blur-opacity-dark));
+  }
+}
+
+@media screen and (max-width:480px) {
+  .node-status-iptables>.main div>.cbi-map>form {
+    background-color: #1e1e1e;
+    box-shadow: 0 0 .5rem 0 rgba(0,0,0,0.35);
+  }
+}
+		}
+	</style>
+	<link rel="shortcut icon" href="../www/luci-static/bootstrap/favicon.ico">
+	<script src="../www/luci-static/resources/cbi.js?v=1.8.4"></script>
+	<script src="../www/luci-static/resources/xhr.js?v=1.8.4"></script>
+	<script src="../www/luci-static/bootstrap/js/jquery.min.js?v=3.5.1"></script>
+	<script src="../www/luci-static/bootstrap/js/color_calc-argon.js?v=1.8.4"></script>
+</head>
+
+<body
+	class="Overview logged-in lang_zh-cn normal  ">
+
+	<div class="main">
+		<div class="main-left">
+			<div class="sidenav-header d-flex align-items-center">
+				<a class="brand" href="#">nradio.in</a>
+			</div>
+			<ul class="nav"><li  class="slide"><a  class="menu exit" data-title="首页" href="/cgi-bin/luci/admin/quickstart">首页</a></li><li  class="slide"><a  class="menu exit" data-title="网络设置向导" href="/cgi-bin/luci/admin/network_guide">网络设置向导</a></li><li  class="slide"><a  class="menu exit" data-title="iStoreRouter" href="/cgi-bin/luci/admin/istorerouter">iStoreRouter</a></li><li class="slide"><a class="menu" data-title="NAS" href="#">NAS</a><ul class="slide-menu"><li><a data-title="磁盘阵列" href="/cgi-bin/luci/admin/nas/raid">磁盘阵列</a></li><li><a data-title="S.M.A.R.T." href="/cgi-bin/luci/admin/nas/smart">S.M.A.R.T.</a></li></ul></li><li class="slide"><a class="menu" data-title="Status" href="#">状态</a><ul class="slide-menu"><li><a data-title="设备总览" href="/cgi-bin/luci/admin/status/details">设备总览</a></li><li><a data-title="总览" href="/cgi-bin/luci/admin/status/overview">总览</a></li><li><a data-title="防火墙" href="/cgi-bin/luci/admin/status/iptables">防火墙</a></li><li><a data-title="路由表" href="/cgi-bin/luci/admin/status/routes">路由表</a></li><li><a data-title="系统日志" href="/cgi-bin/luci/admin/status/syslog">系统日志</a></li><li><a data-title="内核日志" href="/cgi-bin/luci/admin/status/dmesg">内核日志</a></li><li><a data-title="系统进程" href="/cgi-bin/luci/admin/status/processes">系统进程</a></li><li><a data-title="实时信息" href="/cgi-bin/luci/admin/status/realtime">实时信息</a></li><li><a data-title="蜂窝状态" href="/cgi-bin/luci/admin/status/cellular">蜂窝状态</a></li><li><a data-title="设备状态" href="/cgi-bin/luci/admin/status/device">设备状态</a></li><li><a data-title="短信" href="/cgi-bin/luci/admin/status/sms">短信</a></li></ul></li><li class="slide"><a class="menu" data-title="System" href="#">系统</a><ul class="slide-menu"><li><a data-title="系统" href="/cgi-bin/luci/admin/system/system">系统</a></li><li><a data-title="安全" href="/cgi-bin/luci/admin/system/security">安全</a></li><li><a data-title="Terminal" href="/cgi-bin/luci/admin/system/ttyd">Terminal</a></li><li><a data-title="软件包" href="/cgi-bin/luci/admin/system/packages">软件包</a></li><li><a data-title="系统便利工具" href="/cgi-bin/luci/admin/system/systools">系统便利工具</a></li><li><a data-title="备份/升级" href="/cgi-bin/luci/admin/system/reset">备份/升级</a></li><li><a data-title="启动项" href="/cgi-bin/luci/admin/system/startup">启动项</a></li><li><a data-title="计划任务" href="/cgi-bin/luci/admin/system/crontab">计划任务</a></li><li><a data-title="挂载点" href="/cgi-bin/luci/admin/system/fstab">挂载点</a></li><li><a data-title="LED 配置" href="/cgi-bin/luci/admin/system/leds">LED 配置</a></li><li><a data-title="备份/升级" href="/cgi-bin/luci/admin/system/flashops">备份/升级</a></li><li><a data-title="重启设备" href="/cgi-bin/luci/admin/system/reboot">重启设备</a></li></ul></li><li  class="slide"><a  class="menu exit" data-title="iStore" href="/cgi-bin/luci/admin/store">iStore</a></li><li class="slide"><a class="menu" data-title="Services" href="#">服务</a><ul class="slide-menu"><li><a data-title="皎月连" href="/cgi-bin/luci/admin/services/natpierce">皎月连</a></li><li><a data-title="Homebox" href="/cgi-bin/luci/admin/services/homebox">Homebox</a></li><li><a data-title="KSpeeder" href="/cgi-bin/luci/admin/services/istoreenhance">KSpeeder</a></li><li><a data-title="ShadoWRT" href="/cgi-bin/luci/admin/services/shadowrt">ShadoWRT</a></li><li><a data-title="OpenClash" href="/cgi-bin/luci/admin/services/openclash">OpenClash</a></li><li><a data-title="奇游联机宝加速器" href="/cgi-bin/luci/admin/services/qiyougamebooster">奇游联机宝加速器</a></li></ul></li><li class="slide"><a class="menu" data-title="服务" href="#">服务</a><ul class="slide-menu"><li><a data-title="鲲鹏商店" href="/cgi-bin/luci/admin/kp_services/kp_store">鲲鹏商店</a></li><li><a data-title="1Panel 面板" href="/cgi-bin/luci/admin/kp_services/kp_1panel">1Panel 面板</a></li><li><a data-title="Docker 容器" href="/cgi-bin/luci/admin/kp_services/kp_docker">Docker 容器</a></li></ul></li><li class="slide"><a class="menu" data-title="Network" href="#">网络</a><ul class="slide-menu"><li><a data-title="接口" href="/cgi-bin/luci/admin/network/network">接口</a></li><li><a data-title="网口配置" href="/cgi-bin/luci/admin/network/interfaceconfig">网口配置</a></li><li><a data-title="无线" href="/cgi-bin/luci/admin/network/wireless">无线</a></li><li><a data-title="DHCP/DNS" href="/cgi-bin/luci/admin/network/dhcp">DHCP/DNS</a></li><li><a data-title="主机名" href="/cgi-bin/luci/admin/network/hosts">主机名</a></li><li><a data-title="IP/MAC绑定" href="/cgi-bin/luci/admin/network/arpbind">IP/MAC绑定</a></li><li><a data-title="静态路由" href="/cgi-bin/luci/admin/network/routes">静态路由</a></li><li><a data-title="网络诊断" href="/cgi-bin/luci/admin/network/diagnostics">网络诊断</a></li></ul></li><li class="slide"><a class="menu" data-title="插件" href="#">插件</a><ul class="slide-menu"><li><a data-title="全部插件入口" href="/cgi-bin/luci/admin/nradio_plugins/overview">全部插件入口</a></li><li><a data-title="皎月连" href="/cgi-bin/luci/admin/nradio_plugins/services_natpierce">皎月连</a></li><li><a data-title="KSpeeder" href="/cgi-bin/luci/admin/nradio_plugins/services_istoreenhance">KSpeeder</a></li><li><a data-title="Homebox" href="/cgi-bin/luci/admin/nradio_plugins/services_homebox">Homebox</a></li><li><a data-title="ShadoWRT" href="/cgi-bin/luci/admin/nradio_plugins/services_shadowrt">ShadoWRT</a></li><li><a data-title="OpenClash" href="/cgi-bin/luci/admin/nradio_plugins/services_openclash">OpenClash</a></li><li><a data-title="奇游联机宝加速器" href="/cgi-bin/luci/admin/nradio_plugins/services_qiyougamebooster">奇游联机宝加速器</a></li><li><a data-title="Web SSH" href="/cgi-bin/luci/admin/nradio_plugins/ttyd">Web SSH</a></li></ul></li><li  class="slide"><a  class="menu exit" data-title="Logout" href="/cgi-bin/luci/admin/logout">退出</a></li></ul>
+		</div>
+		<div class="main-right">
+			<header class="bg-primary">
+				<div class="fill">
+					<div class="container">
+						<a class="showSide"></a>
+						<a class="brand" href="#">nradio.in</a>
+						<div class="pull-right">
+							
+							<span id="xhr_poll_status" style="display:none"
+								onclick="XHR.running() ? XHR.halt() : XHR.run()">
+								<span class="label success" id="xhr_poll_status_on"><span
+										class="mobile-hide">自动刷新</span> 开</span>
+								<span class="label" id="xhr_poll_status_off" style="display:none"><span
+										class="mobile-hide">自动刷新</span> 关</span>
+							</span>
+						</div>
+					</div>
+				</div>
+			</header>
+			<div class="darkMask"></div>
+			<div id="maincontent">
+				<div class="container"><noscript>
+						<div class="alert-message warning">
+							<h4>需要 JavaScript！</h4>
+							<p>LUCI 的正常运行需要开启浏览器的 JavaScript 支持。</p>
+						</div>
+					</noscript>
+
+					
+
+	<script>
+		// thanks for Jo-Philipp Wich <jow@openwrt.org>
+		var luciLocation = ["admin","status","overview"];
+	</script>
+
+	<script src="../www/luci-static/bootstrap/js/menu-argon.js?v=1.8.4"></script>
+
+	<script src="../www/luci-static/bootstrap/js/sidebar-argon.js?v=1.8.4"></script>
+
+<script>
+// Mwrt 侧栏增强：合并重复菜单 + 折叠开关 + 菜单整理
+(function () {
+	function onReady(callback) {
+		if (document.readyState !== 'loading') callback();
+		else document.addEventListener('DOMContentLoaded', callback);
+	}
+	onReady(function () {
+		var sidebar = document.querySelector('.main-left');
+		if (!sidebar) return;
+		var nav = sidebar.querySelector('ul.nav');
+		if (nav) {
+			var slides = Array.prototype.slice.call(nav.children).filter(function (el) {
+				return el.classList && el.classList.contains('slide');
+			});
+			var serviceGroups = slides.filter(function (li) {
+				var a = li.querySelector(':scope > a.menu');
+				return a && a.textContent.trim() === '服务';
+			});
+			if (serviceGroups.length > 1) {
+				var first = serviceGroups[0];
+				var second = serviceGroups[1];
+				var firstMenu = first.querySelector(':scope > ul.slide-menu');
+				var secondMenu = second.querySelector(':scope > ul.slide-menu');
+				if (firstMenu && secondMenu) {
+					var exists = {};
+					Array.prototype.slice.call(firstMenu.querySelectorAll('a')).forEach(function (a) {
+						exists[a.getAttribute('href')] = true;
+					});
+					var label = document.createElement('li');
+					label.className = 'mwrt-menu-group-label';
+					label.innerHTML = '<span>面板 / 外部应用</span>';
+					firstMenu.appendChild(label);
+					Array.prototype.slice.call(secondMenu.children).forEach(function (li) {
+						var a = li.querySelector('a');
+						if (a && exists[a.getAttribute('href')]) return;
+						firstMenu.appendChild(li);
+					});
+				}
+				second.parentNode.removeChild(second);
+			}
+			Array.prototype.slice.call(nav.querySelectorAll('a')).forEach(function (a) {
+				var text = a.textContent.trim();
+				var href = a.getAttribute('href') || '';
+				if (text === '备份/升级') {
+					if (href.indexOf('/system/reset') >= 0) a.textContent = '恢复出厂';
+					else if (href.indexOf('/system/flashops') >= 0) a.textContent = '备份/刷机';
+				}
+			});
+			// 网络诊断：8080 后端缺少 CBI model（/usr/lib/lua/luci/cbi.lua:53 admin_network/diagnostics），
+			// 当前访问会 500，先隐藏菜单项，待自建诊断页或补 model 后恢复。
+			Array.prototype.slice.call(nav.querySelectorAll('a')).forEach(function (a) {
+				var href = a.getAttribute('href') || '';
+				if (href.indexOf('/network/diagnostics') >= 0) {
+					var li = a.closest('li');
+					if (li) li.style.display = 'none';
+				}
+			});
+
+			// 对齐固件：精简「状态」菜单；蜂窝相关页面移入独立「蜂窝」一级菜单
+			var statusSlide = null, homeSlide = null;
+			Array.prototype.slice.call(nav.children).forEach(function (li) {
+				var a = li.querySelector(':scope > a.menu');
+				if (!a) return;
+				if (a.textContent.trim() === '状态') statusSlide = li;
+				if (a.textContent.trim() === '首页') homeSlide = li;
+			});
+			if (statusSlide) {
+				var statusMenu = statusSlide.querySelector(':scope > ul.slide-menu');
+				if (statusMenu) {
+					var cellLinks = [];
+					Array.prototype.slice.call(statusMenu.children).forEach(function (li) {
+						var a = li.querySelector('a');
+						if (!a) return;
+						var href = a.getAttribute('href') || '';
+						if (/\/admin\/status\/details/.test(href)) { statusMenu.removeChild(li); return; }
+						if (/\/admin\/status\/(cellular|device|sms)(\/|$)/.test(href)) {
+							cellLinks.push(li); statusMenu.removeChild(li);
+						}
+					});
+					// 固件顺序：路由在防火墙之前
+					var routeLi = null, fwLi = null;
+					Array.prototype.slice.call(statusMenu.children).forEach(function (li) {
+						var a = li.querySelector('a'); var txt = a ? a.textContent.trim() : '';
+						if (txt === '路由表') routeLi = li;
+						if (txt === '防火墙') fwLi = li;
+					});
+					if (routeLi && fwLi) statusMenu.insertBefore(routeLi, fwLi);
+					if (cellLinks.length) {
+						var cellSlide = document.createElement('li');
+						cellSlide.className = 'slide';
+						var cellA = document.createElement('a');
+						cellA.className = 'menu';
+						cellA.href = '#';
+						cellA.setAttribute('data-title', 'Modem');
+						cellA.textContent = '蜂窝';
+						var cellMenu = document.createElement('ul');
+						cellMenu.className = 'slide-menu';
+						cellLinks.forEach(function (li) { cellMenu.appendChild(li); });
+						cellSlide.appendChild(cellA);
+						cellSlide.appendChild(cellMenu);
+						if (homeSlide && homeSlide.parentNode === nav) nav.insertBefore(cellSlide, homeSlide.nextSibling);
+						else nav.insertBefore(cellSlide, nav.firstChild);
+						cellA.addEventListener('click', function (ev) {
+							ev.preventDefault();
+							cellA.classList.toggle('active');
+							cellMenu.classList.toggle('active');
+						});
+						if (/\/admin\/status\/(cellular|device|sms)/.test(location.pathname)) {
+							cellA.classList.add('active');
+							cellMenu.classList.add('active');
+						}
+					}
+				}
+			}
+		}
+
+		// 退出项移出滚动菜单，固定为侧栏底部 footer（避免 sticky 遮挡菜单）
+		var navForFoot = sidebar.querySelector('ul.nav');
+		if (navForFoot) {
+			var logoutLi = null;
+			Array.prototype.slice.call(navForFoot.children).forEach(function (li) {
+				var a = li.querySelector(':scope > a');
+				if (!a) return;
+				var title = a.getAttribute('data-title') || '';
+				var href = a.getAttribute('href') || '';
+				if (/logout/i.test(title) || /\/logout/.test(href) || a.textContent.trim() === '退出') logoutLi = li;
+			});
+			if (logoutLi) {
+				var foot = sidebar.querySelector('.mwrt-sidebar-foot');
+				if (!foot) {
+					foot = document.createElement('div');
+					foot.className = 'mwrt-sidebar-foot';
+					sidebar.appendChild(foot);
+				}
+				foot.appendChild(logoutLi);
+			}
+		}
+
+		if (!document.getElementById('mwrt-sb-toggle')) {
+			var toggle = document.createElement('button');
+			toggle.id = 'mwrt-sb-toggle';
+			toggle.type = 'button';
+			toggle.title = '折叠/展开菜单';
+			toggle.setAttribute('aria-label', '折叠/展开菜单');
+			toggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>';
+			document.body.appendChild(toggle);
+			try {
+				if (localStorage.getItem('mwrt_sb_collapsed') === '1') document.body.classList.add('mwrt-sb-collapsed');
+			} catch (e) {}
+			function positionToggle() {
+				if (!sidebar) return;
+				var rect = sidebar.getBoundingClientRect();
+				var width = rect.width || parseFloat(getComputedStyle(sidebar).width) || 0;
+				if (!width) return;
+				toggle.style.left = Math.max(0, Math.round(rect.left + width)) + 'px';
+			}
+			positionToggle();
+			window.requestAnimationFrame(positionToggle);
+			window.addEventListener('resize', positionToggle);
+			window.addEventListener('orientationchange', positionToggle);
+			document.addEventListener('transitionend', function (e) {
+				if (e.target === sidebar) positionToggle();
+			}, true);
+			if (typeof ResizeObserver !== 'undefined') {
+				try { new ResizeObserver(positionToggle).observe(sidebar); } catch (e) {}
+			}
+			toggle.addEventListener('click', function () {
+				var collapsed = document.body.classList.toggle('mwrt-sb-collapsed');
+				try { localStorage.setItem('mwrt_sb_collapsed', collapsed ? '1' : '0'); } catch (e) {}
+				window.setTimeout(function () {
+					positionToggle();
+					window.dispatchEvent(new Event('resize'));
+				}, 300);
+			});
+			window.setTimeout(positionToggle, 400);
+		}
+
+		// ===== 状态 → 总览页面增强（对齐固件仪表盘风格） =====
+		if (document.body.classList.contains('node-status-overview')) {
+			document.body.classList.add('mwrt-overview-page');
+			var ovContainer = document.querySelector('#maincontent > .container');
+			var ovFields = ovContainer ? Array.prototype.slice.call(ovContainer.querySelectorAll(':scope > fieldset.cbi-section')) : [];
+			function escOv(s) {
+				return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+			}
+			function rowValue(label) {
+				var rows = ovContainer ? ovContainer.querySelectorAll('fieldset.cbi-section table tr') : [];
+				for (var i = 0; i < rows.length; i++) {
+					var tds = rows[i].querySelectorAll('td');
+					if (tds.length >= 2 && tds[0].textContent.trim().indexOf(label) >= 0) return tds[1].textContent.trim();
+				}
+				return '';
+			}
+			var ovHost = rowValue('主机名') || rowValue('Hostname');
+			var ovModel = rowValue('型号') || rowValue('Model');
+			var ovFw = rowValue('固件版本') || rowValue('Firmware');
+			var ovKernel = rowValue('内核版本') || rowValue('Kernel');
+			if (ovContainer && !document.querySelector('.mwrt-ov-hero')) {
+				var ovHero = document.createElement('div');
+				ovHero.className = 'mwrt-ov-hero';
+				ovHero.innerHTML =
+					'<div class="oh-main">' +
+						'<div class="oh-k">DEVICE OVERVIEW · 状态总览</div>' +
+						'<div class="oh-name">' + escOv(ovHost || 'nradio.in') + '</div>' +
+						'<div class="oh-chips">' +
+							'<span class="oh-chip"><i class="oh-dot"></i>型号 ' + escOv(ovModel || '--') + '</span>' +
+							'<span class="oh-chip"><i class="oh-dot"></i>固件 ' + escOv(ovFw || '--') + '</span>' +
+							'<span class="oh-chip"><i class="oh-dot"></i>内核 ' + escOv(ovKernel || '--') + '</span>' +
+							'<span class="oh-chip"><i class="oh-dot"></i>运行时间 <b id="mwrt-oh-uptime">--</b></span>' +
+							'<span class="oh-chip"><i class="oh-dot"></i>负载 <b id="mwrt-oh-load">--</b></span>' +
+						'</div>' +
+					'</div>' +
+					'<img class="oh-img" src="../www/luci-static/router3d/ultra.png" alt="" onerror="this.style.display=\'none\'">';
+				var ovH2 = ovContainer.querySelector(':scope > h2');
+				if (ovH2) { ovH2.style.display = 'none'; ovContainer.insertBefore(ovHero, ovH2); }
+				else ovContainer.insertBefore(ovHero, ovContainer.firstChild);
+			}
+			ovFields.forEach(function (fs) {
+				fs.classList.add('mwrt-ov-card');
+				var legend = fs.querySelector(':scope > legend');
+				var title = fs.querySelector(':scope > .panel-title');
+				var name = (legend ? legend.textContent : (title ? title.textContent : '')).trim();
+				if (/dhcp|leases|租约|wireless|无线|associat|关联|站点|homebox|网络/i.test(name)) fs.classList.add('mwrt-ov-wide');
+				if (title && !title.querySelector('.mwrt-ov-lic')) {
+					var lic = document.createElement('i');
+					lic.className = 'mwrt-ov-lic';
+					title.insertBefore(lic, title.firstChild);
+				}
+			});
+			function enhanceOvBar(id) {
+				var cell = document.getElementById(id);
+				if (!cell || cell.querySelector('.mwrt-ov-bar')) return;
+				var text = cell.textContent.trim();
+				var m = text.match(/([\d.]+\s*[kKM]?B?)\s*\/\s*([\d.]+\s*[kKM]?B?)\s*\((\d+)%\)/);
+				if (!m) return;
+				cell.innerHTML = '<div class="mwrt-ov-bar"><i style="width:' + m[3] + '%"></i></div><span class="mwrt-ov-bar-t">' + escOv(text) + '</span>';
+			}
+			function refreshOv() {
+				['memtotal', 'memfree', 'membuff', 'swaptotal', 'swapfree', 'conns'].forEach(enhanceOvBar);
+				ovFields.forEach(function (fs) {
+					var ttl = fs.querySelector(':scope > .panel-title');
+					var nm = ttl ? ttl.textContent.trim() : '';
+					if (/DHCPv6/i.test(nm)) fs.style.display = (fs.textContent.indexOf('没有已分配的租约') >= 0) ? 'none' : '';
+				});
+				['wan4_i', 'wan6_i', 'dsl_i'].forEach(function (id) {
+					var cell = document.getElementById(id);
+					if (!cell) return;
+					var sms = cell.querySelectorAll('small');
+					for (var si = 0; si < sms.length; si++) sms[si].style.display = sms[si].textContent.trim() === '?' ? 'none' : '';
+				});
+				var u = document.getElementById('uptime'), l = document.getElementById('loadavg');
+				var ue = document.getElementById('mwrt-oh-uptime'), le = document.getElementById('mwrt-oh-load');
+				if (ue) ue.textContent = u && u.textContent.trim() !== '-' ? u.textContent.trim() : '--';
+				if (le) le.textContent = l && l.textContent.trim() !== '-' ? l.textContent.trim() : '--';
+			}
+			refreshOv();
+			var ovTimer = window.setInterval(refreshOv, 1200);
+			window.addEventListener('beforeunload', function () { window.clearInterval(ovTimer); });
+		}
+
+		// 内部页面：隐藏缺失/破图图标（无线信号图等）
+		function hideBrokenImgs() {
+			var imgs = document.querySelectorAll('#maincontent img');
+			for (var i = 0; i < imgs.length; i++) {
+				var im = imgs[i];
+				if (im.complete && im.naturalWidth === 0) im.style.display = 'none';
+			}
+		}
+		hideBrokenImgs();
+		window.setTimeout(hideBrokenImgs, 1500);
+		window.setInterval(hideBrokenImgs, 4000);
+
+		// ===== 状态页健康条（KP-STATUS-API v1） =====
+		// 数据来自 /admin/status/*?action=kp_status（3 秒缓存，7 页共用）
+		(function initStatusBar() {
+			if (location.pathname.indexOf('/admin/status/') < 0) return;
+
+			// header.htm 在 #maincontent 之前输出，必须等 DOM 就绪再找节点
+			function start() {
+			// 总览已换成「状态驾驶舱」，自带 KPI，不再叠加健康条
+			if (document.querySelector('.dash')) return;
+			var cont = document.querySelector('#maincontent > .container');
+			if (!cont) return;
+			var h2 = cont.querySelector(':scope > h2');
+			if (!h2) return;
+			if (document.getElementById('st-health')) return;
+
+			var box = document.createElement('div');
+			box.className = 'st-health';
+			box.id = 'st-health';
+			box.style.display = 'none';
+			if (h2.nextSibling) cont.insertBefore(box, h2.nextSibling);
+			else cont.appendChild(box);
+
+			var timer = null, inflight = false;
+
+			function num(v) { return Number(v) || 0; }
+			function mb(bytes) { return (num(bytes) / 1048576); }
+			function fmtPct(v) { return (v >= 100 ? 100 : v).toFixed(0) + '%'; }
+			function fmtMiB(bytes) { return (num(bytes) / 1048576).toFixed(0) + ' MiB'; }
+
+			function pick() {
+				var d = null;
+				try { d = arguments[0]; } catch (e) { return ''; }
+				return d;
+			}
+
+			function render(d) {
+				if (!d || d.code !== 0) { box.style.display = 'none'; return; }
+
+				var loadPct = num(d.ncpu) > 0 ? num((d.load || [])[0]) / num(d.ncpu) * 100 : 0;
+				var memPct = num((d.mem || {}).total) > 0
+					? (num(d.mem.total) - num(d.mem.available)) / num(d.mem.total) * 100 : 0;
+				var stPct = num((d.storage || {}).pct);
+				var temp = 0;
+				(d.thermal || []).forEach(function (t) { if (num(t) > temp) temp = num(t); });
+				var ctPct = num((d.conntrack || {}).max) > 0
+					? num(d.conntrack.count) / num(d.conntrack.max) * 100 : 0;
+				var lg = d.log || {};
+				var bad = num(lg.err) + num(lg.warn);
+
+				function lvl(v, warn, crit) {
+					return (v >= crit) ? 'is-bad' : (v >= warn ? 'is-warn' : '');
+				}
+				function chip(label, value, cls, title, sm) {
+					return '<span class="st-item ' + cls + (sm ? ' st-sm' : '') + '" title="' + (title || '') + '">'
+						+ label + ' <b>' + value + '</b></span>';
+				}
+
+				var cLoad = lvl(loadPct, 60, 85);
+				var cMem = lvl(memPct, 70, 85);
+				var cSt = lvl(stPct, 80, 90);
+				var cTemp = lvl(temp, 70, 80);
+				var cCt = lvl(ctPct, 60, 85);
+				var cLog = lvl(bad, 1, 10);
+
+				var worst = '';
+				var worstLink = '';
+				if (cLoad === 'is-bad' || cMem === 'is-bad' || cSt === 'is-bad' || cTemp === 'is-bad'
+					|| cCt === 'is-bad' || cLog === 'is-bad') {
+					worst = 'is-bad';
+				} else if (cLoad || cMem || cSt || cTemp || cCt || cLog) {
+					worst = 'is-warn';
+				}
+				if (worst === 'is-bad' || worst === 'is-warn') {
+					if (cLog) worstLink = '/cgi-bin/luci/admin/status/syslog';
+					else if (cMem === 'is-bad') worstLink = '/cgi-bin/luci/admin/status/processes';
+					else worstLink = '/cgi-bin/luci/admin/status/realtime/load';
+				}
+
+				var verdict = worst === 'is-bad' ? '需要处理' : (worst === 'is-warn' ? '有异常' : '运行正常');
+				var dotColor = worst === 'is-bad' ? '#d64545' : (worst === 'is-warn' ? '#f0a020' : '#22a06b');
+
+				var html = '<span class="st-verdict"><i class="st-dot" style="background:' + dotColor + '"></i>'
+					+ verdict + '</span><span class="st-sep">|</span>'
+					+ chip('负载', fmtPct(loadPct), cLoad, '1 分钟负载 ' + num((d.load || [])[0]).toFixed(2) + ' / ' + num(d.ncpu) + ' 核')
+					+ chip('内存', fmtPct(memPct), cMem, '可用 ' + fmtMiB((d.mem || {}).available) + ' / 共 ' + fmtMiB((d.mem || {}).total))
+					+ chip('存储', fmtPct(stPct), cSt, '已用 ' + fmtMiB((d.storage || {}).used) + ' / 共 ' + fmtMiB((d.storage || {}).total), true)
+					+ chip('温度', temp > 0 ? temp.toFixed(1) + '℃' : '--', cTemp, '多个温区取最高值', true)
+					+ chip('连接', fmtPct(ctPct), cCt, num((d.conntrack || {}).count) + ' / ' + num((d.conntrack || {}).max), true)
+					+ chip('异常', String(bad), cLog, '日志错误 ' + num(lg.err) + ' 条，警告 ' + num(lg.warn) + ' 条');
+
+				html += '<span class="st-sp"></span>';
+				if (worstLink) {
+					html += '<a class="st-link" href="' + worstLink + '">去查看</a>';
+				}
+				box.innerHTML = html;
+				box.className = 'st-health ' + worst;
+				box.style.display = '';
+			}
+
+			function load() {
+				if (inflight || document.hidden) return;
+				inflight = true;
+				fetch(location.pathname + '?action=kp_status&t=' + Date.now(), {
+					credentials: 'same-origin',
+					headers: { 'Accept': 'application/json' }
+				}).then(function (r) { return r.json(); }).then(function (d) {
+					inflight = false;
+					render(d);
+				}).catch(function () {
+					inflight = false;
+					box.style.display = 'none';
+				});
+			}
+
+			load();
+			timer = window.setInterval(load, 30000);
+			document.addEventListener('visibilitychange', function () {
+				if (!document.hidden) load();
+			});
+			window.addEventListener('beforeunload', function () {
+				if (timer) window.clearInterval(timer);
+			});
+			}
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', start);
+			} else {
+				start();
+			}
+		})();
+
+		// ===== 软件包页面重构：概览卡片 / 存储条 / 表格 / 实时过滤 =====
+		(function initPkgPage() {
+			if (location.pathname.indexOf('/admin/system/packages') < 0) return;
+			document.body.classList.add('mwrt-pkg-page');
+			var cont = document.querySelector('#maincontent > .container');
+			if (!cont) return;
+			var map = cont.querySelector('.cbi-map');
+			var table = cont.querySelector('.cbi-section-table');
+			var rows = table ? table.querySelectorAll('.cbi-section-table-row') : [];
+			var installed = rows.length;
+			var bodyText = cont.textContent || '';
+			var freePct = '', freeSize = '';
+			var mm = bodyText.match(/空闲空间[:：]?\s*(\d+)%\s*\(([^)]+)\)/);
+			if (mm) { freePct = mm[1]; freeSize = mm[2].trim(); }
+			var sourceSynced = bodyText.indexOf('无可用软件列表') < 0;
+			if (!cont.querySelector('.mwrt-pkg-stats')) {
+				var stats = document.createElement('div');
+				stats.className = 'mwrt-pkg-stats';
+				stats.innerHTML =
+					'<div class="pkg-stat"><span class="pkg-stat-ic pkg-ic-box"></span><div><div class="pkg-stat-k">已安装软件包</div><div class="pkg-stat-v">' + installed + ' <small>个</small></div></div></div>' +
+					'<div class="pkg-stat"><span class="pkg-stat-ic pkg-ic-disk"></span><div><div class="pkg-stat-k">空闲空间</div><div class="pkg-stat-v">' + (freePct ? freePct + '%' : '--') + ' <small>' + (freeSize || '') + '</small></div></div></div>' +
+					'<div class="pkg-stat"><span class="pkg-stat-ic pkg-ic-cloud"></span><div><div class="pkg-stat-k">软件源</div><div class="pkg-stat-v">' + (sourceSynced ? '可用' : '未同步') + '</div></div></div>';
+				if (map) cont.insertBefore(stats, map); else cont.appendChild(stats);
+			}
+			var storRow = null, srcRow = null;
+			Array.prototype.slice.call(cont.querySelectorAll('.cbi-value')).forEach(function (v) {
+				var tx = (v.textContent || '').trim();
+				if (tx.indexOf('空闲空间') >= 0) storRow = v;
+				else if (tx.indexOf('无可用软件列表') >= 0) srcRow = v;
+			});
+			if (storRow) {
+				storRow.classList.add('mwrt-pkg-storage-row');
+				var pct = freePct ? parseInt(freePct, 10) : 0;
+				var used = 100 - pct;
+				storRow.innerHTML = '<div class="mwrt-pkg-storage"><div class="pkg-stor-hd"><span>存储空间</span><b>已用 ' + used + '%</b></div><div class="pkg-stor-bar"><i style="width:' + used + '%"></i></div><div class="pkg-stor-ft"><span>空闲 ' + pct + '%</span><span>' + (freeSize || '') + ' 可用</span></div></div>';
+			}
+			if (srcRow) {
+				var btn = srcRow.querySelector('input[name="update"]');
+				srcRow.classList.add('mwrt-pkg-source-row');
+				srcRow.innerHTML = '<span class="mwrt-pkg-source"><i></i>软件源列表未同步</span>' + (btn ? btn.outerHTML : '');
+			}
+			Array.prototype.slice.call(cont.querySelectorAll('.cbi-value')).forEach(function (v) {
+				if (!v.querySelector('.cbi-value-title')) return;
+				v.classList.add('mwrt-pkg-field-row');
+				var inp = v.querySelector('input[type="text"]');
+				if (inp && inp.name === 'url') inp.placeholder = '输入软件包 URL';
+				if (inp && inp.name === 'query') inp.placeholder = '输入名称实时过滤';
+			});
+			if (table && !table.parentNode.classList.contains('mwrt-pkg-table-wrap')) {
+				var wrap = document.createElement('div');
+				wrap.className = 'mwrt-pkg-table-wrap';
+				table.parentNode.insertBefore(wrap, table);
+				wrap.appendChild(table);
+				var th = table.querySelector('.cbi-section-table-titles th');
+				if (th && th.textContent.trim() === '') th.textContent = '操作';
+			}
+			var q = cont.querySelector('input[name="query"]');
+			if (q && table) {
+				q.addEventListener('input', function () {
+					var val = q.value.trim().toLowerCase();
+					Array.prototype.slice.call(table.querySelectorAll('.cbi-section-table-row')).forEach(function (tr) {
+						tr.style.display = (!val || tr.textContent.toLowerCase().indexOf(val) >= 0) ? '' : 'none';
+					});
+				});
+			}
+		})();
+
+		// ===== 无线概况：Wi-Fi 快速设置（SSID / 加密 / 密码） =====
+		(function initWirelessQuick() {
+			var path = location.pathname;
+			if (!/\/admin\/network\/wireless\/?$/.test(path)) return;
+			var cont = document.querySelector('#maincontent > .container');
+			if (!cont || cont.querySelector('.mwrt-wifi-quick')) return;
+			var h2 = cont.querySelector('h2');
+			if (h2 && h2.parentNode !== cont) cont.insertBefore(h2, cont.firstChild);
+			var tabs = cont.querySelector('ul.tabs, ul.cbi-tabmenu');
+			if (!tabs) return;
+			var aps = [];
+			Array.prototype.slice.call(tabs.querySelectorAll('li > a')).forEach(function (a) {
+				var href = a.getAttribute('href') || '';
+				var m = href.match(/\/admin\/network\/wireless\/([^\/?#]+)/);
+				if (!m) return;
+				var text = (a.textContent || '').replace(/\s+/g, ' ').trim();
+				if (!/Master/i.test(text) && text.indexOf('接入点') < 0) return;
+				var sm = text.match(/"([^"]+)"/);
+				aps.push({ iface: m[1], ssid: sm ? sm[1] : '?', edit: href, radio: m[1].split('.')[0], section: '' });
+			});
+			if (!aps.length) return;
+			aps.sort(function (a, b) {
+				var ra = a.radio === 'radio0' ? 0 : 1, rb = b.radio === 'radio0' ? 0 : 1;
+				return ra - rb || a.iface.localeCompare(b.iface);
+			});
+			function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+			function band(r) { return r === 'radio0' ? '2.4G' : (r === 'radio1' ? '5G' : 'Wi-Fi'); }
+			function token() {
+				var m = document.cookie.match(/(?:^|;\s*)sysauth=([0-9a-fA-F]+)/);
+				return m ? m[1] : '';
+			}
+			var quick = document.createElement('div');
+			quick.className = 'mwrt-wifi-quick';
+			quick.innerHTML = '<div class="wq-head"><div><div class="wq-k">WI-FI QUICK SETTINGS</div><h3>Wi-Fi 名称与密码</h3><p>直接修改 SSID、加密方式和密码，保存后立即应用；完整网络管理保留在「高级无线配置」。</p></div><span class="wq-count">' + aps.length + ' 个网络</span></div>' +
+				aps.map(function (ap) {
+					var tg = document.getElementById(ap.iface + '-iw-toggle');
+					var on = !tg || tg.value !== '启用';
+					return '<div class="wq-row" data-iface="' + esc(ap.iface) + '" data-edit="' + esc(ap.edit) + '">' +
+						'<span class="wq-band">' + band(ap.radio) + '</span>' +
+						'<div class="wq-info"><div class="wq-ssid">' + esc(ap.ssid) + '</div>' +
+						'<div class="wq-meta">' + esc(ap.radio) + ' · 接入点 · <span class="wq-state ' + (on ? 'on' : 'off') + '"><i></i>' + (on ? '已启用' : '已停用') + '</span></div></div>' +
+						'<div class="wq-actions"><button type="button" class="wq-btn wq-btn-primary wq-edit">修改 Wi-Fi</button><a class="wq-btn wq-btn-link" href="' + esc(ap.edit) + '" target="_blank" rel="noopener">高级设置</a></div>' +
+						'</div>';
+				}).join('');
+			if (h2 && h2.parentNode === cont) cont.insertBefore(quick, h2.nextSibling);
+			else cont.insertBefore(quick, cont.firstChild);
+			var advBar = document.createElement('div');
+			advBar.className = 'mwrt-wifi-adv-bar';
+			advBar.innerHTML = '<button type="button" class="wq-adv-toggle">高级无线配置<span>网络管理 / 搜索 / 添加 / 启用停用 / 关联终端</span></button>';
+			quick.parentNode.insertBefore(advBar, quick.nextSibling);
+			var adv = document.createElement('div');
+			adv.className = 'mwrt-wifi-advanced';
+			var moved = false;
+			Array.prototype.slice.call(cont.children).forEach(function (n) {
+				if (n === h2 || n === quick || n === advBar || n === adv) return;
+				if (n.tagName === 'SCRIPT' || n.tagName === 'NOSCRIPT') return;
+				adv.appendChild(n); moved = true;
+			});
+			if (moved) advBar.parentNode.insertBefore(adv, advBar.nextSibling);
+			else advBar.style.display = 'none';
+			var advToggle = advBar.querySelector('.wq-adv-toggle');
+			advToggle.addEventListener('click', function () {
+				var open = adv.classList.toggle('open');
+				advToggle.classList.toggle('open', open);
+			});
+
+			// 读取真实 UCI SSID / section（tabs 文本可能是 hostapd 旧名称）
+			aps.forEach(function (ap) {
+				try {
+					fetch(ap.edit, { credentials: 'same-origin' }).then(function (r) { return r.text(); }).then(function (html) {
+						var doc = new DOMParser().parseFromString(html, 'text/html');
+						var el = doc.querySelector('form[name="cbi"] input[name$=".ssid"]');
+						if (!el) return;
+						var m = (el.getAttribute('name') || '').match(/^cbid\.wireless\.([^.]+)\.ssid$/);
+						if (m) ap.section = m[1];
+						if (el.value) {
+							ap.ssid = el.value;
+							var row = quick.querySelector('.wq-row[data-iface="' + ap.iface + '"]');
+							if (row) { var s = row.querySelector('.wq-ssid'); if (s) s.textContent = el.value; }
+						}
+					}).catch(function () {});
+				} catch (e) {}
+			});
+
+			// 状态刷新并隐藏已停用网络（顶部只保留启用中的 Wi-Fi）
+			function refresh() {
+				var rows = Array.prototype.slice.call(quick.querySelectorAll('.wq-row'));
+				var visible = 0;
+				rows.forEach(function (row) {
+					var tg = document.getElementById(row.getAttribute('data-iface') + '-iw-toggle');
+					if (!tg) { visible++; return; }
+					var on = tg.value !== '启用';
+					row.style.display = on ? '' : 'none';
+					if (on) visible++;
+					var st = row.querySelector('.wq-state');
+					if (st) { st.className = 'wq-state ' + (on ? 'on' : 'off'); if (st.lastChild) st.lastChild.nodeValue = on ? '已启用' : '已停用'; }
+				});
+				if (visible === 0) rows.forEach(function (r) { r.style.display = ''; });
+				var count = quick.querySelector('.wq-count');
+				if (count) count.textContent = (visible || rows.length) + ' 个网络';
+			}
+			window.setInterval(refresh, 1500);
+			window.setTimeout(refresh, 900);
+
+			// 弹窗：通过实例私有 CGI 直接写 UCI 并应用，不依赖 8080 的受限无线表单
+			var modal = null;
+			function ensureModal() {
+				if (modal) return modal;
+				modal = document.createElement('div');
+				modal.className = 'mwrt-wifi-modal';
+				modal.innerHTML = '<div class="wq-mask"></div>' +
+					'<div class="wq-dialog" role="dialog" aria-modal="true">' +
+					'<div class="wq-dlg-head"><div><div class="wq-k">WI-FI QUICK SETTINGS</div><h3 class="wq-dlg-title">修改 Wi-Fi</h3><div class="wq-dlg-sub"></div></div><button type="button" class="wq-close" aria-label="关闭">×</button></div>' +
+					'<div class="wq-loading">正在读取当前无线配置…</div>' +
+					'<div class="wq-body" hidden>' +
+					'<label class="wq-field"><span>Wi-Fi 名称（SSID）</span><input type="text" class="wq-input wq-ssid-input" maxlength="32" autocomplete="off"></label>' +
+					'<label class="wq-field"><span>加密方式</span><select class="wq-input wq-enc-select"></select></label>' +
+					'<label class="wq-field"><span>Wi-Fi 密码</span><div class="wq-pass-wrap"><input type="password" class="wq-input wq-pass-input" autocomplete="new-password" placeholder="至少 8 位"><button type="button" class="wq-eye">显示</button></div></label>' +
+					'<div class="wq-note">保存并应用后无线会重启，已连接的设备需要重新连接。</div>' +
+					'<div class="wq-error" hidden></div>' +
+					'</div>' +
+					'<div class="wq-foot"><a class="wq-full" target="_blank" rel="noopener">完整高级设置</a><div class="wq-foot-actions"><button type="button" class="wq-cancel">取消</button><button type="button" class="wq-save">保存并应用</button></div></div>' +
+					'</div>';
+				document.body.appendChild(modal);
+				modal.querySelector('.wq-mask').addEventListener('click', closeModal);
+				modal.querySelector('.wq-close').addEventListener('click', closeModal);
+				modal.querySelector('.wq-cancel').addEventListener('click', closeModal);
+				modal.querySelector('.wq-eye').addEventListener('click', function () {
+					var p = modal.querySelector('.wq-pass-input');
+					p.type = p.type === 'password' ? 'text' : 'password';
+					this.textContent = p.type === 'password' ? '显示' : '隐藏';
+				});
+				modal.querySelector('.wq-enc-select').addEventListener('change', syncPass);
+				modal.querySelector('.wq-save').addEventListener('click', saveWifi);
+				return modal;
+			}
+			function closeModal() {
+				if (!modal) return;
+				modal.classList.remove('open');
+			}
+			function syncPass() {
+				var enc = modal.querySelector('.wq-enc-select').value;
+				var p = modal.querySelector('.wq-pass-input');
+				var none = enc === 'none';
+				p.disabled = none;
+				p.placeholder = none ? '开放网络无需密码' : '至少 8 位';
+			}
+			function showError(msg) {
+				var e = modal.querySelector('.wq-error');
+				e.className = 'wq-error';
+				e.textContent = msg; e.hidden = false;
+			}
+			function showOk(msg) {
+				var e = modal.querySelector('.wq-error');
+				e.className = 'wq-error ok';
+				e.textContent = msg; e.hidden = false;
+			}
+			function fillOptions(cur) {
+				var sel = modal.querySelector('.wq-enc-select');
+				var opts = [
+					['psk2', 'WPA2-PSK（推荐）'],
+					['sae-mixed', 'WPA2/WPA3 混合'],
+					['sae', 'WPA3-SAE'],
+					['psk', 'WPA-PSK（旧设备）'],
+					['psk-mixed', 'WPA/WPA2 混合'],
+					['none', '开放网络（无密码）']
+				];
+				var has = false;
+				for (var i = 0; i < opts.length; i++) if (opts[i][0] === cur) has = true;
+				if (!has && cur) opts.unshift([cur, cur]);
+				sel.innerHTML = '';
+				opts.forEach(function (o) { var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; sel.appendChild(op); });
+				sel.value = cur || 'psk2';
+			}
+			function openModal(row) {
+				ensureModal();
+				var ap = null;
+				for (var i = 0; i < aps.length; i++) if (aps[i].iface === row.getAttribute('data-iface')) ap = aps[i];
+				if (!ap) return;
+				modal.classList.add('open');
+				modal.querySelector('.wq-dlg-title').textContent = '修改 Wi-Fi';
+				modal.querySelector('.wq-dlg-sub').textContent = ap.iface + ' · ' + ap.ssid;
+				modal.querySelector('.wq-full').href = ap.edit;
+				modal.querySelector('.wq-loading').hidden = false;
+				modal.querySelector('.wq-body').hidden = true;
+				modal.querySelector('.wq-error').hidden = true;
+				var save = modal.querySelector('.wq-save'); save.disabled = false; save.textContent = '保存并应用';
+				if (!ap.section) { modal.querySelector('.wq-loading').hidden = true; showError('无线配置读取中，请稍后重试，或打开完整高级设置。'); return; }
+				fetch('/cgi-bin/mwrt-wifi?section=' + encodeURIComponent(ap.section) + '&token=' + encodeURIComponent(token()), { credentials: 'same-origin' })
+					.then(function (r) { return r.json(); })
+					.then(function (d) {
+						if (!d.ok) throw new Error(d.error || '读取失败');
+						modal.querySelector('.wq-ssid-input').value = d.ssid || '';
+						modal.querySelector('.wq-pass-input').value = d.key || '';
+						fillOptions(d.encryption || 'none');
+						syncPass();
+						modal.querySelector('.wq-dlg-sub').textContent = ap.iface + ' · ' + (d.ssid || ap.ssid);
+						modal.querySelector('.wq-loading').hidden = true;
+						modal.querySelector('.wq-body').hidden = false;
+					}).catch(function (e) {
+						modal.querySelector('.wq-loading').hidden = true;
+						showError('读取无线配置失败：' + e.message);
+					});
+			}
+			function saveWifi() {
+				var ssid = modal.querySelector('.wq-ssid-input').value.trim();
+				var enc = modal.querySelector('.wq-enc-select').value;
+				var pass = modal.querySelector('.wq-pass-input').value;
+				var row = null;
+				var sub = modal.querySelector('.wq-dlg-sub').textContent.split(' · ')[0];
+				for (var i = 0; i < aps.length; i++) if (aps[i].iface === sub) row = aps[i];
+				var err = modal.querySelector('.wq-error'); err.hidden = true;
+				if (!ssid) { showError('Wi-Fi 名称不能为空'); return; }
+				if (enc !== 'none' && pass.length < 8) { showError('Wi-Fi 密码至少需要 8 位'); return; }
+				if (!row || !row.section) { showError('无线配置尚未加载完成，请稍后重试'); return; }
+				var btn = modal.querySelector('.wq-save'); btn.disabled = true; btn.textContent = '保存中…';
+				var body = 'token=' + encodeURIComponent(token()) +
+					'&section=' + encodeURIComponent(row.section) +
+					'&ssid=' + encodeURIComponent(ssid) +
+					'&encryption=' + encodeURIComponent(enc) +
+					'&key=' + encodeURIComponent(pass) + '&apply=1';
+				fetch('/cgi-bin/mwrt-wifi', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body })
+					.then(function (r) { return r.json(); })
+					.then(function (d) {
+						if (!d.ok) throw new Error(d.error || '保存失败');
+						showOk(d.changed ? '已保存，正在应用新配置…' : '配置未变化，正在刷新…');
+						window.setTimeout(function () { window.location.reload(); }, 900);
+					}).catch(function (e) {
+						btn.disabled = false; btn.textContent = '保存并应用';
+						showError('保存失败：' + e.message);
+					});
+			}
+			quick.addEventListener('click', function (ev) {
+				var btn = ev.target.closest ? ev.target.closest('.wq-edit') : null;
+				if (!btn) return;
+				var row = btn.closest('.wq-row');
+				if (row) openModal(row);
+			});
+		})();
+
+		// 内部页面：Tab 在页面标题之前时，把标题移到 Tab 上方（接口/无线等页面）
+		(function fixPageTitleOrder() {
+			var cont = document.querySelector('#maincontent > .container');
+			if (!cont) return;
+			var first = null;
+			for (var i = 0; i < cont.children.length; i++) {
+				if (cont.children[i].offsetHeight > 0) { first = cont.children[i]; break; }
+			}
+			if (!first || !first.matches('ul.tabs, .cbi-tabmenu')) return;
+			var h2 = cont.querySelector('h2');
+			if (h2 && h2 !== first) cont.insertBefore(h2, first);
+		})();
+	});
+})();
+</script>
+
+
+<link rel="stylesheet" href="../www/fontawesome/all.min.css?v=1">
+<script>document.body.classList.add('kpc-dash');</script>
+<h2 name="content">状态总览</h2>
+<div class="cbi-map-descr">设备健康、上行链路、资源与异常一屏汇总 · 每 10 秒自动刷新</div>
+
+<div class="dash">
+
+	<!-- 驾驶舱 -->
+	<div class="dash-hero dash-12">
+		<div class="dash-id">
+			<div class="dash-ic"><i class="fas fa-broadcast-tower"></i></div>
+			<div class="dash-id-t">
+				<div class="dash-name">HC-WT9500</div>
+				<div class="dash-sub">
+					<span class="dash-dot"></span>nradio.in
+					<span class="dash-sep">·</span>固件 OpenWrt 21.02-SNAPSHOT 2.3.0.n0.c1
+					<span class="dash-sep">·</span>内核 5.4.281
+					<span class="dash-sep">·</span><span id="dash-uptime">已运行 1 天 17 小时</span>
+				</div>
+			</div>
+		</div>
+		<span class="dash-verdict" id="verdict"><i class="fas fa-circle-notch"></i>读取中</span>
+		<div class="dash-kpis">
+			<div class="dash-kpi" data-k="load"><span>负载 / 核数</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="mem"><span>内存占用</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="store"><span>存储占用</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="temp"><span>最高温度</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="conn"><span>连接跟踪</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="log"><span>日志异常</span><b>--</b><i><u style="width:0"></u></i></div>
+		</div>
+	</div>
+
+	<!-- 上行链路 -->
+	<fieldset class="cbi-section dash-7">
+		<h3>上行链路</h3>
+		<div class="dash-row"><span class="k">蜂窝</span><span class="v" id="v-cell">--</span><span class="t" id="t-cell"></span></div>
+		<div class="dash-row"><span class="k">信号</span><span class="v" id="v-sig">--</span><span class="t" id="t-sig"></span></div>
+		<div class="dash-row"><span class="k">默认路由</span><span class="v" id="v-route">--</span><span class="t" id="t-route"></span></div>
+		<div class="dash-row"><span class="k">IPv4 / IPv6</span><span class="v" id="v-ip">--</span></div>
+		<div class="dash-row"><span class="k">终端</span><span class="v" id="v-clients">--</span><span class="t" id="t-arp"></span></div>
+	</fieldset>
+
+	<!-- 资源 -->
+	<fieldset class="cbi-section dash-5">
+		<h3>资源占用</h3>
+		<div class="dash-top" id="dash-proc">
+			<div class="it"><span class="nm">读取中…</span><span class="bar"><i style="width:0"></i></span><span class="vl">--</span></div>
+		</div>
+		<div class="dash-duo">
+			<div class="dash-row"><span class="k">进程</span><span class="v" id="v-proc">--</span></div>
+			<div class="dash-row"><span class="k">僵尸</span><span class="v" id="v-zombie">--</span></div>
+		</div>
+		<div class="dash-note" id="mem-note">--</div>
+	</fieldset>
+
+	<!-- 日志与安全 -->
+	<fieldset class="cbi-section dash-6">
+		<h3>日志与安全</h3>
+		<div class="dash-row"><span class="k">日志</span><span class="v" id="v-log">--</span><span class="t" id="t-log"></span></div>
+		<div class="dash-row"><span class="k">刷屏来源</span><span class="v" id="v-top">--</span><span class="t" id="t-top"></span></div>
+		<div class="dash-row"><span class="k">防火墙</span><span class="v" id="v-fw">--</span><span class="t" id="t-fw"></span></div>
+		<div class="dash-note" id="log-note">--</div>
+	</fieldset>
+
+	<!-- 连接与设备 -->
+	<fieldset class="cbi-section dash-6">
+		<h3>连接与设备</h3>
+		<div class="dash-row"><span class="k">无线终端</span><span class="v" id="v-wifi">--</span><span class="t" id="t-wifi"></span></div>
+		<div class="dash-row"><span class="k">ARP 邻居</span><span class="v" id="v-arp">--</span></div>
+		<div class="dash-row"><span class="k">连接跟踪</span><span class="v" id="v-ct">--</span><span class="t" id="t-ct"></span></div>
+		<div class="dash-row"><span class="k">运行时间</span><span class="v" id="v-up">--</span></div>
+	</fieldset>
+
+	<!-- 下钻 -->
+	<fieldset class="cbi-section dash-12">
+		<h3>下钻</h3>
+		<div class="dash-links">
+			<a class="dash-link" href="/cgi-bin/luci/admin/status/routes">
+				<i class="fas fa-route"></i><span>路由表</span><em id="l-route">--</em></a>
+			<a class="dash-link" href="/cgi-bin/luci/admin/status/iptables">
+				<i class="fas fa-shield-alt"></i><span>防火墙</span><em id="l-fw">--</em></a>
+			<a class="dash-link" href="/cgi-bin/luci/admin/status/syslog">
+				<i class="fas fa-file-alt"></i><span>系统日志</span><em id="l-log">--</em></a>
+			<a class="dash-link" href="/cgi-bin/luci/admin/status/processes">
+				<i class="fas fa-microchip"></i><span>系统进程</span><em id="l-proc">--</em></a>
+			<a class="dash-link" href="/cgi-bin/luci/admin/status/realtime/load">
+				<i class="fas fa-chart-line"></i><span>实时信息</span><em>负载 / 流量</em></a>
+		</div>
+	</fieldset>
+
+</div>
+
+<div class="dash-note" id="dash-updated" style="padding:0 2px 18px">--</div>
+
+<script>
+window.__KP_DATA__ = "{\"log\":{\"top\":[{\"n\":199,\"src\":\"atserver-sniffer\"},{\"n\":33,\"src\":\"cellular_init\"},{\"n\":1,\"src\":\"logservice\"}],\"total\":276,\"info\":1,\"warn\":0,\"err\":0},\"arp\":109,\"mem\":{\"swap_free\":0,\"total\":1040826368,\"cached\":329785344,\"available\":439517184,\"swap_total\":0,\"free\":158285824},\"fw\":{\"input\":\"ACCEPT\",\"rules\":215},\"ip\":{\"v6\":\"2408:8956:7e40:b927:ea:98:32:d3\",\"v4\":\"10.23.217.92\"},\"conntrack\":{\"count\":1320,\"max\":65536},\"storage\":{\"used\":1384026112,\"total\":17177772032.0,\"pct\":8},\"wifi\":{\"bands\":[{\"dev\":\"ra0\",\"n\":1},{\"dev\":\"rai0\",\"n\":12},{\"dev\":\"rai1\",\"n\":1},{\"dev\":\"rax0\",\"n\":1}],\"total\":15},\"cell\":{\"band\":\"78\",\"earfcn\":\"627264\",\"rsrp\":\"-89\",\"sinr\":\"24\",\"simno\":\"2\",\"pci\":\"129\",\"rsrq\":\"-5\",\"mode\":\"NR SA\",\"simcount\":\"3\",\"isp\":\"46001\"},\"ncpu\":4,\"ts\":1792483518,\"route\":{\"dev\":\"eth3\",\"gw\":\"10.0.0.1\",\"default\":\"default via 10.0.0.1 dev eth3\"},\"uptime\":148142,\"code\":0,\"proc\":{\"rss\":552697856,\"total\":189,\"user\":97,\"top_mem\":[{\"cmd\":\"clash\",\"pid\":6615,\"rss\":110628864},{\"cmd\":\"1panel\",\"pid\":8811,\"rss\":90832896},{\"cmd\":\"openlist\",\"pid\":15528,\"rss\":70111232},{\"cmd\":\"dockerd\",\"pid\":11610,\"rss\":39383040},{\"cmd\":\"containerd\",\"pid\":13108,\"rss\":39026688}],\"zombie\":1},\"load\":[1.6499999999999999,1.6699999999999999,1.71],\"thermal\":[61,61,59]}";
+(function () {
+  var raw = window.__KP_DATA__;
+  var obj = JSON.parse(raw);
+  window.fetch = function () {
+    return Promise.resolve({ json: function () { return Promise.resolve(obj); } });
+  };
+})();
+</script><script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+
+	var API = '/cgi-bin/luci/admin/status/overview';
+	var BOOT_UPTIME = 148142;
+	var bootAt = Date.now() - BOOT_UPTIME * 1000;
+
+	var $ = function (id) { return document.getElementById(id); };
+	function num(v) { return Number(v) || 0; }
+	function mib(b) { return (num(b) / 1048576); }
+	function pct(a, b) { return b > 0 ? a * 100 / b : 0; }
+	function clamp(v) { return v > 100 ? 100 : (v < 0 ? 0 : v); }
+	function pad(x) { return (x < 10 ? '0' : '') + x; }
+
+	function dur(s) {
+		s = Math.floor(num(s));
+		var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+		if (d > 0) return d + ' 天 ' + h + ' 小时';
+		if (h > 0) return h + ' 小时 ' + m + ' 分';
+		return m + ' 分';
+	}
+	function level(v, warn, crit) { return v >= crit ? 'is-bad' : (v >= warn ? 'is-warn' : ''); }
+
+	function setKpi(key, text, ratio, cls) {
+		var el = document.querySelector('.dash-kpi[data-k="' + key + '"]');
+		if (!el) return;
+		el.querySelector('b').innerHTML = text;
+		el.querySelector('u').style.width = clamp(ratio) + '%';
+		el.className = 'dash-kpi ' + (cls || '');
+	}
+
+	function ispName(code) {
+		var map = { '46000': '中国移动', '46002': '中国移动', '46004': '中国移动', '46007': '中国移动', '46008': '中国移动',
+			'46001': '中国联通', '46006': '中国联通', '46009': '中国联通',
+			'46003': '中国电信', '46005': '中国电信', '46011': '中国电信', '46015': '中国广电' };
+		return map[code] || code || '无服务';
+	}
+
+	function render(d) {
+		if (!d || d.code !== 0) return;
+		var cpu = num(d.ncpu) || 1;
+		var loadPct = num((d.load || [])[0]) / cpu * 100;
+		var mem = d.mem || {};
+		var memPct = pct(num(mem.total) - num(mem.available), num(mem.total));
+		var stPct = num((d.storage || {}).pct);
+		var temp = 0;
+		(d.thermal || []).forEach(function (t) { if (num(t) > temp) temp = num(t); });
+		var ctPct = pct(num((d.conntrack || {}).count), num((d.conntrack || {}).max));
+		var lg = d.log || {};
+		var bad = num(lg.err) + num(lg.warn);
+
+		setKpi('load', loadPct.toFixed(0) + '<small>%</small>', loadPct, level(loadPct, 60, 85));
+		setKpi('mem', memPct.toFixed(0) + '<small>%</small>', memPct, level(memPct, 70, 85));
+		setKpi('store', stPct + '<small>%</small>', stPct, level(stPct, 80, 90));
+		setKpi('temp', temp + '<small>℃</small>', temp, level(temp, 70, 80));
+		setKpi('conn', ctPct.toFixed(1) + '<small>%</small>', ctPct, level(ctPct, 60, 85));
+		setKpi('log', String(bad), Math.min(bad * 10, 100), bad > 10 ? 'is-bad' : (bad > 0 ? 'is-warn' : ''));
+
+		var worst = '';
+		['load', 'mem', 'store', 'temp', 'conn', 'log'].forEach(function (k) {
+			var el = document.querySelector('.dash-kpi[data-k="' + k + '"]');
+			if (!el) return;
+			if (el.className.indexOf('is-bad') >= 0) worst = 'is-bad';
+			else if (el.className.indexOf('is-warn') >= 0 && worst !== 'is-bad') worst = 'is-warn';
+		});
+		var v = $('verdict');
+		if (v) {
+			v.className = 'dash-verdict ' + worst;
+			v.innerHTML = (worst === 'is-bad' ? '<i class="fas fa-exclamation-circle"></i>需要处理'
+				: (worst === 'is-warn' ? '<i class="fas fa-exclamation-triangle"></i>有异常'
+					: '<i class="fas fa-check-circle"></i>运行正常'));
+		}
+
+		// 上行
+		var c = d.cell || {};
+		if (c.mode) {
+			$('v-cell').textContent = ispName(c.isp) + ' · ' + c.mode + (c.band ? ' · n' + c.band : '');
+			$('t-cell').innerHTML = '<span class="dash-tag on">已注册</span>';
+			if (c.rsrp) {
+				$('v-sig').textContent = c.rsrp + ' dBm' + (c.sinr ? ' · SINR ' + c.sinr + ' dB' : '');
+				var snr = num(c.sinr);
+				var sigCls = (num(c.rsrp) >= -95) ? 'on' : ((num(c.rsrp) >= -105) ? 'warn' : 'warn');
+				$('t-sig').innerHTML = '<span class="dash-tag ' + sigCls + '">' + (num(c.rsrp) >= -95 ? '良好' : (num(c.rsrp) >= -105 ? '一般' : '较弱')) + '</span>';
+			}
+		} else {
+			$('v-cell').textContent = d.route && d.route.dev ? ('无蜂窝数据 · 上行 ' + d.route.dev) : '无蜂窝数据';
+			$('t-cell').innerHTML = '<span class="dash-tag warn">未注册</span>';
+		}
+
+		var r = d.route || {};
+		$('v-route').textContent = r.gw ? (r.gw + ' via ' + r.dev) : (r.default || '无默认路由');
+		$('t-route').innerHTML = r.gw ? '<span class="dash-tag on">可达</span>' : '<span class="dash-tag warn">缺失</span>';
+
+		var ip = d.ip || {};
+		$('v-ip').textContent = (ip.v4 || '-') + ' / ' + (ip.v6 || '-');
+
+		var w = d.wifi || {};
+		$('v-clients').textContent = num(w.total) + ' 台无线';
+		$('t-arp').textContent = 'ARP ' + num(d.arp) + ' 条';
+
+		// 资源
+		var p = d.proc || {}, tops = p.top_mem || [];
+		var maxRss = 1;
+		tops.forEach(function (t) { if (t.rss > maxRss) maxRss = t.rss; });
+		var html = '';
+		tops.slice(0, 3).forEach(function (t) {
+			html += '<div class="it"><span class="nm">' + t.cmd + '</span>'
+				+ '<span class="bar"><i style="width:' + (t.rss / maxRss * 100).toFixed(0) + '%"></i></span>'
+				+ '<span class="vl">' + mib(t.rss).toFixed(0) + ' MiB</span></div>';
+		});
+		$('dash-proc').innerHTML = html || '<div class="dash-empty">暂无数据</div>';
+		$('v-proc').textContent = num(p.total) + ' 个';
+		$('v-zombie').textContent = num(p.zombie) + ' 个';
+		$('mem-note').textContent = '可用 ' + mib(mem.available).toFixed(0) + ' MiB · 缓存 '
+			+ mib(mem.cached).toFixed(0) + ' MiB（缓存可回收，不计入真实占用）';
+
+		// 日志与安全
+		$('v-log').textContent = '共 ' + num(lg.total) + ' 行 · 异常 ' + bad + ' 条';
+		$('t-log').innerHTML = bad ? '<span class="dash-tag warn">需关注</span>' : '<span class="dash-tag on">干净</span>';
+		var top = (lg.top || [])[0];
+		$('v-top').textContent = top ? (top.src + ' × ' + top.n) : '—';
+		$('t-top').textContent = top ? '占比 ' + Math.round(top.n * 100 / Math.max(num(lg.total), 1)) + '%' : '';
+		var fw = d.fw || {};
+		$('v-fw').textContent = num(fw.rules) + ' 条规则 · INPUT ' + (fw.input || '?');
+		$('t-fw').innerHTML = (fw.input === 'ACCEPT')
+			? '<span class="dash-tag warn">策略宽松</span>' : '<span class="dash-tag on">策略收紧</span>';
+		$('log-note').textContent = bad === 0
+			? '当前没有错误或警告；排查时可在系统日志中切到「全部」。'
+			: '存在 ' + bad + ' 条异常，建议到系统日志查看异常优先列表。';
+
+		// 连接与设备
+		$('v-wifi').textContent = num(w.total) + ' 台';
+		$('t-wifi').textContent = (w.bands || []).map(function (b) { return b.dev + ' ' + b.n + ' 台'; }).join(' · ');
+		$('v-arp').textContent = num(d.arp) + ' 条';
+		$('v-ct').textContent = num((d.conntrack || {}).count) + ' / ' + num((d.conntrack || {}).max);
+		$('t-ct').textContent = ctPct.toFixed(1) + '% 已用';
+		$('v-up').textContent = dur(d.uptime);
+
+		// 下钻角标
+		$('l-route').textContent = num(d.arp) + ' ARP';
+		$('l-fw').textContent = num(fw.rules) + ' 规则';
+		$('l-log').textContent = num(lg.total) + ' 行';
+		$('l-proc').textContent = num(p.total) + ' 进程';
+
+		// 顶部运行时间同步
+		var upEl = document.getElementById('dash-uptime');
+		if (upEl) upEl.textContent = '已运行 ' + dur(d.uptime);
+
+		var t = new Date();
+		$('dash-updated').textContent = '已更新 ' + pad(t.getHours()) + ':' + pad(t.getMinutes())
+			+ ':' + pad(t.getSeconds()) + ' · 每 10 秒自动刷新';
+	}
+
+	var inflight = false;
+	function load() {
+		if (inflight || document.hidden) return;
+		inflight = true;
+		fetch(API + '?action=kp_status&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) { inflight = false; render(d); })
+			.catch(function () { inflight = false; });
+	}
+
+	function tick() {
+		var el = document.getElementById('dash-uptime');
+		if (el && BOOT_UPTIME) el.textContent = '已运行 ' + dur((Date.now() - bootAt) / 1000);
+	}
+
+	load();
+	tick();
+	window.setInterval(load, 10000);
+	window.setInterval(tick, 30000);
+	document.addEventListener('visibilitychange', function () { if (!document.hidden) load(); });
+})();
+
+//]]>
+</script>
+
+
+</div>
+<footer>
+	<div class="ftc">
+		<a class="luci-link" href="https://github.com/openwrt/luci" target="_blank">Powered by LuCI Master
+			(git-26.253.32058-228b00a)</a> /
+		<a href="https://github.com/jerrykuku/luci-theme-argon" target="_blank">ArgonTheme v1.8.4</a> /
+		OpenWrt 21.02-SNAPSHOT 2.3.0.n0.c1
+		
+	</div>
+</footer>
+</div>
+</div>
+	<script>
+		if (window.innerHeight < 660) {
+			document.getElementsByClassName("ftc")[0].style.display = "none";
+		} else {
+			document.getElementsByClassName("ftc")[0].style.display = "block";
+		}
+
+		window.addEventListener('resize', function() {
+			if (window.innerHeight < 660) {
+				document.getElementsByClassName("ftc")[0].style.display = "none";
+			} else {
+				document.getElementsByClassName("ftc")[0].style.display = "block";
+			}
+		})
+	</script>
+
+	<script src="../www/luci-static/bootstrap/js/styles-argon.js?v=1.8.4"></script>
+</body>
+</html>
+

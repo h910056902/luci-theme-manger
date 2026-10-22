@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>预览 · 蜂窝网络</title>
+<!-- 直接复用 8080 实例主题样式，保证与线上观感一致 -->
+<link rel="stylesheet" href="/luci-static/bootstrap/css/cascade.css">
+<link rel="stylesheet" href="/luci-static/bootstrap/css/fonts.css">
+<link rel="stylesheet" href="/luci-static/bootstrap/css/mwrt-menu-custom.css">
+<link rel="stylesheet" href="/luci-static/bootstrap/css/mwrt-global-custom.css">
+<link rel="stylesheet" href="/fontawesome/all.min.css">
+
+<style>
+/* ===== 蜂窝页组件（阶段十九）——仅本页，作用域 kpc-cell-page ===== */
+body.kpc-cell-page{background:#fff}
+body.kpc-cell-page .kpc-shell{display:flex;min-height:100vh}
+body.kpc-cell-page .kpc-side{width:210px;flex:0 0 210px;background:#0d1117;padding:14px 0 24px}
+body.kpc-cell-page .kpc-main{flex:1;min-width:0}
+
+/* --- 顶部条 --- */
+body.kpc-cell-page .kpc-top{display:flex;align-items:center;gap:12px;height:52px;padding:0 18px;
+	background:#fff;border-bottom:1px solid #eef1f4}
+body.kpc-cell-page .kpc-top .brand{font-size:15px;font-weight:600;color:#16202c;letter-spacing:.01em}
+body.kpc-cell-page .kpc-top .sp{flex:1}
+body.kpc-cell-page .kpc-top .kpc-user{font-size:12px;color:#98a2b3}
+
+/* --- 深色信号舱（与首页 hero / 总览 hero 同源） --- */
+body.kpc-cell-page .cell-hero{
+	position:relative;overflow:hidden;border-radius:16px;padding:18px 22px;margin:0 0 10px;
+	display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;
+	background:linear-gradient(120deg,#10182b 0%,#1a2740 55%,#173f3d 100%);
+	box-shadow:0 18px 36px -28px rgba(13,20,35,.85);color:#eef2f8}
+body.kpc-cell-page .cell-hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+	background:radial-gradient(60% 120% at 0% 0%,rgba(124,92,252,.28),transparent 55%),
+	           radial-gradient(50% 110% at 100% 100%,rgba(43,255,198,.18),transparent 60%)}
+body.kpc-cell-page .cell-hero::after{content:'';position:absolute;inset:0;pointer-events:none;
+	background:repeating-radial-gradient(circle at calc(100% - 236px) 50%,rgba(255,255,255,.05) 0 1px,transparent 1px 26px);
+	-webkit-mask-image:radial-gradient(circle 380px at calc(100% - 236px) 50%,#000 0,transparent 100%);
+	        mask-image:radial-gradient(circle 380px at calc(100% - 236px) 50%,#000 0,transparent 100%)}
+body.kpc-cell-page .cell-hero > *{position:relative;z-index:1}
+
+body.kpc-cell-page .cell-id{order:1;flex:1 1 280px;display:flex;align-items:center;gap:13px;min-width:0}
+body.kpc-cell-page .cell-brand{width:40px;height:40px;border-radius:12px;flex:0 0 auto;
+	display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#0e1626;
+	background:linear-gradient(135deg,#2bffc6,#7c5cfc);box-shadow:0 6px 16px -8px rgba(43,255,198,.9)}
+body.kpc-cell-page .cell-id-t{min-width:0}
+body.kpc-cell-page .cell-op{display:flex;align-items:center;gap:8px;min-width:0}
+body.kpc-cell-page .cell-op-name{font-size:20px;font-weight:700;letter-spacing:.01em;line-height:1.2;
+	white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.kpc-cell-page .cell-badge{font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 8px;border-radius:6px;
+	color:#0e1626;background:linear-gradient(135deg,#2bffc6,#7de3cf)}
+body.kpc-cell-page .cell-op-sub{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px;
+	font-size:11.5px;color:#a9b8cc}
+body.kpc-cell-page .cell-dot{width:5px;height:5px;border-radius:50%;background:#2bffc6;
+	box-shadow:0 0 6px rgba(43,255,198,.7);flex:0 0 auto}
+body.kpc-cell-page .cell-sep{color:#4d5a70}
+
+body.kpc-cell-page .cell-mx{order:3;flex:1 1 100%;min-width:0;display:grid;
+	grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+body.kpc-cell-page .cell-m{display:flex;flex-direction:column;gap:5px;min-width:0;padding:9px 11px 10px;
+	border-radius:12px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.06)}
+body.kpc-cell-page .cell-m > span{font-size:9.5px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;
+	color:#8891a5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.kpc-cell-page .cell-m > strong{font-size:17px;font-weight:600;line-height:1.15;color:#eef0f6;
+	font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.kpc-cell-page .cell-m > strong small{font-size:10px;font-weight:500;color:#8891a5;margin-left:3px}
+body.kpc-cell-page .cell-m > .cell-msub{font-size:10.5px;font-style:normal;color:#8891a5;
+	white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.kpc-cell-page .cell-bar{display:block;height:4px;border-radius:2px;background:rgba(127,127,140,.22);overflow:hidden}
+body.kpc-cell-page .cell-bar > i{display:block;height:100%;border-radius:2px;transition:width .6s ease}
+body.kpc-cell-page .cell-m.lv-good .cell-bar>i{background:linear-gradient(90deg,#10b981,#34d399)}
+body.kpc-cell-page .cell-m.lv-fair .cell-bar>i{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+body.kpc-cell-page .cell-m.lv-poor .cell-bar>i{background:linear-gradient(90deg,#ef4444,#f87171)}
+
+body.kpc-cell-page .cell-sig{order:2;flex:0 0 300px;display:flex;align-items:center;gap:14px;
+	padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06)}
+body.kpc-cell-page .cell-ring{position:relative;width:92px;height:92px;flex:0 0 auto}
+body.kpc-cell-page .cell-ring svg{width:100%;height:100%;display:block}
+body.kpc-cell-page .cell-ring .rk-tk{fill:none;stroke:rgba(255,255,255,.07);stroke-width:6}
+body.kpc-cell-page .cell-ring .rk-bg{fill:none;stroke:rgba(255,255,255,.09);stroke-width:7}
+body.kpc-cell-page .cell-ring .rk-fg{fill:none;stroke:#34d399;stroke-width:7;stroke-linecap:round;
+	transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .8s ease}
+body.kpc-cell-page .cell-ring .ct{position:absolute;inset:0;display:flex;flex-direction:column;
+	align-items:center;justify-content:center;gap:1px}
+body.kpc-cell-page .cell-ring .ct b{font-size:23px;font-weight:600;line-height:1;color:#fff;font-variant-numeric:tabular-nums}
+body.kpc-cell-page .cell-ring .ct i{font-size:9.5px;font-style:normal;color:#8891a5;letter-spacing:.05em}
+body.kpc-cell-page .cell-sig-n{min-width:0}
+body.kpc-cell-page .cell-sig-k{font-size:10.5px;letter-spacing:.04em;color:#8891a5}
+body.kpc-cell-page .cell-sig-lv{font-size:14px;font-weight:600;margin:2px 0 7px;color:#34d399}
+body.kpc-cell-page .cell-bars{display:flex;align-items:flex-end;gap:4px;height:26px}
+body.kpc-cell-page .cell-bars span{width:4px;border-radius:2px;background:rgba(127,127,140,.25)}
+body.kpc-cell-page .cell-bars span.on{background:linear-gradient(180deg,#22d3ee,#34d399)}
+
+body.kpc-cell-page .cell-foot{display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+	margin:-2px 0 4px;padding:0 2px;font-size:11.5px;color:#7b8794}
+body.kpc-cell-page .cell-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;
+	background:#f2f8f8;border:1px solid #dcebea;color:#2f6e74}
+body.kpc-cell-page .cell-chip b{font-weight:600;color:#123c3f}
+body.kpc-cell-page .cell-foot .sp{flex:1}
+body.kpc-cell-page .cell-live{font-size:12px;color:#8891a5}
+
+/* --- 通用小件 --- */
+body.kpc-cell-page .cell-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0 12px}
+body.kpc-cell-page .cell-toolbar .sp{flex:1}
+body.kpc-cell-page .cell-sec{border-top:1px solid #f2f4f7;padding:14px 16px}
+body.kpc-cell-page .cell-sec:first-of-type{border-top:0}
+body.kpc-cell-page .cell-sec-h{display:flex;align-items:center;gap:9px;margin-bottom:10px;font-size:.86rem;font-weight:600;color:#22333f}
+body.kpc-cell-page .cell-sec-h .cell-num{width:20px;height:20px;border-radius:6px;flex:0 0 auto;
+	display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;
+	background:linear-gradient(135deg,#388087,#2bffc6)}
+body.kpc-cell-page .cell-sec-h .cell-note,
+body.kpc-cell-page .cell-sec-h em{margin-left:auto;font-style:normal;font-size:.74rem;font-weight:400;color:#8a93a0;text-shadow:none;text-align:left}
+
+body.kpc-cell-page .cell-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+body.kpc-cell-page .cell-kv{min-width:0;padding:9px 11px;border-radius:9px;background:#fbfcfd;border:1px solid #eef1f4}
+body.kpc-cell-page .cell-kv > span{display:block;font-size:.7rem;color:#8a93a0;letter-spacing:.02em;margin-bottom:2px}
+body.kpc-cell-page .cell-kv > strong{display:block;font-size:.95rem;font-weight:600;color:#1f2d3d;
+	font-variant-numeric:tabular-nums;word-break:break-all}
+body.kpc-cell-page .cell-kv > strong small{font-size:.7rem;font-weight:400;color:#98a2b3;margin-left:2px}
+body.kpc-cell-page .cell-kv.is-key{background:linear-gradient(180deg,#f7fbfb,#fff);border-color:#dcebea}
+
+body.kpc-cell-page .cell-pill{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px;border-radius:999px;
+	font-size:11.5px;font-weight:500;background:#f2f4f7;color:#667085;border:1px solid #e7eaee}
+body.kpc-cell-page .cell-pill.on{background:rgba(52,211,153,.13);color:#1d8a5b;border-color:rgba(52,211,153,.32)}
+body.kpc-cell-page .cell-pill.warn{background:rgba(240,160,32,.13);color:#b26a00;border-color:rgba(240,160,32,.32)}
+body.kpc-cell-page .cell-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75}
+
+body.kpc-cell-page .cell-lockrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:7px 0}
+body.kpc-cell-page .cell-lockrow + .cell-lockrow{border-top:1px dashed #eef1f4}
+body.kpc-cell-page .cell-lockrow > b{font-size:.8rem;color:#475467;min-width:64px}
+body.kpc-cell-page .cell-lockrow > span.txt{font-size:.8rem;color:#1f2d3d}
+
+/* 分段选择 */
+body.kpc-cell-page .cell-seg{display:inline-flex;padding:3px;border-radius:9px;background:#f2f4f7;gap:2px;flex-wrap:wrap}
+body.kpc-cell-page .cell-seg label{position:relative;cursor:pointer}
+body.kpc-cell-page .cell-seg input{position:absolute;opacity:0;pointer-events:none}
+body.kpc-cell-page .cell-seg span{display:block;padding:6px 14px;border-radius:7px;font-size:.8rem;color:#475467;transition:all .18s ease}
+body.kpc-cell-page .cell-seg input:checked + span{background:linear-gradient(180deg,#3d8c93,#388087);color:#fff;font-weight:500;
+	box-shadow:0 3px 8px -6px rgba(56,128,135,.9)}
+body.kpc-cell-page .cell-seg label:hover span{color:#2f6e74}
+
+/* 频段胶囊 */
+body.kpc-cell-page .cell-bands{display:flex;flex-wrap:wrap;gap:6px}
+body.kpc-cell-page .cell-bands label{position:relative;cursor:pointer}
+body.kpc-cell-page .cell-bands input{position:absolute;opacity:0;pointer-events:none}
+body.kpc-cell-page .cell-bands span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;
+	font-size:.79rem;color:#344054;background:#fff;border:1px solid #d6dbe1;transition:all .16s ease;font-variant-numeric:tabular-nums}
+body.kpc-cell-page .cell-bands label:hover span{border-color:#388087;color:#2f6e74;background:#f2f8f7}
+body.kpc-cell-page .cell-bands input:checked + span{background:linear-gradient(180deg,#3d8c93,#388087);border-color:#2f6e74;
+	color:#fff;font-weight:500}
+body.kpc-cell-page .cell-bandnote{font-size:.74rem;color:#8a93a0;margin:6px 0 0}
+body.kpc-cell-page .cell-bandrow + .cell-bandrow{margin-top:10px}
+
+/* 指令预览 */
+body.kpc-cell-page .cell-at{margin-top:10px;border:1px solid #e7eaee;border-radius:9px;background:#fbfcfd;overflow:hidden}
+body.kpc-cell-page .cell-at > summary{cursor:pointer;padding:8px 12px;font-size:.78rem;color:#475467;
+	list-style:none;display:flex;align-items:center;gap:6px}
+body.kpc-cell-page .cell-at > summary::-webkit-details-marker{display:none}
+body.kpc-cell-page .cell-at > summary::before{content:'';width:6px;height:6px;flex:0 0 auto;
+	border-right:1.5px solid #98a2b3;border-bottom:1.5px solid #98a2b3;
+	transform:rotate(-45deg);transition:transform .18s ease;margin-right:2px}
+body.kpc-cell-page .cell-at[open] > summary::before{transform:rotate(45deg)}
+body.kpc-cell-page .cell-at pre{margin:0;padding:10px 12px;border-top:1px solid #eef1f4;background:#fff;
+	font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.74rem;line-height:1.7;color:#344054;
+	white-space:pre-wrap;word-break:break-all}
+
+/* 步骤条 */
+body.kpc-cell-page .cell-steps{display:none;align-items:center;flex-wrap:wrap;gap:6px;margin-top:12px;
+	padding:10px 12px;border-radius:9px;background:#fbfcfd;border:1px solid #eef1f4;font-size:.78rem}
+body.kpc-cell-page .cell-steps.show{display:flex}
+body.kpc-cell-page .cell-steps b{display:inline-flex;align-items:center;gap:5px;font-weight:500;color:#98a2b3}
+body.kpc-cell-page .cell-steps b.ok{color:#1d8a5b}
+body.kpc-cell-page .cell-steps b.run{color:#2f6e74}
+body.kpc-cell-page .cell-steps b.err{color:#d9480f}
+body.kpc-cell-page .cell-steps b i{font-size:10px}
+body.kpc-cell-page .cell-steps .arw{color:#d6dbe1;font-size:10px}
+
+/* 体验评分 */
+body.kpc-cell-page .cell-score{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+body.kpc-cell-page .cell-score .v{display:flex;align-items:baseline;gap:4px}
+body.kpc-cell-page .cell-score .v b{font-size:30px;font-weight:700;line-height:1;color:#123c3f;font-variant-numeric:tabular-nums}
+body.kpc-cell-page .cell-score .v span{font-size:.74rem;color:#8a93a0}
+body.kpc-cell-page .cell-score .t{flex:1;min-width:200px;max-width:620px}
+body.kpc-cell-page .cell-score .t p{margin:0 0 6px;font-size:.8rem;color:#475467}
+body.kpc-cell-page .cell-score .t p em{font-style:normal;color:#2f6e74;font-weight:600}
+body.kpc-cell-page .cell-score .bar{height:6px;border-radius:3px;background:#eef1f4;overflow:hidden}
+body.kpc-cell-page .cell-score .bar i{display:block;height:100%;border-radius:3px;
+	background:linear-gradient(90deg,#388087,#2bffc6)}
+
+body.kpc-cell-page .cell-scroll{overflow-x:auto}
+body.kpc-cell-page .cell-tip{margin:8px 0 0;font-size:.74rem;color:#98a2b3;line-height:1.6}
+/* 覆盖 cascade 的 fieldset.cbi-section p{padding:1em} 与 .cbi-section em 默认样式 */
+body.kpc-cell-page .cbi-section p{padding:0!important;text-shadow:none}
+body.kpc-cell-page .cbi-section em{font-size:inherit;font-weight:inherit;color:inherit;
+	text-shadow:none;text-align:left}
+body.kpc-cell-page .cell-sec table{width:100%;border-collapse:collapse}
+body.kpc-cell-page .cell-sec table th{white-space:nowrap;text-align:left;padding:8px 10px}
+body.kpc-cell-page .cell-sec table td{white-space:nowrap;text-align:left;padding:9px 10px}
+body.kpc-cell-page .cell-sec table td.cell-wrap{white-space:normal}
+
+/* 侧栏图标（预览壳） */
+body.kpc-cell-page .kpc-side .menu{position:relative}
+body.kpc-cell-page .kpc-side .menu::before{font-family:argon;position:absolute;left:15px;top:50%;
+	transform:translateY(-50%);font-size:14px;color:#8b949e;line-height:1}
+body.kpc-cell-page .kpc-side li:nth-child(1) .menu::before{content:"\e906"}
+body.kpc-cell-page .kpc-side li:nth-child(2) .menu::before{content:"\e908"}
+body.kpc-cell-page .kpc-side li:nth-child(3) .menu::before{content:"\e915"}
+body.kpc-cell-page .kpc-side li:nth-child(4) .menu::before{content:"\e909"}
+body.kpc-cell-page .kpc-side li:nth-child(5) .menu::before{content:"\e90d";color:#2bffc6}
+body.kpc-cell-page .cell-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+body.kpc-cell-page .cell-actions .sp{flex:1}
+body.kpc-cell-page .cell-dim{color:#98a2b3}
+body.kpc-cell-page .cell-mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.78rem}
+body.kpc-cell-page .cell-tabpanel[hidden]{display:none!important}
+body.kpc-cell-page .cell-tag{display:inline-block;font-size:.7rem;padding:1px 6px;border-radius:5px;
+	background:#eef1f4;color:#667085;margin-left:6px}
+
+/* 预览角标 */
+.kpc-preview-flag{position:fixed;right:14px;bottom:14px;z-index:99;padding:6px 12px;border-radius:999px;
+	background:rgba(16,24,40,.86);color:#fff;font-size:11px;letter-spacing:.03em;backdrop-filter:blur(6px)}
+
+@media (max-width:900px){
+	body.kpc-cell-page .kpc-side{display:none}
+	body.kpc-cell-page .cell-hero{padding:15px 16px;border-radius:14px}
+	body.kpc-cell-page .cell-id{flex:1 1 100%}
+	body.kpc-cell-page .cell-sig{order:3;flex:1 1 100%}
+	body.kpc-cell-page .cell-mx{order:2;grid-template-columns:repeat(2,minmax(0,1fr))}
+	body.kpc-cell-page .cell-op-name{font-size:18px}
+	body.kpc-cell-page .cell-ring{width:78px;height:78px}
+	body.kpc-cell-page .cell-ring .ct b{font-size:19px}
+}
+@media (max-width:560px){
+	body.kpc-cell-page .cell-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+	body.kpc-cell-page .cell-sec{padding:12px}
+	body.kpc-cell-page .cell-op-sub{font-size:11px}
+}
+</style>
+</head>
+
+<body class="node-status-cellular kpc-cell-page">
+
+<div class="kpc-shell">
+	<!-- 左侧模拟导航（仅预览用） -->
+	<div class="kpc-side main-left" style="background:#0d1117">
+		<div class="sidenav-header" style="padding:14px 16px 10px">
+			<a class="brand" href="#" style="color:#fff;font-size:15px;font-weight:600">NRadio</a>
+		</div>
+		<ul class="nav" style="list-style:none;margin:0;padding:0">
+			<li class="slide"><a class="menu" data-title="首页" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">首页</a></li>
+			<li class="slide"><a class="menu" data-title="网络设置向导" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">网络设置向导</a></li>
+			<li class="slide"><a class="menu" data-title="iStore" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">iStore</a></li>
+			<li class="slide"><a class="menu" data-title="服务" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">服务</a></li>
+			<li class="slide"><a class="menu" data-title="状态" href="#" style="display:block;padding:9px 16px 9px 38px;color:#2bffc6;font-size:13px;text-decoration:none;background:rgba(43,255,198,.07)">蜂窝网络</a></li>
+		</ul>
+	</div>
+
+	<div class="kpc-main main-right">
+		<div class="kpc-top">
+			<span class="brand">NRadio</span>
+			<span class="kpc-user">HC-WT9500 · root</span>
+			<span class="sp"></span>
+			<span class="kpc-user">退出</span>
+		</div>
+
+		<div id="maincontent">
+			<div class="container">
+
+				<h2 name="content">蜂窝网络</h2>
+				<div class="cbi-map-descr">实时状态 · 每 10 秒自动刷新</div>
+
+				<!-- ==================== 信号舱 ==================== -->
+				<div class="cell-hero">
+					<div class="cell-id">
+						<div class="cell-brand"><i class="fas fa-broadcast-tower"></i></div>
+						<div class="cell-id-t">
+							<div class="cell-op">
+								<span class="cell-op-name">中国移动</span>
+								<b class="cell-badge">5G</b>
+							</div>
+							<div class="cell-op-sub">
+								<span class="cell-dot"></span>已注册
+								<span class="cell-sep">·</span>5G NSA
+								<span class="cell-sep">·</span>n41
+								<span class="cell-sep">·</span>主卡
+							</div>
+						</div>
+					</div>
+
+					<div class="cell-mx">
+						<div class="cell-m lv-good">
+							<span>RSRP</span>
+							<strong>-92<small>dBm</small></strong>
+							<span class="cell-bar"><i style="width:80%"></i></span>
+						</div>
+						<div class="cell-m lv-good">
+							<span>SINR</span>
+							<strong>18<small>dB</small></strong>
+							<span class="cell-bar"><i style="width:72%"></i></span>
+						</div>
+						<div class="cell-m lv-good">
+							<span>频段</span>
+							<strong>n41</strong>
+							<span class="cell-msub">频点 627264</span>
+						</div>
+						<div class="cell-m lv-fair">
+							<span>卡槽</span>
+							<strong>1 / 2</strong>
+							<span class="cell-msub">中国移动</span>
+						</div>
+					</div>
+
+					<div class="cell-sig">
+						<div class="cell-ring">
+							<svg viewBox="0 0 100 100" aria-hidden="true">
+								<circle class="rk-tk" cx="50" cy="50" r="46"></circle>
+								<circle class="rk-bg" cx="50" cy="50" r="38"></circle>
+								<circle class="rk-fg" cx="50" cy="50" r="38" stroke-dasharray="238.8" stroke-dashoffset="47.8"></circle>
+							</svg>
+							<div class="ct"><b>-92</b><i>dBm</i></div>
+						</div>
+						<div class="cell-sig-n">
+							<div class="cell-sig-k">RSRP · 信号强度</div>
+							<div class="cell-sig-lv">良好</div>
+							<div class="cell-bars">
+								<span class="on" style="height:8px"></span>
+								<span class="on" style="height:12px"></span>
+								<span class="on" style="height:16px"></span>
+								<span class="on" style="height:20px"></span>
+								<span style="height:24px"></span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="cell-foot">
+					<span class="cell-chip">载波聚合 <b>2CC</b></span>
+					<span class="cell-chip">n41 + n78</span>
+					<span class="cell-chip">体验评分 <b>82</b> · 良</span>
+					<span class="cell-chip">模块温度 <b>42 °C</b></span>
+					<span class="sp"></span>
+					<span class="cell-live" id="kpc-live">已更新 10:23:45 · 每 10 秒自动刷新</span>
+				</div>
+
+				<div class="cell-toolbar">
+					<button class="cbi-button cbi-button-neutral" type="button" id="kpc-refresh"><i class="fas fa-sync-alt"></i> 刷新</button>
+					<button class="cbi-button cbi-button-neutral" type="button"><i class="fas fa-file-lines"></i> 诊断报告</button>
+					<span class="sp"></span>
+					<span class="cell-tip" style="margin:0">锁频变更后需 10–30 秒重新注册</span>
+				</div>
+
+				<!-- ==================== Tabs ==================== -->
+				<ul class="tabs" id="kpc-tabs">
+					<li class="active" data-tab="overview"><a href="#overview">概览</a></li>
+					<li data-tab="lock"><a href="#lock">锁频</a></li>
+					<li data-tab="optimize"><a href="#optimize">网优</a></li>
+					<li data-tab="neighbor"><a href="#neighbor">邻区</a></li>
+					<li data-tab="detail"><a href="#detail">明细</a></li>
+				</ul>
+
+				<!-- ==================== 概览 ==================== -->
+				<div class="cell-tabpanel" data-panel="overview">
+					<fieldset class="cbi-section">
+						<h3>无线指标</h3>
+						<div class="cell-sec" style="padding-top:14px">
+							<div class="cell-grid">
+								<div class="cell-kv is-key"><span>信号强度 RSRP</span><strong>-92<small>dBm</small></strong></div>
+								<div class="cell-kv is-key"><span>信号质量 RSRQ</span><strong>-11<small>dB</small></strong></div>
+								<div class="cell-kv is-key"><span>信噪比 SINR</span><strong>18<small>dB</small></strong></div>
+								<div class="cell-kv is-key"><span>信道质量 CQI</span><strong>13</strong></div>
+								<div class="cell-kv"><span>频段 Band</span><strong>n41</strong></div>
+								<div class="cell-kv"><span>频点 ARFCN</span><strong>627264</strong></div>
+								<div class="cell-kv"><span>PCI 物理小区号</span><strong>231</strong></div>
+								<div class="cell-kv"><span>跟踪区 TAC</span><strong>612345</strong></div>
+								<div class="cell-kv"><span>小区标识 Cell</span><strong>01A2B3C4</strong></div>
+								<div class="cell-kv"><span>下行带宽</span><strong>100<small>MHz</small></strong></div>
+								<div class="cell-kv"><span>上行带宽</span><strong>60<small>MHz</small></strong></div>
+								<div class="cell-kv"><span>签约带宽 下行 / 上行</span><strong>1000 / 100<small>Mbps</small></strong></div>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>速率与流量</h3>
+						<div class="cell-sec" style="padding-top:14px">
+							<div class="cell-grid">
+								<div class="cell-kv is-key"><span>实时下行</span><strong>86.4<small>Mbps</small></strong></div>
+								<div class="cell-kv is-key"><span>实时上行</span><strong>12.8<small>Mbps</small></strong></div>
+								<div class="cell-kv"><span>当月流量</span><strong>128.6<small>GiB</small></strong></div>
+								<div class="cell-kv"><span>累计流量</span><strong>1.24<small>TiB</small></strong></div>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>载波聚合</h3>
+						<div class="cell-sec" style="padding-top:14px">
+							<div class="cell-scroll">
+								<table class="cell-table">
+									<thead><tr><th>载波</th><th>频段</th><th>频点</th><th>PCI</th><th>状态</th></tr></thead>
+									<tbody>
+										<tr><td>PCC 主载波</td><td>n41</td><td>627264</td><td>231</td><td><span class="cell-pill on">激活</span></td></tr>
+										<tr><td>SCC 1</td><td>n78</td><td>633984</td><td>88</td><td><span class="cell-pill on">激活</span></td></tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="cell-tip">聚合 2 个载波，理论下行带宽叠加约 100 + 100 MHz。</p>
+						</div>
+					</fieldset>
+				</div>
+
+				<!-- ==================== 锁频 ==================== -->
+				<div class="cell-tabpanel" data-panel="lock" hidden>
+					<fieldset class="cbi-section">
+						<h3>当前锁定状态</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-lockrow">
+								<b>5G NR</b>
+								<span class="cell-pill on">已锁频</span>
+								<span class="txt">n78 / n41 · 允许切换小区</span>
+							</div>
+							<div class="cell-lockrow">
+								<b>4G LTE</b>
+								<span class="cell-pill">未锁定</span>
+								<span class="txt">自动选网</span>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>设置锁频</h3>
+
+						<div class="cell-sec">
+							<div class="cell-sec-h"><span class="cell-num">1</span>选择锁定方式<em>锁定后重新注册网络</em></div>
+							<div class="cell-seg" id="kpc-mode">
+								<label><input type="radio" name="lock_mode" value="band" checked><span>频段白名单</span></label>
+								<label><input type="radio" name="lock_mode" value="arfcn"><span>频点 ARFCN</span></label>
+								<label><input type="radio" name="lock_mode" value="cell"><span>当前小区</span></label>
+							</div>
+						</div>
+
+						<div class="cell-sec" data-mode="band">
+							<div class="cell-sec-h"><span class="cell-num">2</span>选择频段<em>勾选即限制，全不勾为不限制</em></div>
+							<div class="cell-bandrow">
+								<div class="cell-bands" data-group="nr">
+									<label><input type="checkbox"><span>n1</span></label>
+									<label><input type="checkbox"><span>n3</span></label>
+									<label><input type="checkbox"><span>n5</span></label>
+									<label><input type="checkbox"><span>n8</span></label>
+									<label><input type="checkbox"><span>n28</span></label>
+									<label><input type="checkbox" checked><span>n41</span></label>
+									<label><input type="checkbox" checked><span>n78</span></label>
+									<label><input type="checkbox"><span>n79</span></label>
+								</div>
+								<p class="cell-bandnote">5G NR · 已选 2 个频段</p>
+							</div>
+							<div class="cell-bandrow">
+								<div class="cell-bands" data-group="lte">
+									<label><input type="checkbox"><span>B1</span></label>
+									<label><input type="checkbox"><span>B3</span></label>
+									<label><input type="checkbox"><span>B5</span></label>
+									<label><input type="checkbox"><span>B8</span></label>
+									<label><input type="checkbox"><span>B34</span></label>
+									<label><input type="checkbox"><span>B38</span></label>
+									<label><input type="checkbox"><span>B39</span></label>
+									<label><input type="checkbox"><span>B40</span></label>
+									<label><input type="checkbox"><span>B41</span></label>
+								</div>
+								<p class="cell-bandnote">4G LTE · 已选 0 个频段（不限 4G）</p>
+							</div>
+						</div>
+
+						<div class="cell-sec" data-mode="arfcn" hidden>
+							<div class="cell-sec-h"><span class="cell-num">2</span>填写频点<em>只锁频点，不锁物理小区</em></div>
+							<div style="display:flex;gap:16px;flex-wrap:wrap">
+								<label style="font-size:.8rem;color:#475467">5G ARFCN
+									<input type="text" id="kpc-arfcn5" value="627264" placeholder="如 627264" style="width:120px;margin-left:8px">
+								</label>
+								<label style="font-size:.8rem;color:#475467">4G ARFCN
+									<input type="text" value="" placeholder="如 1650" style="width:120px;margin-left:8px">
+								</label>
+							</div>
+							<p class="cell-bandnote" id="kpc-arfcn-hint">627264 → n41 · 下行 100 MHz</p>
+						</div>
+
+						<div class="cell-sec" data-mode="cell" hidden>
+							<div class="cell-sec-h"><span class="cell-num">2</span>锁定当前小区<em>取当前服务小区频点</em></div>
+							<div class="cell-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+								<div class="cell-kv is-key"><span>当前频段</span><strong>n41</strong></div>
+								<div class="cell-kv is-key"><span>当前频点</span><strong>627264</strong></div>
+								<div class="cell-kv is-key"><span>PCI（仅参考）</span><strong>231</strong></div>
+							</div>
+							<p class="cell-bandnote">按频点锁定；PCI 不参与下发指令。</p>
+						</div>
+
+						<div class="cell-sec">
+							<div class="cell-sec-h"><span class="cell-num">3</span>执行选项</div>
+							<div style="display:flex;flex-direction:column;gap:10px">
+								<div class="checkbox">
+									<input class="cbi-input-checkbox" type="checkbox" id="kpc-mob" checked>
+									<label class="switch" for="kpc-mob"></label>
+									<span style="font-size:.8rem;color:#475467">允许在锁定频段内切换小区</span>
+								</div>
+								<div class="checkbox">
+									<input class="cbi-input-checkbox" type="checkbox" id="kpc-guard" checked>
+									<label class="switch" for="kpc-guard"></label>
+									<span style="font-size:.8rem;color:#475467">失败自动回滚（180 秒未确认即解除锁定）</span>
+								</div>
+							</div>
+						</div>
+
+						<div class="cell-sec">
+							<div class="cell-sec-h"><span class="cell-num">4</span>指令预览<em>执行前请确认</em></div>
+							<details class="cell-at">
+								<summary>将下发 4 条指令，点击展开</summary>
+								<pre id="kpc-at">1  AT+CFUN=0
+2  AT^NRFREQLOCK=3,1,2,"78,41"
+3  AT^LTEFREQLOCK=0
+4  AT+CFUN=1</pre>
+							</details>
+							<div class="alert-message warning" style="margin-top:10px">
+								设备将断开重连 10–30 秒，此期间管理页无法访问。请不要刷新或关闭页面。
+							</div>
+
+							<div class="cell-steps" id="kpc-steps">
+								<b data-s="1"><i class="fas fa-circle-notch"></i>关闭射频</b><span class="arw">→</span>
+								<b data-s="2"><i class="fas fa-circle-notch"></i>下发锁频</b><span class="arw">→</span>
+								<b data-s="3"><i class="fas fa-circle-notch"></i>开启射频</b><span class="arw">→</span>
+								<b data-s="4"><i class="fas fa-circle-notch"></i>回读校验</b>
+							</div>
+
+							<div class="cell-actions">
+								<button class="cbi-button cbi-button-apply" type="button" id="kpc-apply">应用锁频</button>
+								<button class="cbi-button cbi-button-reset" type="button" id="kpc-clear">解除锁定</button>
+								<span class="sp"></span>
+								<span class="cell-tip" style="margin:0">回读不一致时会自动提示回滚</span>
+							</div>
+						</div>
+					</fieldset>
+				</div>
+
+				<!-- ==================== 网优 ==================== -->
+				<div class="cell-tabpanel" data-panel="optimize" hidden>
+					<fieldset class="cbi-section">
+						<h3>体验评分</h3>
+						<div class="cell-sec" style="padding-top:14px">
+							<div class="cell-score">
+								<div class="v"><b>82</b><span>分 · 良</span></div>
+								<div class="t">
+									<p>信号强、信噪比正常，但存在更强的同频邻区，<em>建议优先锁 n41 单频</em>。</p>
+									<div class="bar"><i style="width:82%"></i></div>
+								</div>
+								<span class="cell-pill warn">有优化空间</span>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>邻区排行</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-scroll">
+								<table class="cell-table">
+									<thead><tr><th>制式</th><th>频点</th><th>PCI</th><th>RSRP</th><th>RSRQ</th><th>SINR</th><th>判定</th><th>操作</th></tr></thead>
+									<tbody>
+										<tr><td>NR</td><td>627264</td><td>231</td><td>-92 dBm</td><td>-11 dB</td><td>18 dB</td><td><span class="cell-pill on">当前</span></td><td><span class="cell-dim">—</span></td></tr>
+										<tr><td>NR</td><td>627264</td><td>419</td><td>-86 dBm</td><td>-9 dB</td><td>21 dB</td><td><span class="cell-pill warn">优于当前 6 dB</span></td><td><button class="cbi-button cbi-button-neutral" type="button">锁定此频点</button></td></tr>
+										<tr><td>NR</td><td>633984</td><td>88</td><td>-98 dBm</td><td>-12 dB</td><td>14 dB</td><td><span class="cell-dim">同频相邻</span></td><td><button class="cbi-button cbi-button-neutral" type="button">锁定此频点</button></td></tr>
+										<tr><td>LTE</td><td>1650</td><td>77</td><td>-104 dBm</td><td>-14 dB</td><td>9 dB</td><td><span class="cell-dim">回落候选</span></td><td><button class="cbi-button cbi-button-neutral" type="button">锁定此频点</button></td></tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="cell-tip">判定依据 RSRP 差值与时延；同 PCI 的邻区视为同站不同扇区。</p>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>优化建议</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-lockrow">
+								<b>建议 1</b>
+								<span class="txt">当前 n41 邻区 RSRP 优于服务小区 6 dB，锁 n41 单频可减少异频切换。</span>
+								<button class="cbi-button cbi-button-neutral" type="button" style="margin-left:auto">套用</button>
+							</div>
+							<div class="cell-lockrow">
+								<b>建议 2</b>
+								<span class="txt">未聚合 n78，若该频段速率需求高，可将 n78 加入白名单。</span>
+								<button class="cbi-button cbi-button-neutral" type="button" style="margin-left:auto">套用</button>
+							</div>
+							<div class="cell-lockrow">
+								<b>建议 3</b>
+								<span class="txt">FTP 实测 86 Mbps，低于签约 1000 Mbps 且 SINR 正常，疑似被限速。</span>
+								<span class="cell-dim" style="margin-left:auto;font-size:.76rem">建议联系运营商核实</span>
+							</div>
+						</div>
+					</fieldset>
+				</div>
+
+				<!-- ==================== 邻区 ==================== -->
+				<div class="cell-tabpanel" data-panel="neighbor" hidden>
+					<fieldset class="cbi-section">
+						<h3>邻区扫描</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-actions" style="margin-top:0">
+								<button class="cbi-button cbi-button-action" type="button" id="kpc-scan">扫描邻区</button>
+								<span class="cell-tip" id="kpc-scan-note" style="margin:0">邻区需主动扫描，约 1 秒。</span>
+							</div>
+							<div class="cell-scroll" id="kpc-nb" style="margin-top:12px">
+								<table class="cell-table">
+									<thead><tr><th>#</th><th>制式</th><th>频段</th><th>频点</th><th>PCI</th><th>RSRP</th><th>RSRQ</th><th>SINR</th><th>信号</th></tr></thead>
+									<tbody>
+										<tr><td>1</td><td>NR</td><td>n41</td><td>627264</td><td>419</td><td>-86 dBm</td><td>-9 dB</td><td>21 dB</td><td><div class="cell-bar lv-good" style="width:90px"><i style="width:90%;background:#34d399"></i></div></td></tr>
+										<tr><td>2</td><td>NR</td><td>n41</td><td>627264</td><td>231</td><td>-92 dBm</td><td>-11 dB</td><td>18 dB</td><td><div class="cell-bar" style="width:90px"><i style="width:80%;background:#34d399"></i></div></td></tr>
+										<tr><td>3</td><td>NR</td><td>n78</td><td>633984</td><td>88</td><td>-98 dBm</td><td>-12 dB</td><td>14 dB</td><td><div class="cell-bar" style="width:90px"><i style="width:70%;background:#fbbf24"></i></div></td></tr>
+										<tr><td>4</td><td>LTE</td><td>B3</td><td>1650</td><td>77</td><td>-104 dBm</td><td>-14 dB</td><td>9 dB</td><td><div class="cell-bar" style="width:90px"><i style="width:60%;background:#fbbf24"></i></div></td></tr>
+									</tbody>
+								</table>
+							</div>
+							<p class="cell-tip">低于 -120 dBm 的采样已丢弃；结果缓存 10 秒。</p>
+						</div>
+					</fieldset>
+				</div>
+
+				<!-- ==================== 明细 ==================== -->
+				<div class="cell-tabpanel" data-panel="detail" hidden>
+					<fieldset class="cbi-section">
+						<h3>卡与设备</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-scroll">
+								<table class="cell-table">
+									<tbody>
+										<tr><td style="width:200px;color:#667085">IMEI</td><td class="cell-mono">86xxxxxxxxxxxx1</td></tr>
+										<tr><td style="color:#667085">IMSI</td><td class="cell-mono">46000xxxxxxxxxx</td></tr>
+										<tr><td style="color:#667085">ICCID</td><td class="cell-mono">898600xxxxxxxxxxxxxxx</td></tr>
+										<tr><td style="color:#667085">SIM 卡槽 / 卡数</td><td>1 / 2</td></tr>
+										<tr><td style="color:#667085">模块型号</td><td>RM500U-CN</td></tr>
+										<tr><td style="color:#667085">模块温度</td><td>42 °C</td></tr>
+										<tr><td style="color:#667085">模块版本</td><td class="cell-mono">RM500UCNAAR03A09M2G</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>网络地址</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<div class="cell-scroll">
+								<table class="cell-table">
+									<tbody>
+										<tr><td style="width:200px;color:#667085">IPv4 地址</td><td class="cell-mono">10.82.113.204</td></tr>
+										<tr><td style="color:#667085">IPv4 DNS</td><td class="cell-mono">211.136.17.107, 211.136.20.203</td></tr>
+										<tr><td style="color:#667085">IPv6 地址</td><td class="cell-mono">2409:8xxx:xxxx::1/64</td></tr>
+										<tr><td style="color:#667085">IPv6 DNS</td><td class="cell-mono">2409:8000::1</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</fieldset>
+
+					<fieldset class="cbi-section">
+						<h3>指令回执</h3>
+						<div class="cell-sec" style="padding-top:12px">
+							<details class="cell-at">
+								<summary>最近一次锁频执行记录</summary>
+								<pre>AT+CFUN=0            → OK
+AT^NRFREQLOCK=3,1,2,"78,41" → OK
+AT^LTEFREQLOCK=0     → OK
+AT+CFUN=1            → OK
+AT^NRFREQLOCK?       → ^NRFREQLOCK: 3 / 1,2 / 78 / 41</pre>
+							</details>
+							<p class="cell-tip">回执仅用于排障，遇到错误时请一并复制。</p>
+						</div>
+					</fieldset>
+				</div>
+
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="kpc-preview-flag">设计预览 · 数据为模拟</div>
+
+<script>
+//<![CDATA[
+(function () {
+	'use strict';
+
+	/* ---- Tab ---- */
+	var tabs = document.querySelectorAll('#kpc-tabs > li');
+	var panels = document.querySelectorAll('.cell-tabpanel');
+	function showTab(name) {
+		for (var i = 0; i < tabs.length; i++) {
+			tabs[i].className = (tabs[i].getAttribute('data-tab') === name) ? 'active' : '';
+		}
+		for (var j = 0; j < panels.length; j++) {
+			panels[j].hidden = (panels[j].getAttribute('data-panel') !== name);
+		}
+	}
+	for (var i = 0; i < tabs.length; i++) {
+		tabs[i].addEventListener('click', function (ev) {
+			ev.preventDefault();
+			var n = this.getAttribute('data-tab');
+			showTab(n);
+			if (history.replaceState) history.replaceState(null, '', '#' + n);
+		});
+	}
+	var hash = (location.hash || '').replace('#', '');
+	if (hash) showTab(hash);
+
+	/* ---- 锁定方式 ---- */
+	var modeRadios = document.querySelectorAll('#kpc-mode input');
+	var modeSecs = document.querySelectorAll('[data-mode]');
+	function syncMode() {
+		var v = document.querySelector('#kpc-mode input:checked').value;
+		for (var i = 0; i < modeSecs.length; i++) {
+			modeSecs[i].hidden = (modeSecs[i].getAttribute('data-mode') !== v);
+		}
+		updateAtPreview();
+	}
+	for (var m = 0; m < modeRadios.length; m++) modeRadios[m].addEventListener('change', syncMode);
+	syncMode();
+
+	/* ---- 频段计数 ---- */
+	var groups = document.querySelectorAll('.cell-bands');
+	function bandPicked(group) {
+		var out = [], ins = group.querySelectorAll('input:checked');
+		for (var i = 0; i < ins.length; i++) out.push(ins[i].parentNode.querySelector('span').textContent);
+		return out;
+	}
+	function syncBands() {
+		for (var g = 0; g < groups.length; g++) {
+			var note = groups[g].parentNode.querySelector('.cell-bandnote');
+			var picked = bandPicked(groups[g]);
+			var label = groups[g].getAttribute('data-group') === 'nr' ? '5G NR' : '4G LTE';
+			if (!note) continue;
+			note.textContent = picked.length
+				? label + ' · 已选 ' + picked.length + ' 个频段：' + picked.join(' / ')
+				: label + ' · 未选择（不限制' + (groups[g].getAttribute('data-group') === 'nr' ? ' 5G' : ' 4G') + '）';
+		}
+		updateAtPreview();
+	}
+	for (var g2 = 0; g2 < groups.length; g2++) {
+		groups[g2].addEventListener('change', syncBands);
+	}
+	syncBands();
+
+	/* ---- 指令预览联动 ---- */
+	function updateAtPreview() {
+		var v = document.querySelector('#kpc-mode input:checked').value;
+		var nr = bandPicked(groups[0]).map(function (x) { return x.replace(/^n/, ''); });
+		var lte = bandPicked(groups[1]).map(function (x) { return x.replace(/^B/, ''); });
+		var ar5 = (document.getElementById('kpc-arfcn5') || {}).value || '';
+		var mob = document.getElementById('kpc-mob').checked ? '1' : '0';
+		var cmds = ['AT+CFUN=0'];
+
+		if (v === 'band') {
+			if (nr.length) cmds.push('AT^NRFREQLOCK=3,' + mob + ',' + nr.length + ',"' + nr.sort().reverse().join(',') + '"');
+			else cmds.push('AT^NRFREQLOCK=0');
+			if (lte.length) cmds.push('AT^LTEFREQLOCK=3,' + mob + ',' + lte.length + ',"' + lte.sort().reverse().join(',') + '"');
+			else cmds.push('AT^LTEFREQLOCK=0');
+		} else if (v === 'arfcn') {
+			cmds.push(ar5 ? 'AT^NRFREQLOCK=2,' + mob + ',1,"' + ar5 + '"' : 'AT^NRFREQLOCK=0');
+			cmds.push('AT^LTEFREQLOCK=0');
+		} else {
+			cmds.push('AT^NRFREQLOCK=2,' + mob + ',1,"627264"');
+			cmds.push('AT^LTEFREQLOCK=0');
+		}
+		cmds.push('AT+CFUN=1');
+
+		var text = cmds.map(function (c, i) { return (i + 1) + '  ' + c; }).join('\n');
+		document.getElementById('kpc-at').textContent = text;
+		var sum = document.querySelector('.cell-at > summary');
+		sum.textContent = '将下发 ' + cmds.length + ' 条指令，点击展开';
+	}
+
+	var arfcn = document.getElementById('kpc-arfcn5');
+	if (arfcn) {
+		arfcn.addEventListener('input', function () {
+			var n = parseInt(this.value, 10);
+			var hint = document.getElementById('kpc-arfcn-hint');
+			if (!n || n < 499200) hint.textContent = '低于 499200 通常为 4G 频点或无效值';
+			else if (n <= 537999) hint.textContent = n + ' → n78 · 下行 100 MHz';
+			else hint.textContent = n + ' → n41 · 下行 100 MHz';
+			updateAtPreview();
+		});
+	}
+	document.getElementById('kpc-mob').addEventListener('change', updateAtPreview);
+
+	/* ---- 刷新（模拟） ---- */
+	var live = document.getElementById('kpc-live');
+	document.getElementById('kpc-refresh').addEventListener('click', function () {
+		var d = new Date();
+		var p = function (x) { return (x < 10 ? '0' : '') + x; };
+		live.textContent = '已更新 ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()) + ' · 每 10 秒自动刷新';
+		this.disabled = true;
+		var self = this;
+		setTimeout(function () { self.disabled = false; }, 600);
+	});
+
+	/* ---- 扫描（模拟） ---- */
+	document.getElementById('kpc-scan').addEventListener('click', function () {
+		var btn = this, note = document.getElementById('kpc-scan-note');
+		btn.disabled = true;
+		note.textContent = '正在扫描邻区…';
+		setTimeout(function () {
+			btn.disabled = false;
+			note.textContent = '已更新 10:24:02 · 4 个邻区（缓存 10 秒）';
+		}, 1200);
+	});
+
+	/* ---- 应用锁频（模拟步骤） ---- */
+	document.getElementById('kpc-apply').addEventListener('click', function () {
+		var steps = document.getElementById('kpc-steps');
+		steps.className = 'cell-steps show';
+		var items = steps.querySelectorAll('b');
+		for (var i = 0; i < items.length; i++) {
+			items[i].className = '';
+			items[i].querySelector('i').className = 'fas fa-circle-notch';
+		}
+		var seq = [
+			{ idx: 0, state: 'run' },
+			{ idx: 0, state: 'ok' },
+			{ idx: 1, state: 'run' },
+			{ idx: 1, state: 'ok' },
+			{ idx: 2, state: 'run' },
+			{ idx: 2, state: 'ok' },
+			{ idx: 3, state: 'run' },
+			{ idx: 3, state: 'ok' }
+		];
+		seq.forEach(function (s, i) {
+			setTimeout(function () {
+				var el = items[s.idx];
+				el.className = s.state;
+				el.querySelector('i').className = s.state === 'ok' ? 'fas fa-check'
+					: (s.state === 'err' ? 'fas fa-xmark' : 'fas fa-circle-notch');
+			}, 500 * (i + 1));
+		});
+	});
+
+	document.getElementById('kpc-clear').addEventListener('click', function () {
+		var steps = document.getElementById('kpc-steps');
+		steps.className = 'cell-steps show';
+		var items = steps.querySelectorAll('b');
+		for (var i = 0; i < items.length; i++) {
+			items[i].className = 'ok';
+			items[i].querySelector('i').className = 'fas fa-check';
+		}
+	});
+})();
+//]]>
+</script>
+</body>
+</html>

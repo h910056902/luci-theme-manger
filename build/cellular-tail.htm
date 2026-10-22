@@ -1,0 +1,817 @@
+<%+header%>
+<link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
+<%
+	-- ===== 展示层辅助（只做格式换算，不发 AT） =====
+	local mode_up = trim(cell.mode):upper()
+	-- 模块回报的制式写法有 "NR SA" / "NR NSA" / "NR5G NSA" / "LTE" 等多种
+	local is_5g  = mode_up:find("NR", 1, true) ~= nil or mode_up:find("5G", 1, true) ~= nil
+	local is_lte = (not is_5g) and (mode_up:find("LTE", 1, true) ~= nil or mode_up:find("4G", 1, true) ~= nil)
+	local band_pre = is_5g and "n" or "B"
+
+	local function kp_sig_color(v)
+		local n = tonumber(v)
+		if not n or n == 0 then return "#8891a5" end
+		if n >= -95 then return "#34d399" end
+		if n >= -105 then return "#fbbf24" end
+		return "#f87171"
+	end
+
+	local function kp_sig_word(v)
+		local n = tonumber(v)
+		if not n or n == 0 then return "无信号" end
+		if n >= -85 then return "优秀" end
+		if n >= -95 then return "良好" end
+		if n >= -105 then return "一般" end
+		if n >= -115 then return "较差" end
+		return "极差"
+	end
+
+	local function kp_sig_bars(v)
+		local n = tonumber(v)
+		if not n or n == 0 then return 0 end
+		if n >= -85 then return 5 end
+		if n >= -95 then return 4 end
+		if n >= -105 then return 3 end
+		if n >= -115 then return 2 end
+		return 1
+	end
+
+	-- 锁频回读 → 状态 / 标签 / 明细
+	local function kp_lock_state(lk, fiveg)
+		if not lk then return "err", "读取失败", "模块未返回锁频信息" end
+		if lk.type == "0" then return "off", "未锁定", "自动选网" end
+		local body = "-"
+		if lk.type == "2" then
+			body = "频点 " .. table.concat(lk.bands, " / ")
+		else
+			local out = {}
+			local pre = fiveg and "n" or "B"
+			for _, b in ipairs(lk.bands) do out[#out + 1] = pre .. tostring(b) end
+			body = #out > 0 and table.concat(out, " / ") or "-"
+		end
+		local mob = (tostring(lk.mobility) == "1") and "允许切换小区" or "不允许切换小区"
+		return "on", (lk.type == "2") and "已锁频点" or "已锁频段", body .. " · " .. mob
+	end
+
+	local l5_state, l5_text, l5_body = kp_lock_state(lock5, true)
+	local l4_state, l4_text, l4_body = kp_lock_state(lock4, false)
+
+	-- 体验评分：RSRP 35 + SINR 30 + RSRQ 15 + CQI 10 + CA 10
+	local n_rsrp = tonumber(cell.rsrp) or 0
+	local n_sinr = tonumber(cell.sinr) or 0
+	local n_rsrq = tonumber(cell.rsrq) or 0
+	local n_cqi  = tonumber(cell.cqi) or 0
+	local score, score_word, score_tone = 0, "无信号", "warn"
+
+	if n_rsrp ~= 0 then
+		if n_rsrp >= -80 then score = score + 35
+		elseif n_rsrp >= -90 then score = score + 31
+		elseif n_rsrp >= -100 then score = score + 24
+		elseif n_rsrp >= -110 then score = score + 14
+		else score = score + 6 end
+
+		if n_sinr >= 20 then score = score + 30
+		elseif n_sinr >= 13 then score = score + 26
+		elseif n_sinr >= 5 then score = score + 18
+		elseif n_sinr >= 0 then score = score + 10
+		else score = score + 4 end
+
+		if n_rsrq <= -8 then score = score + 15
+		elseif n_rsrq <= -12 then score = score + 11
+		elseif n_rsrq <= -15 then score = score + 7
+		else score = score + 3 end
+
+		if n_cqi >= 12 then score = score + 10
+		elseif n_cqi >= 9 then score = score + 7
+		elseif n_cqi >= 6 then score = score + 4
+		else score = score + 2 end
+
+		score = score + (#ca > 0 and 10 or 4)
+
+		if score >= 85 then score_word, score_tone = "优", "on"
+		elseif score >= 70 then score_word, score_tone = "良", "on"
+		elseif score >= 55 then score_word, score_tone = "一般", "warn"
+		else score_word, score_tone = "差", "warn" end
+	end
+
+	-- 规则化建议（每条都带依据数值）
+	local advice = {}
+	if n_rsrp ~= 0 then
+		if n_sinr < 0 then
+			advice[#advice + 1] = "信噪比 " .. cell.sinr .. " dB 为负，干扰明显偏大。建议锁定当前频点，减少异频切换带来的抖动。"
+		end
+		if n_rsrp > -95 and n_cqi ~= 0 and n_cqi < 9 then
+			advice[#advice + 1] = "信号强（" .. cell.rsrp .. " dBm）但信道质量 CQI 仅 " .. cell.cqi .. "，可能是小区拥塞或签约限速，建议换频段对比。"
+		end
+		if #ca == 0 and is_5g then
+			advice[#advice + 1] = "当前未载波聚合。若所在位置有 n78 覆盖，可将 n78 一并加入白名单以提升峰值。"
+		end
+		if n_rsrp < -110 then
+			advice[#advice + 1] = "信号低于 -110 dBm，属于弱覆盖。建议调整天线朝向或加装外置天线后再做锁频。"
+		end
+		if #advice == 0 then
+			advice[#advice + 1] = "当前指标正常，无需调整锁频。如速率不达预期，可先扫描邻区对比 RSRP。"
+		end
+	end
+
+	local car_nr = {}
+	for _, c in ipairs(ca) do car_nr[#car_nr + 1] = tostring(c) end
+-%>
+<style type="text/css">
+<!--KPC-CSS-->
+</style>
+
+<div class="kpc-cell-page">
+
+<h2 name="content">蜂窝网络</h2>
+<div class="cbi-map-descr">实时状态 · 每 10 秒自动刷新<% if cell.model ~= "" then %> · <%=pcdata(cell.model)%><% end %></div>
+
+<% if flash ~= "" then %>
+<div class="alert-message <%= (flash:sub(1, 1) == "!") and "error" or "success" %>"><%=pcdata(flash:gsub("^!", ""))%></div>
+<% end %>
+
+<% if not cell.available then %>
+<div class="alert-message warning">未读到模块数据。可能刚开机或未插卡，10 秒后自动重试。</div>
+<% end %>
+
+<!-- ==================== 信号舱 ==================== -->
+<div class="cell-hero">
+	<div class="cell-id">
+		<div class="cell-brand"><i class="fas fa-broadcast-tower"></i></div>
+		<div class="cell-id-t">
+			<div class="cell-op">
+				<span class="cell-op-name"><%=pcdata((cell.carrier ~= "-" and (cell.carrier:gsub("（.-）", "")) or "无服务"))%></span>
+				<b class="cell-badge"><%= is_5g and "5G" or (is_lte and "4G" or "—") %></b>
+			</div>
+			<div class="cell-op-sub">
+				<span class="cell-dot"></span><%= cell.available and "已注册" or "未注册" %>
+				<span class="cell-sep">·</span><%=pcdata(cell.mode ~= "" and cell.mode or "无服务")%>
+				<span class="cell-sep">·</span><%=pcdata(cell.band ~= "" and (band_pre .. cell.band) or "—")%>
+				<span class="cell-sep">·</span><%=pcdata(cell.sim_name ~= "" and cell.sim_name or ("卡槽 " .. (cell.simno ~= "" and cell.simno or "-")))%>
+			</div>
+		</div>
+	</div>
+
+	<div class="cell-mx">
+		<div class="cell-m <%= (n_rsrp >= -95 and n_rsrp ~= 0) and "lv-good" or ((n_rsrp >= -105 and n_rsrp ~= 0) and "lv-fair" or "lv-poor") %>">
+			<span>RSRP</span>
+			<strong><%=pcdata(cell.rsrp ~= "" and cell.rsrp or "--")%><small>dBm</small></strong>
+			<span class="cell-bar"><i style="width:<%=sig_pct(cell.rsrp)%>%"></i></span>
+		</div>
+		<div class="cell-m <%= (n_sinr >= 13) and "lv-good" or ((n_sinr >= 0) and "lv-fair" or "lv-poor") %>">
+			<span>SINR</span>
+			<strong><%=pcdata(cell.sinr ~= "" and cell.sinr or "--")%><small>dB</small></strong>
+			<span class="cell-bar"><i style="width:<%= math.max(4, math.min(100, math.floor((n_sinr + 10) * 100 / 40))) %>%"></i></span>
+		</div>
+		<div class="cell-m lv-good">
+			<span>频段</span>
+			<strong><%=pcdata(cell.band ~= "" and (band_pre .. cell.band) or "--")%></strong>
+			<span class="cell-msub"><%=pcdata(cell.earfcn ~= "" and ("频点 " .. cell.earfcn) or "频点 —")%></span>
+		</div>
+		<div class="cell-m <%= (cell.simno ~= "" and cell.simno ~= "0") and "lv-fair" or "lv-poor" %>">
+			<span>卡槽</span>
+			<strong><%=pcdata((cell.simno ~= "" and cell.simno or "-") .. " / " .. (cell.simcount ~= "" and cell.simcount or "-"))%></strong>
+			<span class="cell-msub"><%=pcdata(cell.carrier ~= "-" and cell.carrier or "无服务")%></span>
+		</div>
+	</div>
+
+	<div class="cell-sig">
+		<div class="cell-ring">
+			<svg viewBox="0 0 100 100" aria-hidden="true">
+				<circle class="rk-tk" cx="50" cy="50" r="46"></circle>
+				<circle class="rk-bg" cx="50" cy="50" r="38"></circle>
+				<circle class="rk-fg" cx="50" cy="50" r="38" stroke-dasharray="238.8"
+					stroke-dashoffset="<%=string.format('%.1f', 238.8 * (1 - sig_pct(cell.rsrp) / 100))%>"
+					stroke="<%=kp_sig_color(cell.rsrp)%>"></circle>
+			</svg>
+			<div class="ct"><b><%=pcdata(cell.rsrp ~= "" and cell.rsrp or "--")%></b><i>dBm</i></div>
+		</div>
+		<div class="cell-sig-n">
+			<div class="cell-sig-k">RSRP · 信号强度</div>
+			<div class="cell-sig-lv" style="color:<%=kp_sig_color(cell.rsrp)%>"><%=kp_sig_word(cell.rsrp)%></div>
+			<div class="cell-bars">
+				<% local bars = kp_sig_bars(cell.rsrp) %>
+				<% for i = 1, 5 do %><span class="<%= (i <= bars) and "on" or "" %>" style="height:<%=8 + i * 4%>px"></span><% end %>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="cell-foot">
+	<span class="cell-chip">载波聚合 <b><%= #ca > 0 and (#ca .. "CC") or "未聚合" %></b></span>
+	<% if #ca > 0 then %><span class="cell-chip"><%=pcdata(table.concat(car_nr, " + "))%></span><% end %>
+	<span class="cell-chip">体验评分 <b><%=score%></b> · <%=pcdata(score_word)%></span>
+	<span class="cell-chip">模块温度 <b><%=pcdata(cell.model_temp ~= "" and (cell.model_temp .. " °C") or "--")%></b></span>
+	<span class="sp"></span>
+	<span class="cell-live" id="kpc-live">已更新 <%=os.date("%H:%M:%S")%> · 每 10 秒自动刷新</span>
+</div>
+
+<div class="cell-toolbar">
+	<button class="cbi-button cbi-button-neutral" type="button" id="kpc-refresh"><i class="fas fa-sync-alt"></i> 刷新</button>
+	<button class="cbi-button cbi-button-neutral" type="button" id="kpc-copy"><i class="fas fa-file-alt"></i> 复制诊断</button>
+	<span class="sp"></span>
+	<span class="cell-tip" style="margin:0">锁频变更后需 10–30 秒重新注册</span>
+</div>
+
+<!-- ==================== Tabs ==================== -->
+<ul class="tabs" id="kpc-tabs">
+	<li class="active" data-tab="overview"><a href="#overview">概览</a></li>
+	<li data-tab="lock"><a href="#lock">锁频</a></li>
+	<li data-tab="optimize"><a href="#optimize">网优</a></li>
+	<li data-tab="neighbor"><a href="#neighbor">邻区</a></li>
+	<li data-tab="detail"><a href="#detail">明细</a></li>
+</ul>
+
+<!-- ==================== 概览 ==================== -->
+<div class="cell-tabpanel" data-panel="overview">
+	<fieldset class="cbi-section">
+		<h3>无线指标</h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>信号强度 RSRP</span><strong><%=pcdata(cell.rsrp ~= "" and cell.rsrp or "-")%><small>dBm</small></strong></div>
+				<div class="cell-kv is-key"><span>信号质量 RSRQ</span><strong><%=pcdata(cell.rsrq ~= "" and cell.rsrq or "-")%><small>dB</small></strong></div>
+				<div class="cell-kv is-key"><span>信噪比 SINR</span><strong><%=pcdata(cell.sinr ~= "" and cell.sinr or "-")%><small>dB</small></strong></div>
+				<div class="cell-kv is-key"><span>信道质量 CQI</span><strong><%=pcdata(cell.cqi ~= "" and cell.cqi or "-")%></strong></div>
+				<div class="cell-kv"><span>频段 Band</span><strong><%=pcdata(cell.band ~= "" and (band_pre .. cell.band) or "-")%></strong></div>
+				<div class="cell-kv"><span>频点 ARFCN</span><strong><%=pcdata(cell.earfcn ~= "" and cell.earfcn or "-")%></strong></div>
+				<div class="cell-kv"><span>PCI 物理小区号</span><strong><%=pcdata(cell.pci ~= "" and cell.pci or "-")%></strong></div>
+				<div class="cell-kv"><span>跟踪区 TAC</span><strong><%=pcdata(cell.tac ~= "" and cell.tac or "-")%></strong></div>
+				<div class="cell-kv"><span>小区标识 Cell</span><strong><%=pcdata(cell.cell ~= "" and cell.cell or "-")%></strong></div>
+				<div class="cell-kv"><span>下行带宽</span><strong><% if cell.dlbw ~= "" then %><%=string.format("%.0f", (tonumber(cell.dlbw) or 0) / 1000)%><small>MHz</small><% else %>-<% end %></strong></div>
+				<div class="cell-kv"><span>上行带宽</span><strong><% if cell.ulbw ~= "" then %><%=string.format("%.0f", (tonumber(cell.ulbw) or 0) / 1000)%><small>MHz</small><% else %>-<% end %></strong></div>
+				<div class="cell-kv"><span>签约带宽 下行 / 上行</span><strong><% if cell.ambr_dl ~= "" then %><%=string.format("%.0f", (tonumber(cell.ambr_dl) or 0) / 1000)%> / <%=string.format("%.0f", (tonumber(cell.ambr_ul) or 0) / 1000)%><small>Mbps</small><% else %>-<% end %></strong></div>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>流量</h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>本月流量</span><strong><%=pcdata(fmt(cell.mon_flow))%></strong></div>
+				<div class="cell-kv is-key"><span>累计流量</span><strong><%=pcdata(fmt(cell.total_flow))%></strong></div>
+				<div class="cell-kv"><span>本次下行</span><strong><%=pcdata(fmt(cell.flow_dl))%></strong></div>
+				<div class="cell-kv"><span>本次上行</span><strong><%=pcdata(fmt(cell.flow_ul))%></strong></div>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>载波聚合</h3>
+		<div class="cell-sec">
+			<% if #ca > 0 then %>
+			<div class="cell-scroll">
+				<table class="cell-table">
+					<thead><tr><th>载波</th><th>明细</th></tr></thead>
+					<tbody>
+						<% for i, c in ipairs(ca) do %>
+						<tr><td><%= (i == 1) and "SCC 1" or ("SCC " .. i) %></td><td class="cell-mono"><%=pcdata(c)%></td></tr>
+						<% end %>
+					</tbody>
+				</table>
+			</div>
+			<p class="cell-tip">共 <%=#ca%> 个辅载波。锁频时若只保留单频段，聚合可能失效。</p>
+			<% else %>
+			<p class="cell-tip">当前未载波聚合。多频段覆盖区域内，扩大频段白名单可能触发聚合。</p>
+			<% end %>
+		</div>
+	</fieldset>
+</div>
+
+<!-- ==================== 锁频 ==================== -->
+<div class="cell-tabpanel" data-panel="lock" hidden>
+	<fieldset class="cbi-section">
+		<h3>当前锁定状态</h3>
+		<div class="cell-sec">
+			<div class="cell-lockrow">
+				<b>5G NR</b>
+				<span class="cell-pill <%= (l5_state == "on") and "on" or ((l5_state == "err") and "warn" or "") %>"><%=pcdata(l5_text)%></span>
+				<span class="txt"><%=pcdata(l5_body)%></span>
+			</div>
+			<div class="cell-lockrow">
+				<b>4G LTE</b>
+				<span class="cell-pill <%= (l4_state == "on") and "on" or ((l4_state == "err") and "warn" or "") %>"><%=pcdata(l4_text)%></span>
+				<span class="txt"><%=pcdata(l4_body)%></span>
+			</div>
+			<p class="cell-tip">回读自模块当前配置。若与设备其他页面不一致，以本页回读为准。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>设置锁频</h3>
+
+		<div class="cell-sec">
+			<div class="cell-sec-h"><span class="cell-num">1</span>选择锁定方式<span class="cell-note">执行后会重新注册网络</span></div>
+			<div class="cell-seg" id="kpc-mode">
+				<label><input type="radio" name="kpc_mode" value="band" checked><span>频段白名单</span></label>
+				<label><input type="radio" name="kpc_mode" value="cell"><span>频点 ARFCN</span></label>
+				<label><input type="radio" name="kpc_mode" value="current"><span>当前小区</span></label>
+			</div>
+		</div>
+
+		<div class="cell-sec" data-mode="band">
+			<div class="cell-sec-h"><span class="cell-num">2</span>选择频段<span class="cell-note">勾选即限制，全不勾为不限制</span></div>
+			<div class="cell-bandrow">
+				<div class="cell-bands" data-group="nr">
+					<% for _, b in ipairs(band5_support) do %>
+					<label><input type="checkbox" name="band5" value="<%=b%>"<% if lock5 and lock5.type == "3" then for _, x in ipairs(lock5.bands) do if tostring(x) == tostring(b) then %> checked<% end end end %>><span>n<%=b%></span></label>
+					<% end %>
+				</div>
+				<p class="cell-bandnote">5G NR</p>
+			</div>
+			<div class="cell-bandrow">
+				<div class="cell-bands" data-group="lte">
+					<% for _, b in ipairs(band4_support) do %>
+					<label><input type="checkbox" name="band4" value="<%=b%>"<% if lock4 and lock4.type == "3" then for _, x in ipairs(lock4.bands) do if tostring(x) == tostring(b) then %> checked<% end end end %>><span>B<%=b%></span></label>
+					<% end %>
+				</div>
+				<p class="cell-bandnote">4G LTE</p>
+			</div>
+		</div>
+
+		<div class="cell-sec" data-mode="cell" hidden>
+			<div class="cell-sec-h"><span class="cell-num">2</span>填写频点<span class="cell-note">只锁频点，不锁物理小区</span></div>
+			<div class="cell-formrow">
+				<label>5G ARFCN <input type="text" name="earfcn5" id="kpc-earfcn5" value="<%= (is_5g and cell.earfcn ~= "") and cell.earfcn or "" %>" placeholder="如 627264"></label>
+				<label>4G ARFCN <input type="text" name="earfcn4" id="kpc-earfcn4" value="<%= (not is_5g and cell.earfcn ~= "") and cell.earfcn or "" %>" placeholder="如 1650"></label>
+			</div>
+			<p class="cell-bandnote">5G 频点范围 0–875000；4G 频点范围 0–875000。留空表示该制式不锁定。</p>
+		</div>
+
+		<div class="cell-sec" data-mode="current" hidden>
+			<div class="cell-sec-h"><span class="cell-num">2</span>锁定当前服务小区<span class="cell-note">按频点锁定</span></div>
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>当前频段</span><strong><%=pcdata(cell.band ~= "" and (band_pre .. cell.band) or "-")%></strong></div>
+				<div class="cell-kv is-key"><span>当前频点</span><strong><%=pcdata(cell.earfcn ~= "" and cell.earfcn or "-")%></strong></div>
+				<div class="cell-kv"><span>PCI（不参与下发）</span><strong><%=pcdata(cell.pci ~= "" and cell.pci or "-")%></strong></div>
+			</div>
+			<p class="cell-bandnote">将把当前 <%= is_5g and "5G" or "4G" %> 频点写入锁定，另一制式不锁定。</p>
+		</div>
+
+		<div class="cell-sec">
+			<div class="cell-sec-h"><span class="cell-num">3</span>执行选项</div>
+			<div class="cell-optrow">
+				<div class="checkbox">
+					<input class="cbi-input-checkbox" type="checkbox" id="kpc-mob" name="lock_mobility" value="1"<%= ((lock5 and lock5.mobility == "1") or not lock5) and " checked" or "" %>>
+					<label class="switch" for="kpc-mob"></label>
+					<span>允许在锁定频段内切换小区</span>
+				</div>
+			</div>
+			<p class="cell-tip">锁错频段可能导致设备失联。远程操作前，请确认仍有有线或串口可管理设备。</p>
+		</div>
+
+		<div class="cell-sec">
+			<div class="cell-sec-h"><span class="cell-num">4</span>指令预览<span class="cell-note">执行前请确认</span></div>
+			<details class="cell-at">
+				<summary id="kpc-at-sum">将下发 4 条指令，点击展开</summary>
+				<pre id="kpc-at"></pre>
+			</details>
+			<div class="alert-message warning" style="margin-top:10px">
+				设备将断开重连 10–30 秒，此期间管理页无法访问。请不要刷新或关闭页面。
+			</div>
+
+			<div class="cell-steps" id="kpc-steps">
+				<b data-s="1"><i class="fas fa-circle-notch"></i>关闭射频</b><span class="arw">→</span>
+				<b data-s="2"><i class="fas fa-circle-notch"></i>下发锁频</b><span class="arw">→</span>
+				<b data-s="3"><i class="fas fa-circle-notch"></i>开启射频</b><span class="arw">→</span>
+				<b data-s="4"><i class="fas fa-circle-notch"></i>回读校验</b>
+			</div>
+
+			<div id="kpc-result"></div>
+
+			<div class="cell-actions">
+				<button class="cbi-button cbi-button-apply" type="button" id="kpc-apply">应用锁频</button>
+				<button class="cbi-button cbi-button-reset" type="button" id="kpc-clear">解除锁定</button>
+				<span class="sp"></span>
+				<span class="cell-tip" style="margin:0" id="kpc-hint">回读不一致时会提示回滚</span>
+			</div>
+		</div>
+	</fieldset>
+</div>
+
+<!-- ==================== 网优 ==================== -->
+<div class="cell-tabpanel" data-panel="optimize" hidden>
+	<fieldset class="cbi-section">
+		<h3>体验评分</h3>
+		<div class="cell-sec">
+			<div class="cell-score">
+				<div class="v"><b><%=score%></b><span>分 · <%=pcdata(score_word)%></span></div>
+				<div class="t">
+					<p><%=pcdata(advice[1] or "暂无数据")%></p>
+					<div class="bar"><i style="width:<%=score%>%"></i></div>
+				</div>
+				<span class="cell-pill <%=score_tone%>"><%= (score >= 70) and "指标健康" or "有优化空间" %></span>
+			</div>
+			<p class="cell-tip">评分构成：RSRP 35 + SINR 30 + RSRQ 15 + CQI 10 + 载波聚合 10。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>优化建议</h3>
+		<div class="cell-sec">
+			<% for i, a in ipairs(advice) do %>
+			<div class="cell-lockrow">
+				<b>建议 <%=i%></b>
+				<span class="txt"><%=pcdata(a)%></span>
+				<button class="cbi-button cbi-button-neutral" type="button" data-goto="lock" style="margin-left:auto">去锁频</button>
+			</div>
+			<% end %>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>快捷操作</h3>
+		<div class="cell-sec">
+			<div class="cell-actions" style="margin-top:0">
+				<button class="cbi-button cbi-button-neutral" type="button" data-goto="neighbor"><i class="fas fa-search"></i> 扫描邻区对比</button>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-lock-cur"><i class="fas fa-lock"></i> 锁定当前频点</button>
+			</div>
+			<p class="cell-tip">锁定当前频点适合现场定点测试；移动场景建议保留多频段白名单。</p>
+		</div>
+	</fieldset>
+</div>
+
+<!-- ==================== 邻区 ==================== -->
+<div class="cell-tabpanel" data-panel="neighbor" hidden>
+	<fieldset class="cbi-section">
+		<h3>邻区扫描</h3>
+		<div class="cell-sec">
+			<div class="cell-actions" style="margin-top:0">
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-scan">扫描邻区</button>
+				<span class="cell-tip" id="kpc-scan-note" style="margin:0">邻区需主动扫描，约 1 秒。</span>
+			</div>
+			<div id="kpc-nb" class="cell-scroll" style="margin-top:12px">
+				<p class="cell-tip" style="margin:0">点击「扫描邻区」获取当前可用的相邻小区。</p>
+			</div>
+			<p class="cell-tip">低于 -120 dBm 的采样已丢弃。扫描结果仅供参考，实际小区选择由模块决定。</p>
+		</div>
+	</fieldset>
+</div>
+
+<!-- ==================== 明细 ==================== -->
+<div class="cell-tabpanel" data-panel="detail" hidden>
+	<fieldset class="cbi-section">
+		<h3>卡与设备</h3>
+		<div class="cell-sec">
+			<div class="cell-scroll">
+				<table class="cell-table">
+					<tbody>
+						<tr><td class="k">IMEI</td><td class="cell-mono"><%=pcdata(cell.imei ~= "" and cell.imei or "-")%></td></tr>
+						<tr><td class="k">IMSI</td><td class="cell-mono"><%=pcdata(cell.imsi ~= "" and cell.imsi or "-")%></td></tr>
+						<tr><td class="k">ICCID</td><td class="cell-mono"><%=pcdata(cell.iccid ~= "" and cell.iccid or "-")%></td></tr>
+						<tr><td class="k">SIM 卡槽 / 卡数</td><td><%=pcdata((cell.simno ~= "" and cell.simno or "-") .. " / " .. (cell.simcount ~= "" and cell.simcount or "-"))%></td></tr>
+						<tr><td class="k">模块型号</td><td><%=pcdata(cell.model ~= "" and cell.model or "-")%></td></tr>
+						<tr><td class="k">模块温度</td><td><%=pcdata(cell.model_temp ~= "" and (cell.model_temp .. " °C") or "-")%></td></tr>
+						<tr><td class="k">模块版本</td><td class="cell-mono"><%=pcdata(cell.revision ~= "" and cell.revision or "-")%></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>网络地址</h3>
+		<div class="cell-sec">
+			<div class="cell-scroll">
+				<table class="cell-table">
+					<tbody>
+						<tr><td class="k">IPv4 地址</td><td class="cell-mono"><%=pcdata(#v4 > 0 and table.concat(v4, ", ") or "-")%></td></tr>
+						<tr><td class="k">IPv4 DNS</td><td class="cell-mono"><%=pcdata(#v4dns > 0 and table.concat(v4dns, ", ") or "-")%></td></tr>
+						<tr><td class="k">IPv6 地址</td><td class="cell-mono"><%=pcdata(#v6 > 0 and table.concat(v6, ", ") or "-")%></td></tr>
+						<tr><td class="k">IPv6 DNS</td><td class="cell-mono"><%=pcdata(#v6dns > 0 and table.concat(v6dns, ", ") or "-")%></td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>指令回读</h3>
+		<div class="cell-sec">
+			<details class="cell-at">
+				<summary>最近一次锁频回读</summary>
+				<pre>5G  : <%=pcdata(l5_text .. " · " .. l5_body)%>
+4G  : <%=pcdata(l4_text .. " · " .. l4_body)%></pre>
+			</details>
+			<p class="cell-tip">回读不一致时，先点「解除锁定」恢复自动选网，再重新下发。</p>
+		</div>
+	</fieldset>
+</div>
+
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+
+	var URL_BASE = '<%=pcdata(dispatcher.build_url("admin", "status", "cellular"))%>';
+	var IS_5G = <%= is_5g and "true" or "false" %>;
+	var CUR_ARFCN = '<%=pcdata(cell.earfcn)%>';
+
+	/* ---- Tabs ---- */
+	var tabs = document.querySelectorAll('#kpc-tabs > li');
+	var panels = document.querySelectorAll('.cell-tabpanel');
+	function showTab(name) {
+		for (var i = 0; i < tabs.length; i++) {
+			tabs[i].className = (tabs[i].getAttribute('data-tab') === name) ? 'active' : '';
+		}
+		for (var j = 0; j < panels.length; j++) {
+			panels[j].hidden = (panels[j].getAttribute('data-panel') !== name);
+		}
+	}
+	for (var i = 0; i < tabs.length; i++) {
+		tabs[i].addEventListener('click', function (ev) {
+			ev.preventDefault();
+			showTab(this.getAttribute('data-tab'));
+		});
+	}
+	// 支持 #lock / #neighbor 深链接（刷新后仍停在同一页签）
+	(function () {
+		var h = (location.hash || '').replace('#', '');
+		if (!h) return;
+		for (var i = 0; i < panels.length; i++) {
+			if (panels[i].getAttribute('data-panel') === h) { showTab(h); break; }
+		}
+	})();
+
+	var gotoBtns = document.querySelectorAll('[data-goto]');
+	for (var g = 0; g < gotoBtns.length; g++) {
+		gotoBtns[g].addEventListener('click', function () { showTab(this.getAttribute('data-goto')); });
+	}
+
+	/* ---- 锁定方式 ---- */
+	var modeRadios = document.querySelectorAll('#kpc-mode input');
+	var modeSecs = document.querySelectorAll('[data-mode]');
+	function curMode() {
+		return document.querySelector('#kpc-mode input:checked').value;
+	}
+	function syncMode() {
+		var v = curMode();
+		for (var i = 0; i < modeSecs.length; i++) {
+			modeSecs[i].hidden = (modeSecs[i].getAttribute('data-mode') !== v);
+		}
+		updatePreview();
+	}
+	for (var m = 0; m < modeRadios.length; m++) modeRadios[m].addEventListener('change', syncMode);
+
+	/* ---- 频段 ---- */
+	var bands = document.querySelectorAll('.cell-bands');
+	function picked(group) {
+		var out = [], ins = group.querySelectorAll('input:checked');
+		for (var i = 0; i < ins.length; i++) out.push(ins[i].value);
+		return out;
+	}
+	function syncBands() {
+		for (var i = 0; i < bands.length; i++) {
+			var note = bands[i].parentNode.querySelector('.cell-bandnote');
+			var isNr = bands[i].getAttribute('data-group') === 'nr';
+			var p = picked(bands[i]);
+			var label = isNr ? '5G NR' : '4G LTE';
+			var pre = isNr ? 'n' : 'B';
+			if (!note) continue;
+			if (p.length) {
+				for (var k = 0; k < p.length; k++) p[k] = pre + p[k];
+				note.textContent = label + ' · 已选 ' + p.length + ' 个频段：' + p.join(' / ');
+			} else {
+				note.textContent = label + ' · 未选择（不限制）';
+			}
+		}
+		updatePreview();
+	}
+	for (var b = 0; b < bands.length; b++) bands[b].addEventListener('change', syncBands);
+
+	/* ---- 指令预览（与服务端下发逻辑保持一致） ---- */
+	function updatePreview() {
+		var mode = curMode();
+		var mob = document.getElementById('kpc-mob').checked ? '1' : '0';
+		var nr = picked(bands[0]).sort(function (x, y) { return y - x; });
+		var lte = picked(bands[1]).sort(function (x, y) { return y - x; });
+		var a5 = (document.getElementById('kpc-earfcn5') || {}).value || '';
+		var a4 = (document.getElementById('kpc-earfcn4') || {}).value || '';
+		var cmds = ['AT+CFUN=0'];
+
+		if (mode === 'band') {
+			cmds.push(nr.length ? 'AT^NRFREQLOCK=3,' + mob + ',' + nr.length + ',"' + nr.join(',') + '"' : 'AT^NRFREQLOCK=0');
+			cmds.push(lte.length ? 'AT^LTEFREQLOCK=3,' + mob + ',' + lte.length + ',"' + lte.join(',') + '"' : 'AT^LTEFREQLOCK=0');
+		} else if (mode === 'cell') {
+			cmds.push(a5 ? 'AT^NRFREQLOCK=2,' + mob + ',1,"' + a5 + '"' : 'AT^NRFREQLOCK=0');
+			cmds.push(a4 ? 'AT^LTEFREQLOCK=2,' + mob + ',1,"' + a4 + '"' : 'AT^LTEFREQLOCK=0');
+		} else {
+			if (IS_5G) {
+				cmds.push(CUR_ARFCN ? 'AT^NRFREQLOCK=2,' + mob + ',1,"' + CUR_ARFCN + '"' : 'AT^NRFREQLOCK=0');
+				cmds.push('AT^LTEFREQLOCK=0');
+			} else {
+				cmds.push('AT^NRFREQLOCK=0');
+				cmds.push(CUR_ARFCN ? 'AT^LTEFREQLOCK=2,' + mob + ',1,"' + CUR_ARFCN + '"' : 'AT^LTEFREQLOCK=0');
+			}
+		}
+		cmds.push('AT+CFUN=1');
+
+		document.getElementById('kpc-at').textContent = cmds.map(function (c, i) {
+			return (i + 1) + '  ' + c;
+		}).join('\n');
+		document.getElementById('kpc-at-sum').textContent = '将下发 ' + cmds.length + ' 条指令，点击展开';
+		return cmds;
+	}
+
+	var e5 = document.getElementById('kpc-earfcn5');
+	var e4 = document.getElementById('kpc-earfcn4');
+	if (e5) e5.addEventListener('input', updatePreview);
+	if (e4) e4.addEventListener('input', updatePreview);
+	document.getElementById('kpc-mob').addEventListener('change', updatePreview);
+	syncMode();
+	syncBands();
+
+	/* ---- 提交 ---- */
+	function esc(s) {
+		return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	}
+	function say(ok, text, detail) {
+		document.getElementById('kpc-result').innerHTML =
+			'<div class="alert-message ' + (ok ? 'success' : 'error') + '">' + esc(text) +
+			(detail ? '<div class="cell-tip" style="margin-top:6px;word-break:break-all">' + detail + '</div>' : '') +
+			'</div>';
+	}
+	function setSteps(state) {
+		var box = document.getElementById('kpc-steps');
+		box.className = 'cell-steps show';
+		var items = box.querySelectorAll('b');
+		for (var i = 0; i < items.length; i++) {
+			var ic = items[i].querySelector('i');
+			if (state === 'reset') { items[i].className = ''; ic.className = 'fas fa-circle-notch'; }
+			else if (state === 'run') { items[i].className = (i === 0) ? 'run' : ''; ic.className = 'fas fa-circle-notch'; }
+			else { items[i].className = (state === 'err' && i === 3) ? 'err' : 'ok'; ic.className = (state === 'err' && i === 3) ? 'fas fa-times' : 'fas fa-check'; }
+		}
+	}
+	function progress(done) {
+		var box = document.getElementById('kpc-steps');
+		box.className = 'cell-steps show';
+		var items = box.querySelectorAll('b');
+		for (var i = 0; i < items.length; i++) {
+			var ic = items[i].querySelector('i');
+			if (i < done) { items[i].className = 'ok'; ic.className = 'fas fa-check'; }
+			else if (i === done) { items[i].className = 'run'; ic.className = 'fas fa-circle-notch'; }
+			else { items[i].className = ''; ic.className = 'fas fa-circle-notch'; }
+		}
+	}
+
+	function submit(action) {
+		var mode = curMode();
+		var fd = new FormData();
+		fd.append('lock_mode', (mode === 'band') ? 'band' : 'cell');
+		if (document.getElementById('kpc-mob').checked) fd.append('lock_mobility', '1');
+		if (action === 'lock_apply' && mode === 'band') {
+			var nr = picked(bands[0]), lte = picked(bands[1]);
+			if (!nr.length && !lte.length) {
+				say(false, '没有勾选任何频段。', '如需解除锁定，请点「解除锁定」。');
+				return;
+			}
+			for (var i = 0; i < nr.length; i++) fd.append('band5', nr[i]);
+			for (var j = 0; j < lte.length; j++) fd.append('band4', lte[j]);
+		} else if (action === 'lock_apply' && mode === 'cell') {
+			var a5 = (e5.value || '').replace(/\D/g, '');
+			var a4 = (e4.value || '').replace(/\D/g, '');
+			if (!a5 && !a4) { say(false, '至少填写一个频点。', '5G 与 4G 频点不能同时为空。'); return; }
+			if (a5) fd.append('earfcn5', a5);
+			if (a4) fd.append('earfcn4', a4);
+		} else if (action === 'lock_apply') {
+			if (!CUR_ARFCN) { say(false, '当前没有可用频点。', '请改用频段白名单或手动填写 ARFCN。'); return; }
+			if (IS_5G) fd.append('earfcn5', CUR_ARFCN);
+			else fd.append('earfcn4', CUR_ARFCN);
+		}
+
+		var btns = document.querySelectorAll('#kpc-apply, #kpc-clear');
+		for (var k = 0; k < btns.length; k++) btns[k].disabled = true;
+		document.getElementById('kpc-result').innerHTML = '';
+		progress(0);
+
+		var timers = [600, 1600, 2600];
+		for (var t = 0; t < timers.length; t++) {
+			(function (idx) { setTimeout(function () { progress(idx + 1); }, timers[idx]); })(t);
+		}
+
+		fetch(URL_BASE + '?action=' + encodeURIComponent(action), {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: fd
+		}).then(function (r) { return r.json(); }).then(function (d) {
+			for (var k = 0; k < btns.length; k++) btns[k].disabled = false;
+			var ok = d && d.code === 0;
+			if (!ok) {
+				setSteps('err');
+				say(false, (d && d.msg) || '下发失败', '');
+				return;
+			}
+			document.getElementById('kpc-steps').className = 'cell-steps show';
+			var items = document.querySelectorAll('#kpc-steps b');
+			for (var i = 0; i < items.length; i++) {
+				items[i].className = 'ok';
+				items[i].querySelector('i').className = 'fas fa-check';
+			}
+			say(true, (action === 'lock_clear') ? '已解除锁定，设备将自动选网。' : ((d.msg || '锁频已下发') + '，设备正在重新注册。'),
+				'请等待 10–30 秒后刷新页面查看回读结果。');
+		}).catch(function (e) {
+			for (var k = 0; k < btns.length; k++) btns[k].disabled = false;
+			setSteps('err');
+			say(false, '请求失败，可能与设备断开重连有关。', esc(e));
+		});
+	}
+
+	document.getElementById('kpc-apply').addEventListener('click', function () { submit('lock_apply'); });
+	document.getElementById('kpc-clear').addEventListener('click', function () {
+		if (!confirm('解除 5G 与 4G 的全部锁定？设备将重新注册网络。')) return;
+		submit('lock_clear');
+	});
+	document.getElementById('kpc-lock-cur').addEventListener('click', function () {
+		var r = document.querySelector('#kpc-mode input[value="current"]');
+		r.checked = true; syncMode(); showTab('lock');
+	});
+
+	/* ---- 刷新 ---- */
+	document.getElementById('kpc-refresh').addEventListener('click', function () {
+		this.disabled = true;
+		location.reload();
+	});
+
+	/* ---- 复制诊断 ---- */
+	document.getElementById('kpc-copy').addEventListener('click', function () {
+		var txt = document.querySelector('#maincontent, #main').innerText.replace(/\n{2,}/g, '\n');
+		var btn = this;
+		function done() { btn.innerHTML = '<i class="fas fa-check"></i> 已复制'; setTimeout(function () {
+			btn.innerHTML = '<i class="fas fa-file-alt"></i> 复制诊断'; }, 1600); }
+		if (navigator.clipboard && navigator.clipboard.writeText) {
+			navigator.clipboard.writeText(txt).then(done).catch(done);
+		} else {
+			var ta = document.createElement('textarea');
+			ta.value = txt; document.body.appendChild(ta); ta.select();
+			try { document.execCommand('copy'); } catch (e) {}
+			document.body.removeChild(ta); done();
+		}
+	});
+
+	/* ---- 邻区扫描 ---- */
+	var scanBtn = document.getElementById('kpc-scan');
+	scanBtn.addEventListener('click', function () {
+		var btn = this, note = document.getElementById('kpc-scan-note');
+		var box = document.getElementById('kpc-nb');
+		btn.disabled = true;
+		note.textContent = '正在扫描邻区…';
+		box.innerHTML = '<p class="cell-tip" style="margin:0">正在读取模块邻区信息，请稍候…</p>';
+
+		fetch(URL_BASE + '?action=neighbor&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); }).then(function (d) {
+				btn.disabled = false;
+				if (!d || d.code !== 0) {
+					note.textContent = '';
+					box.innerHTML = '<div class="alert-message error">' + esc((d && d.msg) || '扫描失败') + '</div>';
+					return;
+				}
+				var list = d.cells || [];
+				note.textContent = '已更新 ' + (d.time || '') + ' · ' + list.length + ' 个邻区（缓存 10 秒）';
+				if (!list.length) {
+					box.innerHTML = '<p class="cell-tip" style="margin:0">未发现可用邻区。可能信号过弱或附近无同频小区。</p>';
+					return;
+				}
+				var h = '<table class="cell-table"><thead><tr><th>#</th><th>制式</th><th>频点</th><th>PCI</th>'
+					+ '<th>RSRP</th><th>RSRQ</th><th>SINR</th><th>信号</th><th>操作</th></tr></thead><tbody>';
+				for (var i = 0; i < list.length; i++) {
+					var c = list[i];
+					h += '<tr><td>' + (i + 1) + '</td><td>' + esc(c.mode) + '</td><td>' + esc(c.earfcn)
+						+ '</td><td>' + esc(c.pci) + '</td><td>' + esc(c.rsrp) + ' dBm</td><td>' + esc(c.rsrq)
+						+ ' dB</td><td>' + esc(c.sinr) + ' dB</td>'
+						+ '<td><div class="cell-bar" style="width:80px"><i style="width:' + esc(c.pct) + '%;background:#34d399"></i></div></td>'
+						+ '<td><button class="cbi-button cbi-button-neutral" type="button" data-arfcn="' + esc(c.earfcn)
+						+ '" data-mode="' + esc(c.mode) + '">锁定此频点</button></td></tr>';
+				}
+				h += '</tbody></table>';
+				box.innerHTML = h;
+
+				var btns = box.querySelectorAll('[data-arfcn]');
+				for (var k = 0; k < btns.length; k++) {
+					btns[k].addEventListener('click', function () {
+						var arfcn = this.getAttribute('data-arfcn');
+						var md = (this.getAttribute('data-mode') || '').toUpperCase();
+						document.querySelector('#kpc-mode input[value="cell"]').checked = true;
+						syncMode();
+						if (md.indexOf('NR') >= 0 || md.indexOf('5G') >= 0) {
+							e5.value = arfcn; e4.value = '';
+						} else {
+							e4.value = arfcn; e5.value = '';
+						}
+						updatePreview();
+						showTab('lock');
+					});
+				}
+			}).catch(function (e) {
+				btn.disabled = false;
+				note.textContent = '';
+				box.innerHTML = '<div class="alert-message error">扫描请求失败：' + esc(e) + '</div>';
+			});
+	});
+})();
+//]]>
+</script>
+
+<%+footer%>

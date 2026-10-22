@@ -1,0 +1,126 @@
+<%+header%>
+<link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
+<script>document.body.classList.add('kpc-dash');</script>
+<%
+	local sys   = require "luci.sys"
+	local util  = require "luci.util"
+	local disp  = require "luci.dispatcher"
+	local board = util.ubus("system", "board") or {}
+	local ver   = require "luci.version"
+	local uname = require("nixio").uname() or {}
+
+	local hostname = sys.hostname() or "?"
+	local model    = board.model or board.system or "NRadio"
+	local kernel   = uname.release or "-"
+	local uptime   = tonumber(sys.uptime()) or 0
+
+	local function dur(s)
+		s = math.floor(tonumber(s) or 0)
+		local d = math.floor(s / 86400)
+		local h = math.floor((s % 86400) / 3600)
+		local m = math.floor((s % 3600) / 60)
+		if d > 0 then return d .. " 天 " .. h .. " 小时" end
+		if h > 0 then return h .. " 小时 " .. m .. " 分" end
+		return m .. " 分"
+	end
+-%>
+
+<h2 name="content">状态总览</h2>
+<div class="cbi-map-descr">设备健康、上行链路、资源与异常一屏汇总 · 每 10 秒自动刷新</div>
+
+<div class="dash">
+
+	<!-- 驾驶舱 -->
+	<div class="dash-hero dash-12">
+		<div class="dash-id">
+			<div class="dash-ic"><i class="fas fa-broadcast-tower"></i></div>
+			<div class="dash-id-t">
+				<div class="dash-name"><%=pcdata(model)%></div>
+				<div class="dash-sub">
+					<span class="dash-dot"></span><%=pcdata(hostname)%>
+					<span class="dash-sep">·</span>固件 <%=pcdata(ver.distversion or "-")%>
+					<span class="dash-sep">·</span>内核 <%=pcdata(kernel)%>
+					<span class="dash-sep">·</span><span id="dash-uptime">已运行 <%=dur(uptime)%></span>
+				</div>
+			</div>
+		</div>
+		<span class="dash-verdict" id="verdict"><i class="fas fa-circle-notch"></i>读取中</span>
+		<div class="dash-kpis">
+			<div class="dash-kpi" data-k="load"><span>负载 / 核数</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="mem"><span>内存占用</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="store"><span>存储占用</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="temp"><span>最高温度</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="conn"><span>连接跟踪</span><b>--</b><i><u style="width:0"></u></i></div>
+			<div class="dash-kpi" data-k="log"><span>日志异常</span><b>--</b><i><u style="width:0"></u></i></div>
+		</div>
+	</div>
+
+	<!-- 上行链路 -->
+	<fieldset class="cbi-section dash-7">
+		<h3>上行链路</h3>
+		<div class="dash-row"><span class="k">蜂窝</span><span class="v" id="v-cell">--</span><span class="t" id="t-cell"></span></div>
+		<div class="dash-row"><span class="k">信号</span><span class="v" id="v-sig">--</span><span class="t" id="t-sig"></span></div>
+		<div class="dash-row"><span class="k">默认路由</span><span class="v" id="v-route">--</span><span class="t" id="t-route"></span></div>
+		<div class="dash-row"><span class="k">IPv4 / IPv6</span><span class="v" id="v-ip">--</span></div>
+		<div class="dash-row"><span class="k">终端</span><span class="v" id="v-clients">--</span><span class="t" id="t-arp"></span></div>
+	</fieldset>
+
+	<!-- 资源 -->
+	<fieldset class="cbi-section dash-5">
+		<h3>资源占用</h3>
+		<div class="dash-top" id="dash-proc">
+			<div class="it"><span class="nm">读取中…</span><span class="bar"><i style="width:0"></i></span><span class="vl">--</span></div>
+		</div>
+		<div class="dash-duo">
+			<div class="dash-row"><span class="k">进程</span><span class="v" id="v-proc">--</span></div>
+			<div class="dash-row"><span class="k">僵尸</span><span class="v" id="v-zombie">--</span></div>
+		</div>
+		<div class="dash-note" id="mem-note">--</div>
+	</fieldset>
+
+	<!-- 日志与安全 -->
+	<fieldset class="cbi-section dash-6">
+		<h3>日志与安全</h3>
+		<div class="dash-row"><span class="k">日志</span><span class="v" id="v-log">--</span><span class="t" id="t-log"></span></div>
+		<div class="dash-row"><span class="k">刷屏来源</span><span class="v" id="v-top">--</span><span class="t" id="t-top"></span></div>
+		<div class="dash-row"><span class="k">防火墙</span><span class="v" id="v-fw">--</span><span class="t" id="t-fw"></span></div>
+		<div class="dash-note" id="log-note">--</div>
+	</fieldset>
+
+	<!-- 连接与设备 -->
+	<fieldset class="cbi-section dash-6">
+		<h3>连接与设备</h3>
+		<div class="dash-row"><span class="k">无线终端</span><span class="v" id="v-wifi">--</span><span class="t" id="t-wifi"></span></div>
+		<div class="dash-row"><span class="k">ARP 邻居</span><span class="v" id="v-arp">--</span></div>
+		<div class="dash-row"><span class="k">连接跟踪</span><span class="v" id="v-ct">--</span><span class="t" id="t-ct"></span></div>
+		<div class="dash-row"><span class="k">运行时间</span><span class="v" id="v-up">--</span></div>
+	</fieldset>
+
+	<!-- 下钻 -->
+	<fieldset class="cbi-section dash-12">
+		<h3>下钻</h3>
+		<div class="dash-links">
+			<a class="dash-link" href="<%=pcdata(disp.build_url("admin", "status", "routes"))%>">
+				<i class="fas fa-route"></i><span>路由表</span><em id="l-route">--</em></a>
+			<a class="dash-link" href="<%=pcdata(disp.build_url("admin", "status", "iptables"))%>">
+				<i class="fas fa-shield-alt"></i><span>防火墙</span><em id="l-fw">--</em></a>
+			<a class="dash-link" href="<%=pcdata(disp.build_url("admin", "status", "syslog"))%>">
+				<i class="fas fa-file-alt"></i><span>系统日志</span><em id="l-log">--</em></a>
+			<a class="dash-link" href="<%=pcdata(disp.build_url("admin", "status", "processes"))%>">
+				<i class="fas fa-microchip"></i><span>系统进程</span><em id="l-proc">--</em></a>
+			<a class="dash-link" href="<%=pcdata(disp.build_url("admin", "status", "realtime", "load"))%>">
+				<i class="fas fa-chart-line"></i><span>实时信息</span><em>负载 / 流量</em></a>
+		</div>
+	</fieldset>
+
+</div>
+
+<div class="dash-note" id="dash-updated" style="padding:0 2px 18px">--</div>
+
+<script type="text/javascript">
+//<![CDATA[
+<!--KPC-DASH-JS-->
+//]]>
+</script>
+
+<%+footer%>

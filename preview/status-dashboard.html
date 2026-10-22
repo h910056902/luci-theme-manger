@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>预览 · 状态总览</title>
+<link rel="stylesheet" href="../www/luci-static/bootstrap/css/cascade.css">
+<link rel="stylesheet" href="../www/luci-static/bootstrap/css/fonts.css">
+<link rel="stylesheet" href="../www/luci-static/bootstrap/css/mwrt-menu-custom.css">
+<link rel="stylesheet" href="../www/luci-static/bootstrap/css/mwrt-global-custom.css">
+<link rel="stylesheet" href="../www/fontawesome/all.min.css">
+
+<style>
+/* ===== 状态驾驶舱（阶段二十一）===== */
+.dash{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.dash > .cbi-section{margin:0!important;min-width:0}
+.dash-12{grid-column:span 12}.dash-7{grid-column:span 7}.dash-5{grid-column:span 5}
+.dash-6{grid-column:span 6}.dash-4{grid-column:span 4}.dash-8{grid-column:span 8}
+@media (max-width:1000px){.dash > *{grid-column:span 12!important}}
+
+/* 顶部驾驶舱 */
+.dash-hero{position:relative;overflow:hidden;border-radius:16px;padding:18px 22px;color:#eef2f8;
+	background:linear-gradient(120deg,#10182b 0%,#1a2740 55%,#173f3d 100%);
+	box-shadow:0 18px 36px -28px rgba(13,20,35,.85);display:flex;flex-wrap:wrap;
+	align-items:center;gap:16px 22px}
+.dash-hero::before{content:'';position:absolute;inset:0;pointer-events:none;
+	background:radial-gradient(60% 120% at 0% 0%,rgba(124,92,252,.28),transparent 55%),
+	           radial-gradient(50% 110% at 100% 100%,rgba(43,255,198,.18),transparent 60%)}
+.dash-hero > *{position:relative;z-index:1}
+.dash-id{display:flex;align-items:center;gap:13px;flex:1 1 300px;min-width:0}
+.dash-ic{width:42px;height:42px;border-radius:12px;flex:0 0 auto;display:inline-flex;
+	align-items:center;justify-content:center;font-size:17px;color:#0e1626;
+	background:linear-gradient(135deg,#2bffc6,#7c5cfc);box-shadow:0 6px 16px -8px rgba(43,255,198,.9)}
+.dash-id-t{min-width:0}
+.dash-name{font-size:19px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-sub{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:5px;font-size:11.5px;color:#a9b8cc}
+.dash-dot{width:5px;height:5px;border-radius:50%;background:#2bffc6;box-shadow:0 0 6px rgba(43,255,198,.7)}
+.dash-sep{color:#4d5a70}
+.dash-verdict{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;
+	font-size:12px;font-weight:600;background:rgba(52,211,153,.14);color:#5eead4;
+	border:1px solid rgba(52,211,153,.28)}
+.dash-verdict.is-warn{background:rgba(251,191,36,.14);color:#fbbf24;border-color:rgba(251,191,36,.3)}
+.dash-verdict.is-bad{background:rgba(248,113,113,.16);color:#f87171;border-color:rgba(248,113,113,.32)}
+.dash-kpis{display:flex;flex-wrap:wrap;gap:8px;flex:1 1 100%}
+.dash-kpi{flex:1 1 120px;min-width:0;padding:9px 11px;border-radius:12px;
+	background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.06)}
+.dash-kpi > span{display:block;font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:#8891a5}
+.dash-kpi > b{display:block;font-size:17px;font-weight:600;line-height:1.2;margin-top:2px;
+	font-variant-numeric:tabular-nums;color:#eef0f6}
+.dash-kpi > b small{font-size:10px;color:#8891a5;font-weight:500;margin-left:2px}
+.dash-kpi > i{display:block;height:4px;border-radius:2px;background:rgba(127,127,140,.22);margin-top:6px;overflow:hidden}
+.dash-kpi > i > u{display:block;height:100%;border-radius:2px;background:linear-gradient(90deg,#10b981,#34d399)}
+.dash-kpi.is-warn > b{color:#fbbf24}.dash-kpi.is-bad > b{color:#f87171}
+.dash-kpi.is-warn > i > u{background:linear-gradient(90deg,#f59e0b,#fbbf24)}
+.dash-kpi.is-bad > i > u{background:linear-gradient(90deg,#ef4444,#f87171)}
+
+/* 卡片内行 */
+.dash-row{display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid #f2f4f7;font-size:.8rem}
+.dash-row:last-child{border-bottom:0}
+.dash-row > .k{color:#667085;flex:0 0 96px}
+.dash-row > .v{color:#1f2d3d;font-weight:500;min-width:0;flex:1;
+	white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.dash-row > .t{font-size:.72rem;color:#98a2b3;flex:0 0 auto}
+.dash-tag{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;
+	font-size:11px;font-weight:500;background:#f2f4f7;color:#667085;border:1px solid #e7eaee}
+.dash-tag.on{background:rgba(52,211,153,.13);color:#1d8a5b;border-color:rgba(52,211,153,.32)}
+.dash-tag.warn{background:rgba(240,160,32,.13);color:#b26a00;border-color:rgba(240,160,32,.32)}
+.dash-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+
+/* 双行指标 */
+.dash-duo{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.dash-duo .dash-row{border-bottom:0}
+.dash-duo .dash-row + .dash-row{border-left:1px solid #f2f4f7}
+
+/* 进程 Top */
+.dash-top{padding:6px 16px 12px}
+.dash-top .it{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:.78rem}
+.dash-top .it .nm{flex:0 0 130px;color:#1f2d3d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-top .it .bar{flex:1;height:6px;border-radius:3px;background:#eef1f4;overflow:hidden}
+.dash-top .it .bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#388087,#2bffc6)}
+.dash-top .it .vl{flex:0 0 62px;text-align:right;color:#475467;font-variant-numeric:tabular-nums}
+
+/* 快捷入口 */
+.dash-links{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:14px 16px}
+@media (max-width:760px){.dash-links{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.dash-link{display:flex;align-items:center;gap:9px;padding:11px 12px;border-radius:10px;
+	border:1px solid #e7eaee;background:linear-gradient(135deg,#fbfdfe,#fff);text-decoration:none;
+	color:#344054;font-size:.8rem;transition:all .18s ease}
+.dash-link:hover{border-color:#388087;background:#f2f8f7;color:#2f6e74;text-decoration:none;transform:translateY(-1px)}
+.dash-link i{width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
+	font-size:12px;color:#fff;background:linear-gradient(135deg,#388087,#2bffc6);flex:0 0 auto}
+.dash-link span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dash-link em{margin-left:auto;font-style:normal;font-size:.7rem;color:#98a2b3}
+
+.dash-note{padding:0 16px 12px;font-size:.72rem;color:#98a2b3}
+.dash-empty{padding:16px;text-align:center;color:#98a2b3;font-size:.78rem}
+
+/* 与旧版总览增强隔离：本页使用驾驶舱布局 */
+body.kpc-dash #maincontent > .container{display:block!important}
+body.kpc-dash #maincontent > .container > h2{display:flex!important}
+body.kpc-dash .mwrt-ov-hero{display:none!important}
+</style>
+</head>
+<body class="node-status-overview">
+
+<div class="kpc-shell" style="display:flex;min-height:100vh">
+	<div class="kpc-side main-left" style="width:210px;flex:0 0 210px;background:#0d1117;padding:14px 0 24px">
+		<div class="sidenav-header" style="padding:14px 16px 10px"><a class="brand" href="#" style="color:#fff;font-size:15px;font-weight:600">NRadio</a></div>
+		<ul class="nav" style="list-style:none;margin:0;padding:0">
+			<li class="slide"><a class="menu" data-title="首页" href="#" style="display:block;padding:9px 16px 9px 38px;color:#2bffc6;font-size:13px;text-decoration:none;background:rgba(43,255,198,.07)">首页</a></li>
+			<li class="slide"><a class="menu" data-title="网络设置向导" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">网络设置向导</a></li>
+			<li class="slide"><a class="menu" data-title="iStore" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">iStore</a></li>
+			<li class="slide"><a class="menu" data-title="服务" href="#" style="display:block;padding:9px 16px 9px 38px;color:#c9d1d9;font-size:13px;text-decoration:none">服务</a></li>
+		</ul>
+	</div>
+
+	<div class="main-right" style="flex:1;min-width:0">
+		<div style="display:flex;align-items:center;height:52px;padding:0 18px;background:#fff;border-bottom:1px solid #eef1f4">
+			<span style="font-size:15px;font-weight:600;color:#16202c">NRadio</span>
+		</div>
+
+		<div id="maincontent">
+			<div class="container" style="padding:0 18px">
+				<h2 name="content">状态总览</h2>
+				<div class="cbi-map-descr">设备健康、上行链路、资源与异常一屏汇总 · 每 10 秒自动刷新</div>
+
+				<div class="dash">
+					<!-- 驾驶舱 -->
+					<div class="dash-hero dash-12">
+						<div class="dash-id">
+							<div class="dash-ic"><i class="fas fa-broadcast-tower"></i></div>
+							<div class="dash-id-t">
+								<div class="dash-name">NRadio HC-WT9500</div>
+								<div class="dash-sub">
+									<span class="dash-dot"></span>nradio.in
+									<span class="dash-sep">·</span>固件 2.3.0.n0.c1
+									<span class="dash-sep">·</span>内核 5.4.281
+									<span class="dash-sep">·</span>已运行 40 小时 52 分
+								</div>
+							</div>
+						</div>
+						<span class="dash-verdict" id="verdict"><i class="fas fa-circle-check"></i>运行正常</span>
+						<div class="dash-kpis">
+							<div class="dash-kpi" data-k="load"><span>负载 / 4 核</span><b>--</b><i><u style="width:0"></u></i></div>
+							<div class="dash-kpi" data-k="mem"><span>内存占用</span><b>--</b><i><u style="width:0"></u></i></div>
+							<div class="dash-kpi" data-k="store"><span>存储占用</span><b>--</b><i><u style="width:0"></u></i></div>
+							<div class="dash-kpi" data-k="temp"><span>最高温度</span><b>--</b><i><u style="width:0"></u></i></div>
+							<div class="dash-kpi" data-k="conn"><span>连接跟踪</span><b>--</b><i><u style="width:0"></u></i></div>
+							<div class="dash-kpi" data-k="log"><span>日志异常</span><b>--</b><i><u style="width:0"></u></i></div>
+						</div>
+					</div>
+
+					<!-- 上行链路 -->
+					<fieldset class="cbi-section dash-7">
+						<h3>上行链路</h3>
+						<div class="dash-row"><span class="k">蜂窝</span><span class="v" id="v-cell">--</span><span class="t" id="t-cell"></span></div>
+						<div class="dash-row"><span class="k">信号</span><span class="v" id="v-sig">--</span><span class="t" id="t-sig"></span></div>
+						<div class="dash-row"><span class="k">默认路由</span><span class="v" id="v-route">--</span><span class="t" id="t-route"></span></div>
+						<div class="dash-row"><span class="k">IPv4 / IPv6</span><span class="v" id="v-ip">--</span></div>
+						<div class="dash-row"><span class="k">终端</span><span class="v" id="v-clients">--</span><span class="t" id="t-arp"></span></div>
+					</fieldset>
+
+					<!-- 资源 -->
+					<fieldset class="cbi-section dash-5">
+						<h3>资源占用</h3>
+						<div class="dash-top" id="dash-proc">
+							<div class="it"><span class="nm">加载中…</span><span class="bar"><i style="width:0"></i></span><span class="vl">--</span></div>
+						</div>
+						<div class="dash-duo">
+							<div class="dash-row"><span class="k">进程</span><span class="v" id="v-proc">--</span></div>
+							<div class="dash-row"><span class="k">僵尸</span><span class="v" id="v-zombie">--</span></div>
+						</div>
+						<div class="dash-note" id="mem-note">--</div>
+					</fieldset>
+
+					<!-- 日志与安全 -->
+					<fieldset class="cbi-section dash-6">
+						<h3>日志与安全</h3>
+						<div class="dash-row"><span class="k">日志</span><span class="v" id="v-log">--</span><span class="t" id="t-log"></span></div>
+						<div class="dash-row"><span class="k">刷屏来源</span><span class="v" id="v-top">--</span><span class="t" id="t-top"></span></div>
+						<div class="dash-row"><span class="k">防火墙</span><span class="v" id="v-fw">--</span><span class="t" id="t-fw"></span></div>
+						<div class="dash-note" id="log-note">--</div>
+					</fieldset>
+
+					<!-- 连接与设备 -->
+					<fieldset class="cbi-section dash-6">
+						<h3>连接与设备</h3>
+						<div class="dash-row"><span class="k">无线终端</span><span class="v" id="v-wifi">--</span><span class="t" id="t-wifi"></span></div>
+						<div class="dash-row"><span class="k">ARP 邻居</span><span class="v" id="v-arp">--</span></div>
+						<div class="dash-row"><span class="k">连接跟踪</span><span class="v" id="v-ct">--</span><span class="t" id="t-ct"></span></div>
+						<div class="dash-row"><span class="k">运行时间</span><span class="v" id="v-up">--</span></div>
+					</fieldset>
+
+					<!-- 快捷入口 -->
+					<fieldset class="cbi-section dash-12">
+						<h3>下钻</h3>
+						<div class="dash-links">
+							<a class="dash-link" href="#"><i class="fas fa-route"></i><span>路由表</span><em id="l-route">--</em></a>
+							<a class="dash-link" href="#"><i class="fas fa-shield-halved"></i><span>防火墙</span><em id="l-fw">--</em></a>
+							<a class="dash-link" href="#"><i class="fas fa-file-lines"></i><span>系统日志</span><em id="l-log">--</em></a>
+							<a class="dash-link" href="#"><i class="fas fa-microchip"></i><span>系统进程</span><em id="l-proc">--</em></a>
+							<a class="dash-link" href="#"><i class="fas fa-chart-line"></i><span>实时信息</span><em>负载 / 流量</em></a>
+						</div>
+					</fieldset>
+				</div>
+
+				<div class="dash-note" id="dash-updated" style="padding:0 2px 18px">--</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="kpc-preview-flag" style="position:fixed;right:14px;bottom:14px;z-index:99;padding:6px 12px;border-radius:999px;background:rgba(16,24,40,.86);color:#fff;font-size:11px">设计预览 · 数据为模拟</div>
+
+<script>
+//<![CDATA[
+(function () {
+	'use strict';
+
+	// ---- 模拟数据（真实环境由 ?action=kp_status 返回）----
+	var MOCK = {
+		code: 0, ts: 1792482725, uptime: 147349, ncpu: 4, load: [1.46, 1.69, 1.69],
+		mem: { total: 1040826368, available: 452648960, free: 171937792, cached: 329654272 },
+		storage: { total: 17177772032, used: 1383997440, pct: 8 },
+		thermal: [62, 62, 58], conntrack: { count: 1040, max: 65536 }, arp: 109,
+		route: { default: 'default via 10.0.0.1 dev eth3', gw: '10.0.0.1', dev: 'eth3' },
+		log: { total: 129, err: 0, warn: 0, info: 1, top: [{ src: 'atserver-sniffer', n: 93 }, { src: 'cellular_init', n: 14 }] },
+		proc: { total: 187, user: 95, zombie: 4, rss: 526540800, top_mem: [
+			{ pid: 6615, cmd: 'clash', rss: 95719424 }, { pid: 8811, cmd: '1panel', rss: 90886144 },
+			{ pid: 15528, cmd: 'openlist', rss: 70111232 }] },
+		cell: { mode: 'NR SA', band: '78', earfcn: '627264', pci: '129', rsrp: '-87', sinr: '27', rsrq: '-5', isp: '46001', simno: '2', simcount: '3' },
+		wifi: { total: 13, bands: [{ dev: 'rai0', n: 12 }, { dev: 'ra0', n: 1 }] },
+		fw: { rules: 217, input: 'ACCEPT' },
+		ip: { v4: '10.23.217.92', v6: '2409:8a00:7c1f::1' }
+	};
+
+	var $ = function (id) { return document.getElementById(id); };
+	function num(v) { return Number(v) || 0; }
+	function mib(b) { return (num(b) / 1048576); }
+	function pct(a, b) { return b > 0 ? a * 100 / b : 0; }
+	function clamp(v) { return v > 100 ? 100 : (v < 0 ? 0 : v); }
+	function dur(s) {
+		s = Math.floor(num(s));
+		var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+		if (d > 0) return d + ' 天 ' + h + ' 小时';
+		if (h > 0) return h + ' 小时 ' + m + ' 分';
+		return m + ' 分';
+	}
+	function level(v, warn, crit) { return v >= crit ? 'is-bad' : (v >= warn ? 'is-warn' : ''); }
+
+	function setKpi(key, text, ratio, cls) {
+		var el = document.querySelector('.dash-kpi[data-k="' + key + '"]');
+		if (!el) return;
+		el.querySelector('b').innerHTML = text;
+		el.querySelector('u').style.width = clamp(ratio) + '%';
+		el.className = 'dash-kpi ' + (cls || '');
+	}
+
+	function render(d) {
+		var cpu = num(d.ncpu) || 1;
+		var loadPct = num((d.load || [])[0]) / cpu * 100;
+		var memPct = pct(num((d.mem || {}).total) - num((d.mem || {}).available), num((d.mem || {}).total));
+		var stPct = num((d.storage || {}).pct);
+		var temp = 0; (d.thermal || []).forEach(function (t) { if (num(t) > temp) temp = num(t); });
+		var ctPct = pct(num((d.conntrack || {}).count), num((d.conntrack || {}).max));
+		var bad = num((d.log || {}).err) + num((d.log || {}).warn);
+
+		setKpi('load', loadPct.toFixed(0) + '<small>%</small>', loadPct, level(loadPct, 60, 85));
+		setKpi('mem', memPct.toFixed(0) + '<small>%</small>', memPct, level(memPct, 70, 85));
+		setKpi('store', stPct + '<small>%</small>', stPct, level(stPct, 80, 90));
+		setKpi('temp', temp + '<small>℃</small>', temp, level(temp, 70, 80));
+		setKpi('conn', ctPct.toFixed(1) + '<small>%</small>', ctPct, level(ctPct, 60, 85));
+		setKpi('log', String(bad), Math.min(bad * 10, 100), bad > 10 ? 'is-bad' : (bad > 0 ? 'is-warn' : ''));
+
+		var worst = '';
+		['load', 'mem', 'store', 'temp', 'conn', 'log'].forEach(function (k) {
+			var el = document.querySelector('.dash-kpi[data-k="' + k + '"]');
+			if (el.className.indexOf('is-bad') >= 0) worst = 'is-bad';
+			else if (el.className.indexOf('is-warn') >= 0 && worst !== 'is-bad') worst = 'is-warn';
+		});
+		var v = $('verdict');
+		v.className = 'dash-verdict ' + worst;
+		v.innerHTML = (worst === 'is-bad' ? '<i class="fas fa-circle-exclamation"></i>需要处理'
+			: (worst === 'is-warn' ? '<i class="fas fa-triangle-exclamation"></i>有异常' : '<i class="fas fa-circle-check"></i>运行正常'));
+
+		// 蜂窝
+		var c = d.cell || {};
+		if (c.mode) {
+			$('v-cell').textContent = (c.isp === '46001' ? '中国联通' : (c.isp === '46000' ? '中国移动' : (c.isp === '46003' ? '中国电信' : (c.isp || '未知'))))
+				+ ' · ' + c.mode + ' · n' + c.band;
+			$('t-cell').innerHTML = '<span class="dash-tag on">已注册</span>';
+			$('v-sig').textContent = c.rsrp + ' dBm · SINR ' + c.sinr + ' dB';
+			$('t-sig').innerHTML = '<span class="dash-tag on">良好</span>';
+		}
+
+		var r = d.route || {};
+		$('v-route').textContent = r.gw ? (r.gw + ' via ' + r.dev) : (r.default || '无默认路由');
+		$('t-route').innerHTML = r.gw ? '<span class="dash-tag on">可达</span>' : '<span class="dash-tag warn">缺失</span>';
+
+		if (d.ip) $('v-ip').textContent = (d.ip.v4 || '-') + ' / ' + (d.ip.v6 || '-');
+
+		var w = d.wifi || {};
+		$('v-clients').textContent = (w.total || 0) + ' 台无线';
+		$('t-arp').textContent = 'ARP ' + num(d.arp) + ' 条';
+
+		// 进程
+		var p = d.proc || {}, tops = p.top_mem || [];
+		var maxRss = 1;
+		tops.forEach(function (t) { if (t.rss > maxRss) maxRss = t.rss; });
+		var html = '';
+		tops.slice(0, 3).forEach(function (t) {
+			html += '<div class="it"><span class="nm">' + t.cmd + '</span>'
+				+ '<span class="bar"><i style="width:' + (t.rss / maxRss * 100).toFixed(0) + '%"></i></span>'
+				+ '<span class="vl">' + mib(t.rss).toFixed(0) + ' MiB</span></div>';
+		});
+		$('dash-proc').innerHTML = html || '<div class="dash-empty">无数据</div>';
+		$('v-proc').textContent = num(p.total) + ' 个';
+		$('v-zombie').textContent = num(p.zombie) + ' 个';
+		$('mem-note').textContent = '可用 ' + mib((d.mem || {}).available).toFixed(0) + ' MiB · 缓存 '
+			+ mib((d.mem || {}).cached).toFixed(0) + ' MiB（缓存可回收，不计入真实占用）';
+
+		// 日志与安全
+		var lg = d.log || {};
+		$('v-log').textContent = '共 ' + num(lg.total) + ' 行 · 异常 ' + bad + ' 条';
+		$('t-log').innerHTML = bad ? '<span class="dash-tag warn">需关注</span>' : '<span class="dash-tag on">干净</span>';
+		var top = (lg.top || [])[0];
+		$('v-top').textContent = top ? (top.src + ' × ' + top.n) : '—';
+		$('t-top').textContent = top ? '占比 ' + Math.round(top.n * 100 / Math.max(num(lg.total), 1)) + '%' : '';
+		var fw = d.fw || {};
+		$('v-fw').textContent = num(fw.rules) + ' 条规则 · INPUT ' + (fw.input || '?');
+		$('t-fw').innerHTML = (fw.input === 'ACCEPT')
+			? '<span class="dash-tag warn">策略宽松</span>' : '<span class="dash-tag on">策略收紧</span>';
+		$('log-note').textContent = bad === 0
+			? '当前没有错误或警告；如需排查，可在系统日志中开启「全部」。'
+			: '存在 ' + bad + ' 条异常，建议到系统日志查看异常优先列表。';
+
+		// 连接与设备
+		$('v-wifi').textContent = (w.total || 0) + ' 台';
+		$('t-wifi').textContent = (w.bands || []).map(function (b) {
+			return b.dev + ' ' + b.n + ' 台';
+		}).join(' · ');
+		$('v-arp').textContent = num(d.arp) + ' 条';
+		$('v-ct').textContent = num((d.conntrack || {}).count) + ' / ' + num((d.conntrack || {}).max);
+		$('t-ct').textContent = ctPct.toFixed(1) + '% 已用';
+		$('v-up').textContent = dur(d.uptime);
+
+		// 下钻角标
+		$('l-route').textContent = num(d.arp) + ' ARP';
+		$('l-fw').textContent = num(fw.rules) + ' 规则';
+		$('l-log').textContent = num(lg.total) + ' 行';
+		$('l-proc').textContent = num(p.total) + ' 进程';
+
+		var t = new Date();
+		var pad = function (x) { return (x < 10 ? '0' : '') + x; };
+		$('dash-updated').textContent = '已更新 ' + pad(t.getHours()) + ':' + pad(t.getMinutes())
+			+ ':' + pad(t.getSeconds()) + ' · 每 10 秒自动刷新';
+	}
+
+	render(MOCK);
+})();
+//]]>
+</script>
+</body>
+</html>

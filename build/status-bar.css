@@ -1,0 +1,23 @@
+/* ==== 阶段二十：状态页健康条（KP-STATUS-API v1，7 页共用） ==== */
+.st-health{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin:0 0 12px!important;
+	padding:9px 14px;background:#fff;border:1px solid #e7eaee;border-radius:10px;
+	box-shadow:0 1px 2px rgba(16,24,40,.03);font-size:.78rem;line-height:1.4;color:#667085}
+.st-health .st-verdict{display:inline-flex;align-items:center;gap:7px;font-weight:600;color:#1d6b3a;white-space:nowrap}
+.st-health.is-warn .st-verdict{color:#b26a00}
+.st-health.is-bad .st-verdict{color:#c23b22}
+.st-health .st-dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px rgba(34,160,107,.12)}
+.st-health.is-warn .st-dot{box-shadow:0 0 0 3px rgba(240,160,32,.16)}
+.st-health.is-bad .st-dot{box-shadow:0 0 0 3px rgba(214,69,69,.16)}
+.st-health .st-item{white-space:nowrap}
+.st-health .st-item b{font-weight:600;color:#1f2d3d;font-variant-numeric:tabular-nums}
+.st-health .st-item.is-warn b{color:#b26a00}
+.st-health .st-item.is-bad b{color:#c23b22}
+.st-health .st-sep{color:#e4e7ec}
+.st-health .st-sp{flex:1}
+.st-health .st-link{color:#2f6e74;text-decoration:none;font-size:.74rem;white-space:nowrap}
+.st-health .st-link:hover{text-decoration:underline}
+@media (max-width:760px){
+	.st-health{gap:6px 10px;padding:8px 10px;font-size:.72rem}
+	.st-health .st-sm{display:none}
+	.st-health .st-sep{display:none}
+}
