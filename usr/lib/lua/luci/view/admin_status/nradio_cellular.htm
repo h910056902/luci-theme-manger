@@ -1159,6 +1159,34 @@
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>监听地址<span class="cell-live" id="kpc-listen-note">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>当前监听</span><strong id="kpc-listen-cur">-</strong></div>
+				<div class="cell-kv"><span>LAN 地址</span><strong id="kpc-listen-lan">-</strong></div>
+			</div>
+			<div class="cell-formrow" style="margin-top:8px;flex-wrap:wrap;gap:8px">
+				<label>模式
+					<select id="kpc-listen-mode" class="kpc-sel" style="width:auto;min-width:150px">
+						<option value="auto">自动跟随 LAN</option>
+						<option value="all">全部地址 0.0.0.0</option>
+						<option value="custom">自定义</option>
+					</select>
+				</label>
+				<label>地址
+					<select id="kpc-listen-ip" class="kpc-sel" style="width:auto;min-width:150px"></select>
+				</label>
+				<label>端口
+					<input id="kpc-listen-port" class="kpc-num" type="number" min="1" max="65535" value="8080">
+				</label>
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-listen-apply">应用</button>
+				<span class="cell-tip" id="kpc-listen-msg" style="margin:0"></span>
+			</div>
+			<p class="cell-tip">「自动跟随 LAN」会在 LAN 改地址（例如改成 192.168.100.1）后自动跟上，不需要手动改。自定义只能选本机<strong>已有</strong>的地址，否则 uhttpd 绑定失败、8080 会整个失联；脚本带 2 秒自检，绑不上会自动回滚到旧地址。切到别的地址后当前页面会断开，请用新地址访问。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>AT 调试台<span class="cell-live">只读白名单</span></h3>
 		<div class="cell-sec">
 			<div class="cell-formrow">
@@ -1653,6 +1681,75 @@
 	setInterval(pollTrend, 10000);
 	pollTrend();
 
+	/* ---- 监听地址 ---- */
+	function listenSync() {
+		var mode = document.getElementById('kpc-listen-mode');
+		var ipSel = document.getElementById('kpc-listen-ip');
+		if (mode && ipSel) ipSel.disabled = (mode.value !== 'custom');
+	}
+
+	function loadListen() {
+		fetch(URL_BASE + '?action=web_listen&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				var cur = document.getElementById('kpc-listen-cur');
+				if (cur) cur.textContent = d.current || '-';
+				var lan = document.getElementById('kpc-listen-lan');
+				if (lan) lan.textContent = d.lan || '-';
+				var sel = document.getElementById('kpc-listen-ip');
+				if (sel) {
+					sel.innerHTML = '';
+					(d.candidates || []).forEach(function (c) {
+						var o = document.createElement('option');
+						o.value = c.ip;
+						o.textContent = c.ip + (c.label ? ' (' + c.label + ')' : '');
+						sel.appendChild(o);
+					});
+				}
+				var m = document.getElementById('kpc-listen-mode');
+				if (m) m.value = (d.mode === 'all' || d.mode === 'custom') ? d.mode : 'auto';
+				var p = document.getElementById('kpc-listen-port');
+				if (p) p.value = d.port || 8080;
+				var note = document.getElementById('kpc-listen-note');
+				if (note) {
+					note.textContent = d.mode === 'auto' ? '自动跟随 LAN'
+						: (d.mode === 'all' ? '全部地址' : '自定义');
+				}
+				listenSync();
+			})
+			.catch(function () {});
+	}
+
+	var _lMode = document.getElementById('kpc-listen-mode');
+	if (_lMode) _lMode.addEventListener('change', listenSync);
+	var _lApply = document.getElementById('kpc-listen-apply');
+	if (_lApply) {
+		_lApply.addEventListener('click', function () {
+			var mode = document.getElementById('kpc-listen-mode').value;
+			var ip = document.getElementById('kpc-listen-ip').value;
+			var port = document.getElementById('kpc-listen-port').value;
+			var msg = document.getElementById('kpc-listen-msg');
+			if (!confirm('切换后当前地址的页面会断开，需要用新地址访问。继续？')) return;
+			var fd = new FormData();
+			fd.append('mode', mode);
+			fd.append('ip', ip);
+			fd.append('port', port);
+			_lApply.disabled = true;
+			fetch(URL_BASE + '?action=web_listen_apply', { method: 'POST', credentials: 'same-origin', body: fd })
+				.then(function (r) { return r.json(); })
+				.then(function (d) {
+					_lApply.disabled = false;
+					if (msg) msg.textContent = (d && d.msg) || '';
+					if (d && d.code === 0) setTimeout(loadListen, 6000);
+				})
+				.catch(function (e) {
+					_lApply.disabled = false;
+					if (msg) msg.textContent = '请求失败：' + e;
+				});
+		});
+	}
+
 	/* ---- 服务小区全量：NCI / TA（距离估算）/ 服务域 / PLMN ---- */
 	function loadCellDetail() {
 		fetch(URL_BASE + '?action=cell&t=' + Date.now(), { credentials: 'same-origin' })
@@ -1704,6 +1801,7 @@
 	}
 	loadCellDetail();
 	setInterval(function () { if (!document.hidden) loadCellDetail(); }, 30000);
+	loadListen();
 
 	document.getElementById('kpc-diag').addEventListener('click', function () {
 		window.location.href = URL_BASE + '?action=diag&t=' + Date.now();

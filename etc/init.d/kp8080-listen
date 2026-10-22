@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+# 开机同步 8080 监听地址：LAN 改地址后不会失联
+START=99
+STOP=05
+
+wait_lan() {
+    local i
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        if ip -4 addr show 2>/dev/null | grep -q "inet "; then return 0; fi
+        sleep 1
+    done
+    return 0
+}
+
+boot() {
+    wait_lan
+    [ -x /usr/bin/kp8080-listen ] && /usr/bin/kp8080-listen apply >/dev/null 2>&1
+}
+
+start() { boot; }

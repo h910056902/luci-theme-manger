@@ -24,6 +24,15 @@ for d in bootstrap router3d; do
     if [ -d "$D/www/luci-static/$d" ]; then cp -a "$D/www/luci-static/$d" "$R/www/luci-static/"; fi
 done
 
+echo "== 收集系统级脚本（监听地址同步） =="
+for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen; do
+    if [ -f "$D/$f" ]; then
+        mkdir -p "$R/${f%/*}"
+        cp "$D/$f" "$R/$f"
+        chmod 755 "$R/$f"
+    fi
+done
+
 echo "== 收集 cgi-bin（跳过 .bak） =="
 for f in luci mwrt-wifi mwrt-svc; do
     if [ -f "$D/www/cgi-bin/$f" ]; then cp "$D/www/cgi-bin/$f" "$R/www/cgi-bin/$f"; fi
@@ -65,6 +74,13 @@ D=/overlay/nradio-apps/openwrt-luci-8080
 chmod 755 "$D/www/cgi-bin/luci" 2>/dev/null
 chmod 755 "$D/www/cgi-bin/mwrt-wifi" 2>/dev/null
 chmod 755 "$D/www/cgi-bin/mwrt-svc" 2>/dev/null
+
+# 监听地址同步（LAN 改地址后 8080 自动跟上）
+chmod 755 /usr/bin/kp8080-listen 2>/dev/null
+chmod 755 /etc/init.d/kp8080-listen 2>/dev/null
+[ -x /etc/init.d/kp8080-listen ] && /etc/init.d/kp8080-listen enable 2>/dev/null
+[ -f /etc/config/kpnet ] || printf "config web 'web'\n\toption listen 'auto'\n\toption port '8080'\n" > /etc/config/kpnet
+/usr/bin/kp8080-listen apply >/dev/null 2>&1
 
 # 复用系统已有的静态资源，避免重复占用（argon 是本地相对链接）
 if [ -d "$D/www/luci-static/bootstrap" ] && [ ! -e "$D/www/luci-static/argon" ]; then

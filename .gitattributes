@@ -13,3 +13,8 @@
 *.sh text eol=lf
 *.lua text eol=lf
 *.htm text eol=lf
+
+# 无扩展名的可执行脚本：必须 LF，CRLF 会让 busybox ash 报
+# "syntax error: unexpected word (expecting in/do)"
+usr/bin/* text eol=lf
+etc/init.d/* text eol=lf

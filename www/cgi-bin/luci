@@ -1805,7 +1805,8 @@ do
 		local actions = kind == "cellular"
 			and { neighbor = true, lock_apply = true, lock_clear = true, poll = true,
 			      stats = true, cell = true, ta_cal = true, diag = true, at = true,
-			      devices = true, qos_apply = true, qos_reset = true }
+			      devices = true, qos_apply = true, qos_reset = true,
+			      web_listen = true, web_listen_apply = true }
 			or  { sms_send = true }
 		if not actions[action] then return false end
 
@@ -1834,6 +1835,72 @@ do
 				return true
 			end
 			kp_write_json({ code = 0, ts = snap.t, cell = snap, hist = hist, events = evts })
+			return true
+		end
+
+		if action == "web_listen" then
+			local sys = require "luci.sys"
+			local function q(k) return kp_trim(sys.exec("uci -q get " .. k .. " 2>/dev/null")) end
+			local mode, port = q("kpnet.web.listen"), q("kpnet.web.port")
+			if mode == "" then mode = "auto" end
+			if port == "" then port = "8080" end
+			local cands = { { ip = "0.0.0.0", label = "全部地址" } }
+			local seen = { ["0.0.0.0"] = true }
+			local curdev = ""
+			for line in (sys.exec("ip -4 addr show 2>/dev/null") or ""):gmatch("[^\n]+") do
+				local d = line:match("^%d+:%s*([^:@]+)")
+				if d then curdev = kp_trim(d) end
+				local ip = line:match("inet%s+(%d+%.%d+%.%d+%.%d+)")
+				if ip and ip ~= "127.0.0.1" and not seen[ip] then
+					seen[ip] = true
+					cands[#cands + 1] = { ip = ip, label = curdev }
+				end
+			end
+			local eff = ""
+			if pcall(function() sys.exec("test -x /usr/bin/kp8080-listen") end) then
+				eff = kp_trim(sys.exec("[ -x /usr/bin/kp8080-listen ] && /usr/bin/kp8080-listen resolve 2>/dev/null"))
+			end
+			kp_write_json({ code = 0, current = q("uhttpd.openwrt8080.listen_http"),
+				mode = mode, port = port, lan = q("network.lan.ipaddr"),
+				effective = eff, candidates = cands })
+			return true
+		end
+
+		if action == "web_listen_apply" then
+			local sys = require "luci.sys"
+			-- 本固件的 uci 不能用 set 新建配置文件：缺文件时先落一份骨架，否则后续 set 全部静默失败
+			sys.call("[ -f /etc/config/kpnet ] || printf \"config web 'web'\\n\\toption listen 'auto'\\n\\toption port '8080'\\n\" > /etc/config/kpnet")
+			sys.call("uci -q get kpnet.web >/dev/null 2>&1 || uci set kpnet.web=web")
+			local mode = kp_trim(form.mode)
+			local ip = kp_trim(form.ip)
+			local port = tonumber(kp_trim(form.port)) or 8080
+			if port < 1 or port > 65535 then
+				kp_write_json({ code = 1, msg = "端口需在 1~65535 之间" })
+				return true
+			end
+			if mode == "custom" then
+				if not ip:match("^%d+%.%d+%.%d+%.%d+$") then
+					kp_write_json({ code = 1, msg = "IP 格式不正确" })
+					return true
+				end
+				if ip ~= "0.0.0.0" then
+					local addrs = sys.exec("ip -4 addr show 2>/dev/null") or ""
+					if not addrs:find("inet " .. ip .. "/", 1, true) then
+						kp_write_json({ code = 1, msg = "地址 " .. ip .. " 不在本机任何接口上，绑定会失败" })
+						return true
+					end
+				end
+				sys.call("uci set kpnet.web.listen=" .. kp_shq(ip .. ":" .. port))
+			elseif mode == "all" then
+				sys.call("uci set kpnet.web.listen='all'")
+			else
+				sys.call("uci set kpnet.web.listen='auto'")
+			end
+			sys.call("uci set kpnet.web.port='" .. port .. "'")
+			sys.call("uci commit kpnet")
+			-- 延迟 3 秒再切：先让本次响应回到浏览器，避免请求被自己打断
+			sys.exec("( sleep 3; [ -x /usr/bin/kp8080-listen ] && /usr/bin/kp8080-listen apply ) >/tmp/kp8080-listen.log 2>&1 &")
+			kp_write_json({ code = 0, msg = "已提交，3 秒后切换；绑定失败会自动回滚" })
 			return true
 		end
 

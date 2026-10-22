@@ -1,0 +1,92 @@
+#!/bin/sh
+# 计算并应用 8080 面板的监听地址
+#
+# 配置（/etc/config/kpnet）：
+#   kpnet.web.listen = auto | all | <ip>[:port]
+#       auto  跟随 network.lan.ipaddr（LAN 改地址后自动跟上，默认）
+#       all   监听 0.0.0.0（所有接口，含 WAN，注意暴露面）
+#       其它  按字面值，未写端口时补 kpnet.web.port
+#   kpnet.web.port   = 端口，默认 8080
+#
+# 安全策略：
+#   1. 目标 IP 不在任何本机接口上 → 拒绝应用（否则 uhttpd 绑定失败，8080 直接消失）
+#   2. 应用后自检监听，失败自动回滚到上一个值
+SECTION=uhttpd.openwrt8080
+
+log() { logger -t kp8080-listen "$*"; }
+
+ip_exists() {
+    [ "$1" = "0.0.0.0" ] && return 0
+    ip -4 addr show 2>/dev/null | grep -q "inet $1/"
+}
+
+resolve() {
+    local mode port lan target
+    mode=$(uci -q get kpnet.web.listen)
+    port=$(uci -q get kpnet.web.port)
+    [ -n "$port" ] || port=8080
+    lan=$(uci -q get network.lan.ipaddr)
+
+    case "$mode" in
+        ""|auto)
+            if [ -n "$lan" ] && ip_exists "$lan"; then
+                target="$lan:$port"
+            else
+                target="0.0.0.0:$port"
+            fi
+            ;;
+        all)
+            target="0.0.0.0:$port"
+            ;;
+        *)
+            case "$mode" in
+                *:*) target="$mode" ;;
+                *)   target="$mode:$port" ;;
+            esac
+            ;;
+    esac
+    echo "$target"
+}
+
+apply() {
+    local target cur host port
+    target=$(resolve)
+    host=${target%:*}
+    port=${target##*:}
+    cur=$(uci -q get $SECTION.listen_http)
+
+    if ! ip_exists "$host"; then
+        log "skip: $host 不在任何接口上"
+        echo "ERR: 地址 $host 未在本机配置，已跳过"
+        return 1
+    fi
+
+    if [ "$target" = "$cur" ]; then
+        echo "OK: 已是 $target"
+        return 0
+    fi
+
+    uci set "$SECTION.listen_http=$target"
+    uci commit uhttpd
+    /etc/init.d/uhttpd restart >/dev/null 2>&1
+    sleep 2
+
+    if netstat -lnt 2>/dev/null | grep -q ":$port "; then
+        log "applied $target"
+        echo "OK: 已切换到 $target"
+        return 0
+    fi
+
+    log "bind failed on $target, rollback to $cur"
+    uci set "$SECTION.listen_http=$cur"
+    uci commit uhttpd
+    /etc/init.d/uhttpd restart >/dev/null 2>&1
+    echo "ERR: $target 绑定失败，已回滚到 $cur"
+    return 1
+}
+
+case "$1" in
+    resolve) resolve ;;
+    apply|"") apply ;;
+    *) echo "usage: kp8080-listen [apply|resolve]"; exit 1 ;;
+esac
