@@ -650,6 +650,22 @@
 .kpc-cell-page .cell-table tr.is-serving td{background:#f2f8f7;font-weight:600}
 .kpc-cell-page .cell-table td .nb-sub{color:#98a2b3;font-size:.68rem}
 
+/* 网页终端卡片（与面板深色终端主题一致） */
+.kpc-cell-page .kpc-term-bar{display:flex;align-items:center;gap:8px;background:#0f1720;border-radius:8px;
+	padding:9px 12px;font-family:"JetBrains Mono",Menlo,Consolas,monospace}
+.kpc-cell-page .kpc-term-led{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 8px;
+	box-shadow:0 0 0 3px rgba(100,116,139,.18);transition:background .3s}
+.kpc-cell-page .kpc-term-led.on{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+.kpc-cell-page .kpc-term-url{flex:1;color:#e6edf3;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kpc-cell-page .kpc-term-copy{background:rgba(255,255,255,.08);border:0;color:#cbd5e1;font-size:.7rem;
+	padding:3px 9px;border-radius:5px;cursor:pointer;flex:0 0 auto}
+.kpc-cell-page .kpc-term-copy:hover{background:rgba(255,255,255,.18);color:#fff}
+.kpc-cell-page .kpc-term-badge{display:inline-block;font-size:.68rem;padding:2px 9px;border-radius:999px;
+	background:rgba(100,116,139,.15);color:#64748b;margin-left:8px;vertical-align:middle;font-weight:600}
+.kpc-cell-page .kpc-term-badge.on{background:rgba(52,211,153,.15);color:#1d8a5b}
+.kpc-cell-page .kpc-term-open{min-width:150px}
+.kpc-cell-page .kpc-term-open:disabled{opacity:.45;cursor:not-allowed}
+
 /* AT 调试台输出 */
 .kpc-cell-page .kpc-at-pre{margin:10px 0 0;padding:10px 12px;border-radius:9px;background:#0f1720;
 	color:#d7e3ea;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.74rem;
@@ -1170,15 +1186,20 @@
 		</div>
 	</fieldset>
 
-	<fieldset class="cbi-section">
-		<h3>网页终端<span class="cell-live" id="kpc-term-state">—</span></h3>
+	<fieldset class="cbi-section kpc-term">
+		<h3>网页终端<span class="kpc-term-badge" id="kpc-term-state">—</span></h3>
 		<div class="cell-sec">
-			<div class="cell-grid">
+			<div class="kpc-term-bar">
+				<i class="kpc-term-led" id="kpc-term-led"></i>
+				<code class="kpc-term-url" id="kpc-term-url">—</code>
+				<button class="kpc-term-copy" type="button" id="kpc-term-copy" title="复制访问地址">复制</button>
+			</div>
+			<div class="cell-grid" style="margin-top:10px">
 				<div class="cell-kv is-key"><span>服务状态</span><strong id="kpc-term-run">-</strong></div>
-				<div class="cell-kv"><span>访问地址</span><strong id="kpc-term-url" style="font-size:.78rem">-</strong></div>
+				<div class="cell-kv"><span>监听 / 鉴权</span><strong id="kpc-term-meta">-</strong></div>
 			</div>
 			<div class="cell-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px">
-				<button class="cbi-button cbi-button-action" type="button" id="kpc-term-open">打开终端</button>
+				<button class="cbi-button cbi-button-action kpc-term-open" type="button" id="kpc-term-open">打开终端 ↗</button>
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-start">启动</button>
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-stop">停止</button>
 				<span class="cell-tip" id="kpc-term-msg" style="margin:0"></span>
@@ -1779,9 +1800,18 @@
 				var url = document.getElementById('kpc-term-url');
 				var st = document.getElementById('kpc-term-state');
 				var openBtn = document.getElementById('kpc-term-open');
+				var led = document.getElementById('kpc-term-led');
+				var meta = document.getElementById('kpc-term-meta');
 				if (run) run.textContent = d.running ? ('运行中' + (d.pid ? ' · PID ' + d.pid : '')) : '已停止';
-				if (url) url.textContent = d.url || '-';
-				if (st) st.textContent = d.credential ? '有密码保护' : '无密码（注意暴露）';
+				if (url) url.textContent = d.url || '—';
+				if (st) {
+					st.textContent = d.running ? '已就绪' : '未启动';
+					st.className = 'kpc-term-badge' + (d.running ? ' on' : '');
+				}
+				if (led) led.className = 'kpc-term-led' + (d.running ? ' on' : '');
+				if (meta) {
+					meta.textContent = ':' + (d.port || 7681) + ' · ' + (d.credential ? '有密码' : '无密码');
+				}
 				if (openBtn) openBtn.disabled = !d.running;
 			})
 			.catch(function () {});
@@ -1804,6 +1834,30 @@
 	if (_tOpen) _tOpen.addEventListener('click', function () {
 		if (TERM_URL) window.open(TERM_URL, '_blank');
 	});
+
+	var _tCopy = document.getElementById('kpc-term-copy');
+	if (_tCopy) {
+		_tCopy.addEventListener('click', function () {
+			if (!TERM_URL) return;
+			var restore = function () {
+				_tCopy.textContent = '已复制';
+				setTimeout(function () { _tCopy.textContent = '复制'; }, 1500);
+			};
+			if (navigator.clipboard && navigator.clipboard.writeText) {
+				navigator.clipboard.writeText(TERM_URL).then(restore).catch(restore);
+				return;
+			}
+			var ta = document.createElement('textarea');
+			ta.value = TERM_URL;
+			ta.style.position = 'fixed';
+			ta.style.opacity = '0';
+			document.body.appendChild(ta);
+			ta.select();
+			try { document.execCommand('copy'); } catch (e) { }
+			document.body.removeChild(ta);
+			restore();
+		});
+	}
 	var _tStart = document.getElementById('kpc-term-start');
 	if (_tStart) _tStart.addEventListener('click', function () { termOp('start'); });
 	var _tStop = document.getElementById('kpc-term-stop');
