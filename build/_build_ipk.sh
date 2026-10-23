@@ -24,9 +24,9 @@ for d in bootstrap router3d; do
     if [ -d "$D/www/luci-static/$d" ]; then cp -a "$D/www/luci-static/$d" "$R/www/luci-static/"; fi
 done
 
-echo "== 收集系统级脚本（监听地址同步） =="
-# 注意：这两个脚本落在系统路径，不在 8080 实例目录下
-for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen; do
+echo "== 收集系统级脚本（监听地址同步 / 短信转发） =="
+# 注意：这些脚本落在系统路径，不在 8080 实例目录下
+for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/init.d/kpsmsfwd; do
     src=""
     if [ -f "/$f" ]; then
         src="/$f"
@@ -93,6 +93,14 @@ chmod 755 /etc/init.d/kp8080-listen 2>/dev/null
 [ -x /etc/init.d/kp8080-listen ] && /etc/init.d/kp8080-listen enable 2>/dev/null
 [ -f /etc/config/kpnet ] || printf "config web 'web'\n\toption listen 'auto'\n\toption port '8080'\n" > /etc/config/kpnet
 /usr/bin/kp8080-listen apply >/dev/null 2>&1
+
+# 短信转发守护（默认关闭，配置由面板写入）
+chmod 755 /usr/bin/kpsmsfwd 2>/dev/null
+chmod 755 /etc/init.d/kpsmsfwd 2>/dev/null
+[ -x /etc/init.d/kpsmsfwd ] && /etc/init.d/kpsmsfwd enable 2>/dev/null
+[ -f /etc/config/kpsmsfwd ] || printf "config main 'main'\n\toption enable '0'\n\toption interval '20'\n\toption url ''\n" > /etc/config/kpsmsfwd
+[ -f /etc/kpsmsfwd.body ] || printf '{"sender":"{sender}","text":"{text}","time":"{time}"}' > /etc/kpsmsfwd.body
+[ -x /etc/init.d/kpsmsfwd ] && /etc/init.d/kpsmsfwd restart >/dev/null 2>&1
 
 # 复用系统已有的静态资源，避免重复占用（argon 是本地相对链接）
 if [ -d "$D/www/luci-static/bootstrap" ] && [ ! -e "$D/www/luci-static/argon" ]; then
