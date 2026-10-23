@@ -1809,7 +1809,8 @@ do
 			      stats = true, cell = true, ta_cal = true, diag = true, at = true,
 			      devices = true, qos_apply = true, qos_reset = true,
 			      web_listen = true, web_listen_apply = true,
-			      at_raw = true, modem_reboot = true, terminal = true, hnat = true }
+			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
+			      swap = true, simlock = true }
 			or  { sms_send = true }
 		if not actions[action] then return false end
 
@@ -2083,6 +2084,73 @@ do
 				hook = hook, version = ver, entry_head = entry_raw,
 				entries = n_entry,
 				soft_offload = (sw == "1"),
+			})
+			return true
+		end
+
+		-- swap 管理：文件型 swap，落在数据分区，默认 256MB
+		if action == "swap" then
+			local sys = require "luci.sys"
+			local SWAPFILE = "/mnt/storage/data/swapfile"
+			local op = kp_trim(form.op)
+			if op == "on" or op == "off" then
+				if kp_trim(form.confirm) ~= "1" then
+					kp_write_json({ code = 1, msg = "需要确认" })
+					return true
+				end
+				local mb = tonumber(kp_trim(form.size)) or 256
+				if op == "on" and (mb < 64 or mb > 1024) then
+					kp_write_json({ code = 1, msg = "swap 大小需在 64~1024 MB" })
+					return true
+				end
+				if op == "on" then
+					sys.call("[ -f " .. SWAPFILE .. " ] || dd if=/dev/zero of=" .. SWAPFILE ..
+						" bs=1M count=" .. mb .. " 2>/dev/null")
+					sys.call("chmod 600 " .. SWAPFILE)
+					sys.call("mkswap " .. SWAPFILE .. " >/dev/null 2>&1")
+					sys.call("swapon " .. SWAPFILE .. " >/dev/null 2>&1")
+					sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci add fstab swap >/dev/null 2>&1")
+					sys.call("uci set fstab.@swap[-1].device='" .. SWAPFILE .. "'")
+					sys.call("uci set fstab.@swap[-1].enabled='1'")
+					sys.call("uci commit fstab")
+				else
+					sys.call("swapoff " .. SWAPFILE .. " >/dev/null 2>&1")
+					sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci commit fstab")
+				end
+			end
+			local total, used = 0, 0
+			local f = io.open("/proc/swaps", "r")
+			if f then
+				f:read("*l")
+				for line in f:lines() do
+					local sz, us = line:match("%s(%d+)%s+(%d+)%s+%-?%d+$")
+					if sz then total = total + tonumber(sz); used = used + tonumber(us) end
+				end
+				f:close()
+			end
+			local exists = kp_trim(sys.exec("[ -f " .. SWAPFILE .. " ] && du -m " .. SWAPFILE .. " 2>/dev/null | cut -f1"))
+			local persist = kp_trim(sys.exec("uci -q get fstab.@swap[0].device 2>/dev/null"))
+			kp_write_json({
+				code = 0, on = (total > 0),
+				total_kb = total, used_kb = used,
+				file_mb = tonumber(exists) or 0,
+				persist = (persist ~= ""),
+				path = SWAPFILE,
+			})
+			return true
+		end
+
+		-- 锁状态：厂商 SIM 保护锁，只读显示（密钥在厂商侧，无法也不应绕过）
+		if action == "simlock" then
+			local sys = require "luci.sys"
+			local flag = kp_trim(sys.exec("bdinfo -g sim_protect 2>/dev/null"))
+			local has_pkg = kp_trim(sys.exec("[ -f /usr/lib/lua/luci/controller/nradio/hsimlock.lua ] && echo 1"))
+			kp_write_json({
+				code = 0,
+				supported = (flag ~= ""),
+				protect = (flag == "1"),
+				page = (has_pkg == "1"),
+				raw = flag,
 			})
 			return true
 		end
