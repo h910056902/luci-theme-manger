@@ -1158,6 +1158,18 @@
 		</div>
 	</fieldset>
 
+	<fieldset class="cbi-section" id="kpc-oc" hidden>
+		<h3>OpenClash<span class="cell-live">已解锁</span></h3>
+		<div class="cell-sec">
+			<div class="cell-actions" style="flex-wrap:wrap;gap:8px">
+				<a class="cbi-button cbi-button-action" id="kpc-oc-open" href="#" target="_blank" rel="noopener">打开 OpenClash</a>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-oc-lock">重新隐藏</button>
+				<span class="cell-tip" id="kpc-oc-state" style="margin:0"></span>
+			</div>
+			<p class="cell-tip">入口默认隐藏。在页头「已更新 …」那行文字上<strong>连续点 5 下</strong>（1.5 秒内）即可解锁；再连点 5 下重新隐藏。状态存在浏览器本地，换设备或清缓存后需要重新解锁。OpenClash 本身运行在主 LuCI（80 端口），这里只做入口跳转。</p>
+		</div>
+	</fieldset>
+
 	<fieldset class="cbi-section">
 		<h3>网页终端<span class="cell-live" id="kpc-term-state">—</span></h3>
 		<div class="cell-sec">
@@ -1881,6 +1893,53 @@
 			.then(function (d) { atRawOut((d && (d.msg + '\n' + (d.resp || ''))) || '无响应'); })
 			.catch(function (e) { atRawOut('失败：' + e); });
 	});
+
+	/* ---- 隐藏入口：连点 5 下解锁 OpenClash ---- */
+	var OC_KEY = 'kp_oc_unlock';
+	var ocClicks = 0;
+	var ocTimer = null;
+
+	function ocShow(on) {
+		var box = document.getElementById('kpc-oc');
+		if (!box) return;
+		box.hidden = !on;
+		if (on) {
+			var a = document.getElementById('kpc-oc-open');
+			if (a) a.href = location.protocol + '//' + location.hostname
+				+ '/cgi-bin/luci/admin/services/openclash';
+		}
+	}
+
+	function ocToggle() {
+		var on = localStorage.getItem(OC_KEY) !== '1';
+		try { localStorage.setItem(OC_KEY, on ? '1' : '0'); } catch (e) {}
+		ocShow(on);
+		var st = document.getElementById('kpc-oc-state');
+		if (st) st.textContent = on ? '已解锁' : '已隐藏';
+		// 解锁后直接跳到「工具」页，否则用户点完看不到变化
+		if (on && typeof showTab === 'function') showTab('tools');
+	}
+
+	var _live = document.getElementById('kpc-live');
+	if (_live) {
+		_live.style.cursor = 'pointer';
+		_live.title = '';
+		_live.addEventListener('click', function () {
+			ocClicks++;
+			if (ocTimer) clearTimeout(ocTimer);
+			ocTimer = setTimeout(function () { ocClicks = 0; }, 1500);
+			if (ocClicks >= 5) { ocClicks = 0; ocToggle(); }
+		});
+	}
+	try { if (localStorage.getItem(OC_KEY) === '1') ocShow(true); } catch (e) {}
+
+	var _ocLock = document.getElementById('kpc-oc-lock');
+	if (_ocLock) {
+		_ocLock.addEventListener('click', function () {
+			try { localStorage.setItem(OC_KEY, '0'); } catch (e) {}
+			ocShow(false);
+		});
+	}
 
 	/* ---- 系统维护：swap / 卡锁 ---- */
 	function fmtKB(kb) {
