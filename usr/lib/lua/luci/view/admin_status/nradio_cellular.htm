@@ -1166,7 +1166,7 @@
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-oc-lock">重新隐藏</button>
 				<span class="cell-tip" id="kpc-oc-state" style="margin:0"></span>
 			</div>
-			<p class="cell-tip">入口默认隐藏。在页头「已更新 …」那行文字上<strong>连续点 5 下</strong>（1.5 秒内）即可解锁；再连点 5 下重新隐藏。状态存在浏览器本地，换设备或清缓存后需要重新解锁。OpenClash 本身运行在主 LuCI（80 端口），这里只做入口跳转。</p>
+			<p class="cell-tip">入口默认隐藏。在<strong>首页点击设备图片 5 下</strong>（1.5 秒内）即可解锁，解锁后会自动跳回本页并切到「工具」。解锁状态存在浏览器本地，换设备或清缓存后需重新解锁。OpenClash 本身运行在主 LuCI（80 端口），这里只做入口跳转。</p>
 		</div>
 	</fieldset>
 
@@ -1920,18 +1920,18 @@
 		if (on && typeof showTab === 'function') showTab('tools');
 	}
 
-	var _live = document.getElementById('kpc-live');
-	if (_live) {
-		_live.style.cursor = 'pointer';
-		_live.title = '';
-		_live.addEventListener('click', function () {
-			ocClicks++;
-			if (ocTimer) clearTimeout(ocTimer);
-			ocTimer = setTimeout(function () { ocClicks = 0; }, 1500);
-			if (ocClicks >= 5) { ocClicks = 0; ocToggle(); }
-		});
-	}
-	try { if (localStorage.getItem(OC_KEY) === '1') ocShow(true); } catch (e) {}
+	// 触发点已移到首页的设备图片（#dv-img）；这里只按本地状态决定是否显示
+	try {
+		if (localStorage.getItem(OC_KEY) === '1') {
+			ocShow(true);
+			if (localStorage.getItem('kp_oc_jump') === '1') {
+				localStorage.removeItem('kp_oc_jump');
+				window.setTimeout(function () {
+					if (typeof showTab === 'function') showTab('tools');
+				}, 0);
+			}
+		}
+	} catch (e) {}
 
 	var _ocLock = document.getElementById('kpc-oc-lock');
 	if (_ocLock) {

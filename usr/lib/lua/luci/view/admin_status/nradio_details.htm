@@ -1025,4 +1025,30 @@
 })();
 </script>
 
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+	// 连点设备图片 5 下：解锁 8080 蜂窝页的隐藏 OpenClash 入口
+	var img = document.getElementById('dv-img');
+	if (!img) return;
+	var n = 0, t = null;
+	img.style.cursor = 'pointer';
+	img.addEventListener('click', function () {
+		n++;
+		if (t) window.clearTimeout(t);
+		t = window.setTimeout(function () { n = 0; }, 1500);
+		if (n >= 5) {
+			n = 0;
+			try {
+				localStorage.setItem('kp_oc_unlock', '1');
+				localStorage.setItem('kp_oc_jump', '1');
+			} catch (e) { }
+			location.href = '<%=luci.dispatcher.build_url("admin", "status", "cellular")%>';
+		}
+	});
+})();
+//]]>
+</script>
+
 <%+footer%>
