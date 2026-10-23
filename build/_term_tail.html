@@ -2,12 +2,17 @@
 //<![CDATA[
 (function () {
 	'use strict';
-	var PORT = '<%=port%>';
-	var dot = document.getElementById('kpt-dot');
+	/* 独立页（ttyd --index）时由外层先定义 KP_TERM_PORT，模板页则用服务端端口 */
+	var PORT = (typeof window.KP_TERM_PORT !== 'undefined') ? String(window.KP_TERM_PORT) : '<%=port%>';
 	var meta = document.getElementById('kpt-meta');
 	var sizeEl = document.getElementById('kpt-size');
 	var nameEl = document.getElementById('kpt-name');
 	var box = document.getElementById('kpt-term');
+	var lights = {
+		red: document.getElementById('kpt-l-red'),
+		yellow: document.getElementById('kpt-l-yellow'),
+		green: document.getElementById('kpt-l-green')
+	};
 
 	if (nameEl) nameEl.textContent = 'root@' + (location.hostname || 'router');
 
@@ -31,12 +36,18 @@
 	term.open(box);
 
 	function fit() { try { term.fit(); } catch (e) { } }
+
+	/* cls: '' 连接中（黄） / 'on' 已连接（绿） / 'err' 断开（红） */
 	function setState(cls, txt) {
-		if (dot) dot.className = 'kpt-dot' + (cls ? ' ' + cls : '');
 		if (meta) meta.textContent = txt;
+		['red', 'yellow', 'green'].forEach(function (k) {
+			if (lights[k]) lights[k].classList.remove('on');
+		});
+		var pick = cls === 'on' ? 'green' : (cls === 'err' ? 'red' : 'yellow');
+		if (lights[pick]) lights[pick].classList.add('on');
 	}
 
-	var ws = null, ping = null, retry = null;
+	var ws = null, ping = null, retry = null, manualStop = false;
 
 	function writeRaw(b64) {
 		var bin = atob(b64);
@@ -49,7 +60,16 @@
 		catch (e) { term.write(bin); }
 	}
 
+	function disconnect() {
+		manualStop = true;
+		if (retry) { clearTimeout(retry); retry = null; }
+		if (ping) { clearInterval(ping); ping = null; }
+		if (ws) { try { ws.close(); } catch (e) { } }
+		setState('err', '已断开（手动）');
+	}
+
 	function connect() {
+		manualStop = false;
 		if (retry) { clearTimeout(retry); retry = null; }
 		if (ws && ws.readyState <= 1) { try { ws.close(); } catch (e) { } }
 		setState('', '连接中…');
@@ -82,6 +102,7 @@
 
 		ws.onclose = function () {
 			if (ping) { clearInterval(ping); ping = null; }
+			if (manualStop) { setState('err', '已断开（手动）'); return; }
 			setState('err', '已断开，3 秒后重连');
 			retry = setTimeout(connect, 3000);
 		};
@@ -96,9 +117,7 @@
 		}
 	});
 
-	document.getElementById('kpt-clear').addEventListener('click', function () { term.clear(); });
-	document.getElementById('kpt-reconnect').addEventListener('click', function () { connect(); });
-	document.getElementById('kpt-full').addEventListener('click', function () {
+	function fullscreen() {
 		var el = document.getElementById('kpt');
 		if (!document.fullscreenElement) {
 			(el.requestFullscreen || el.webkitRequestFullscreen || function () { }).call(el);
@@ -106,7 +125,17 @@
 			(document.exitFullscreen || document.webkitExitFullscreen || function () { }).call(document);
 		}
 		setTimeout(fit, 220);
-	});
+	}
+
+	/* 工具栏按钮 */
+	document.getElementById('kpt-clear').addEventListener('click', function () { term.clear(); });
+	document.getElementById('kpt-reconnect').addEventListener('click', function () { connect(); });
+	document.getElementById('kpt-full').addEventListener('click', fullscreen);
+
+	/* macOS 三键：红=断开 / 黄=重连 / 绿=全屏 */
+	if (lights.red) lights.red.addEventListener('click', function (e) { e.preventDefault(); disconnect(); });
+	if (lights.yellow) lights.yellow.addEventListener('click', function (e) { e.preventDefault(); connect(); });
+	if (lights.green) lights.green.addEventListener('click', function (e) { e.preventDefault(); fullscreen(); });
 
 	var rt = null;
 	window.addEventListener('resize', function () {

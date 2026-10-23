@@ -1,39 +1,92 @@
 <style type="text/css">
-/* 面板风格覆盖（xterm 基础样式由上方参考页 CSS 提供） */
-.kpt{border:1px solid rgba(15,23,32,.14);border-radius:12px;overflow:hidden;background:#0f1720;
-	box-shadow:0 8px 24px rgba(15,23,32,.10);margin-bottom:16px}
-.kpt-bar{display:flex;align-items:center;gap:9px;padding:9px 14px;background:#141e28;
-	border-bottom:1px solid rgba(255,255,255,.07);color:#cbd5e1;font-size:12.5px;
-	font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC",sans-serif}
-.kpt-dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 8px;
-	transition:background .3s,box-shadow .3s}
-.kpt-dot.on{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2)}
-.kpt-dot.err{background:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,.2)}
+/* 面板风格覆盖（xterm 基础样式由参考页 CSS 提供） */
+.kpt{
+	border:1px solid rgba(0,0,0,.35);
+	border-radius:14px;
+	overflow:hidden;
+	background:#0f1720;
+	box-shadow:0 12px 32px rgba(15,23,32,.20), 0 1px 0 rgba(255,255,255,.05) inset;
+	margin-bottom:16px;
+	-webkit-font-smoothing:antialiased
+}
+
+/* 工具栏：windows 质感（顶部微亮渐变 + 细描边） */
+.kpt-bar{
+	display:flex;align-items:center;gap:10px;padding:9px 14px;
+	background:linear-gradient(180deg,#1b2732 0%,#141e28 100%);
+	border-bottom:1px solid rgba(0,0,0,.45);
+	box-shadow:0 1px 0 rgba(255,255,255,.04) inset;
+	color:#cbd5e1;font-size:12.5px;
+	font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC",sans-serif
+}
+
+/* macOS 红黄绿三键 */
+.kpt-lights{display:flex;align-items:center;gap:8px;margin-right:2px;flex:0 0 auto}
+.kpt-l{
+	position:relative;width:12px;height:12px;border-radius:50%;display:block;
+	opacity:.34;cursor:pointer;text-decoration:none;
+	border:1px solid rgba(0,0,0,.18);
+	transition:opacity .18s,box-shadow .18s
+}
+.kpt-l.red{background:#ff5f57}
+.kpt-l.yellow{background:#febc2e}
+.kpt-l.green{background:#28c840}
+.kpt-l:hover{opacity:.85}
+.kpt-l.on{opacity:1;box-shadow:0 0 7px rgba(255,255,255,.22)}
+/* 悬停时显示 macOS 那种小符号 */
+.kpt-l::after{
+	position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+	font-size:8px;font-weight:700;color:rgba(0,0,0,.55);opacity:0;transition:opacity .18s
+}
+.kpt-l.red::after{content:"×"}
+.kpt-l.yellow::after{content:"–"}
+.kpt-l.green::after{content:"+"}
+.kpt-l:hover::after{opacity:1}
+
 .kpt-name{color:#e6edf3;font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:12px}
 .kpt-meta{color:#8a93a0}
 .kpt-sp{margin-left:auto}
-.kpt-btn{background:rgba(255,255,255,.07);border:0;color:#cbd5e1;font-size:11.5px;
-	padding:4px 10px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s;
-	font-family:inherit}
-.kpt-btn:hover{background:rgba(255,255,255,.16);color:#fff}
-.kpt-body{padding:10px 12px;background:#0f1720}
-#kpt-term{height:calc(100vh - 268px);min-height:380px;position:relative}
+
+/* 按钮：分段控件 */
+.kpt-btns{display:flex;align-items:center;gap:6px}
+.kpt-btn{
+	background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.05));
+	border:1px solid rgba(255,255,255,.08);color:#cbd5e1;font-size:11.5px;
+	padding:4px 11px;border-radius:7px;cursor:pointer;
+	transition:background .15s,color .15s,border-color .15s;font-family:inherit
+}
+.kpt-btn:hover{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.16)}
+.kpt-btn:active{transform:translateY(1px)}
+
+.kpt-body{padding:12px 14px;background:#0f1720}
+#kpt-term{height:calc(100vh - 276px);min-height:380px;position:relative}
 /* xterm 必须撑满容器，否则没有尺寸 */
 #kpt-term .xterm{height:100%}
 #kpt-term .xterm-viewport{background:#0f1720!important;scrollbar-width:thin}
 #kpt-term .xterm-viewport::-webkit-scrollbar{width:10px}
 #kpt-term .xterm-viewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:5px}
 #kpt-term .xterm-viewport::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
-.kpt-foot{display:flex;align-items:center;gap:12px;padding:6px 14px;
-	border-top:1px solid rgba(255,255,255,.06);background:#141e28;color:#8a93a0;
-	font-size:11.5px;font-family:"JetBrains Mono",Menlo,Consolas,monospace}
+
+.kpt-foot{
+	display:flex;align-items:center;gap:12px;padding:6px 14px;
+	border-top:1px solid rgba(0,0,0,.40);
+	background:linear-gradient(180deg,#141e28,#111a23);
+	color:#8a93a0;font-size:11.5px;
+	font-family:"JetBrains Mono",Menlo,Consolas,monospace
+}
 .kpt-foot .dim{color:#5c6773}
-.kpt:fullscreen{border-radius:0;border:0}
+
+.kpt:fullscreen{border-radius:0;border:0;box-shadow:none}
 .kpt:fullscreen #kpt-term{height:calc(100vh - 96px)}
+
 @media (max-width:600px){
-	#kpt-term{height:calc(100vh - 240px);min-height:300px}
-	.kpt-bar{font-size:12px;padding:8px 10px}
-	.kpt-body{padding:6px 8px}
+	#kpt-term{height:calc(100vh - 248px);min-height:300px}
+	.kpt-bar{font-size:12px;padding:8px 10px;gap:7px}
+	.kpt-l{width:10px;height:10px}
+	.kpt-btns{gap:4px}
+	.kpt-btn{padding:3px 8px;font-size:11px}
+	.kpt-body{padding:7px 8px}
+	.kpt-foot{font-size:10.5px;gap:8px}
 }
 </style>
 
@@ -41,13 +94,19 @@
 
 <div class="kpt" id="kpt">
 	<div class="kpt-bar">
-		<span class="kpt-dot" id="kpt-dot"></span>
+		<span class="kpt-lights">
+			<a class="kpt-l red" id="kpt-l-red" href="#" title="断开连接"></a>
+			<a class="kpt-l yellow" id="kpt-l-yellow" href="#" title="重新连接"></a>
+			<a class="kpt-l green" id="kpt-l-green" href="#" title="全屏"></a>
+		</span>
 		<span class="kpt-name" id="kpt-name">root@…</span>
 		<span class="kpt-meta" id="kpt-meta">连接中…</span>
 		<span class="kpt-sp"></span>
-		<button class="kpt-btn" type="button" id="kpt-clear">清屏</button>
-		<button class="kpt-btn" type="button" id="kpt-reconnect">重连</button>
-		<button class="kpt-btn" type="button" id="kpt-full">全屏</button>
+		<span class="kpt-btns">
+			<button class="kpt-btn" type="button" id="kpt-clear">清屏</button>
+			<button class="kpt-btn" type="button" id="kpt-reconnect">重连</button>
+			<button class="kpt-btn" type="button" id="kpt-full">全屏</button>
+		</span>
 	</div>
 	<div class="kpt-body"><div id="kpt-term"></div></div>
 	<div class="kpt-foot">
