@@ -1,0 +1,91 @@
+<%#
+ 内嵌终端页（对齐 iStoreOS：页面里一块黑色终端）
+
+ 实现方式：iframe 指向本机 ttyd。
+ 前提：ttyd.@server[0].check_origin 必须是 0 —— ttyd 默认只接受同源 WebSocket，
+ 面板在 :8080、ttyd 在 :7681，跨端口会被拒绝（实测握手无响应）。
+ 关闭后任何网页都能连 :7681 拿 root shell，仅建议内网专用设备使用。
+-%>
+<%
+	local uci = require "luci.model.uci".cursor()
+	local port = uci:get("ttyd", "@server[0]", "port") or "7681"
+	local co = uci:get("ttyd", "@server[0]", "check_origin") or "1"
+-%>
+<%+header%>
+
+<style type="text/css">
+.kp-term-page{margin:-10px -12px 0;background:#000}
+.kp-term-bar{display:flex;align-items:center;gap:9px;padding:7px 14px;background:#0f1720;
+	border-bottom:1px solid rgba(255,255,255,.09);color:#cbd5e1;font-size:12.5px;
+	font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+.kp-term-bar .dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 8px;
+	transition:background .3s,box-shadow .3s}
+.kp-term-bar .dot.on{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+.kp-term-bar .addr{color:#8a93a0;font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:11.5px}
+.kp-term-bar .sp{margin-left:auto}
+.kp-term-bar a{color:#93c5fd;text-decoration:none;padding:2px 6px;border-radius:4px}
+.kp-term-bar a:hover{background:rgba(147,197,253,.12)}
+.kp-term-warn{padding:7px 14px;background:#3a2408;color:#fbbf24;font-size:12px;
+	border-bottom:1px solid rgba(251,191,36,.25)}
+.kp-term-frame{width:100%;border:0;display:block;background:#000}
+</style>
+
+<h2 name="content">终端</h2>
+
+<div class="kp-term-page">
+	<div class="kp-term-bar">
+		<i class="dot" id="kp-dot"></i>
+		<span id="kp-state">正在加载…</span>
+		<span class="addr" id="kp-addr"></span>
+		<span class="sp"></span>
+		<a href="#" id="kp-reload">重新加载</a>
+		<a href="#" id="kp-popout" target="_blank" rel="noopener">新窗口</a>
+	</div>
+	<% if co ~= "0" then %>
+	<div class="kp-term-warn">ttyd 的 check_origin 仍为开启状态，跨端口 WebSocket 会被拒绝，终端会一直显示「Connection Closed」。需要执行：<code>uci set ttyd.@server[0].check_origin='0' &amp;&amp; uci commit ttyd &amp;&amp; /etc/init.d/ttyd restart</code></div>
+	<% end %>
+	<iframe id="kp-frame" class="kp-term-frame" src="about:blank" title="终端"></iframe>
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+	var url = location.protocol + '//' + location.hostname + ':<%=port%>/';
+	var frame = document.getElementById('kp-frame');
+	var dot = document.getElementById('kp-dot');
+	var state = document.getElementById('kp-state');
+	var addr = document.getElementById('kp-addr');
+	var pop = document.getElementById('kp-popout');
+
+	if (addr) addr.textContent = ':' + '<%=port%>';
+	if (pop) pop.href = url;
+
+	function fit() {
+		/* 让 iframe 正好占满剩余视口，避免出现外层滚动条 */
+		var top = frame.getBoundingClientRect().top;
+		frame.style.height = Math.max(320, window.innerHeight - top - 2) + 'px';
+	}
+
+	frame.addEventListener('load', function () {
+		if (frame.src.indexOf('about:blank') >= 0) return;
+		dot.className = 'dot on';
+		state.textContent = '已连接';
+		fit();
+	});
+
+	document.getElementById('kp-reload').addEventListener('click', function (e) {
+		e.preventDefault();
+		dot.className = 'dot';
+		state.textContent = '正在重新加载…';
+		frame.src = url + '?t=' + Date.now();
+	});
+
+	frame.src = url;
+	window.addEventListener('resize', fit);
+	setTimeout(fit, 60);
+})();
+//]]>
+</script>
+
+<%+footer%>

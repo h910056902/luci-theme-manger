@@ -117,6 +117,15 @@ chmod 755 /etc/init.d/kpswap 2>/dev/null
 [ -x /etc/init.d/kpswap ] && [ -f /overlay/swapfile ] && /etc/init.d/kpswap enable 2>/dev/null
 [ -x /etc/init.d/kpswap ] && /etc/init.d/kpswap start >/dev/null 2>&1
 
+# 内嵌终端前提：关闭 ttyd 的 check_origin（跨端口 WebSocket 才通）
+uci -q get ttyd.@server[0] >/dev/null 2>&1 && {
+	[ "$(uci -q get ttyd.@server[0].check_origin)" = "0" ] || {
+		uci set ttyd.@server[0].check_origin='0'
+		uci commit ttyd
+		/etc/init.d/ttyd restart >/dev/null 2>&1
+	}
+}
+
 # ttyd 主题首页（有文件才启用，避免 --index 指向不存在的路径导致起不来）
 if [ -f /etc/ttyd/index.html ]; then
 	uci -q get ttyd.@server[0] >/dev/null 2>&1 && {

@@ -33,6 +33,7 @@ function parser.parse(path, ...)
 			or name == "admin_status/nradio_cellular.htm"
 			or name == "admin_status/nradio_device.htm"
 			or name == "admin_status/nradio_sms.htm"
+			or name == "admin_status/nradio_term.htm"
 			or name == "admin_status/nradio_8080_sysauth.htm"
 			-- 状态总览：换成实例私有的「驾驶舱」单页（一屏汇总）
 			or name == "admin_status/index.htm"
@@ -236,6 +237,14 @@ function luci.dispatcher.createtree()
 				target = luci.dispatcher.template("admin_status/nradio_sms"),
 				title = "短信",
 				order = 4,
+				leaf = true
+			}
+			-- 内嵌终端（iframe 指向 ttyd:7681，需 check_origin=0）
+			status.nodes.terminal = {
+				nodes = {},
+				target = luci.dispatcher.template("admin_status/nradio_term"),
+				title = "终端",
+				order = 5,
 				leaf = true
 			}
 			-- KP-CELLULAR-MENU-END

@@ -1199,7 +1199,8 @@
 				<div class="cell-kv"><span>监听 / 鉴权</span><strong id="kpc-term-meta">-</strong></div>
 			</div>
 			<div class="cell-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px">
-				<button class="cbi-button cbi-button-action kpc-term-open" type="button" id="kpc-term-open">打开终端 ↗</button>
+				<button class="cbi-button cbi-button-action kpc-term-open" type="button" id="kpc-term-open">在面板内打开</button>
+				<a class="cbi-button cbi-button-neutral" id="kpc-term-pop" href="#" target="_blank" rel="noopener">新窗口</a>
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-start">启动</button>
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-stop">停止</button>
 				<span class="cell-tip" id="kpc-term-msg" style="margin:0"></span>
@@ -1830,10 +1831,17 @@
 			.catch(function (e) { if (msg) msg.textContent = '失败：' + e; });
 	}
 
+	var TERM_PAGE = '<%=luci.dispatcher.build_url("admin", "status", "terminal")%>';
 	var _tOpen = document.getElementById('kpc-term-open');
-	if (_tOpen) _tOpen.addEventListener('click', function () {
-		if (TERM_URL) window.open(TERM_URL, '_blank');
-	});
+	if (_tOpen) {
+		_tOpen.addEventListener('click', function () {
+			/* 内嵌页：整页加载，不用 iframe 嵌套面板自身 */
+			location.href = TERM_PAGE;
+		});
+	}
+	var _tPop = document.getElementById('kpc-term-pop');
+	if (_tPop) _tPop.href = TERM_URL || '#';
+	
 
 	var _tCopy = document.getElementById('kpc-term-copy');
 	if (_tCopy) {
