@@ -1,0 +1,55 @@
+<style id="kp-term-theme">
+/* 追加层：不改 ttyd 内联 bundle，只在其后追加样式与少量脚本 */
+html,body{height:100%;margin:0;background:#0b1218!important;color:#e6edf3;
+	font-family:"JetBrains Mono",Menlo,Consolas,"Courier New",monospace!important;
+	padding-top:48px!important;box-sizing:border-box;overflow:hidden}
+
+/* 顶栏 */
+body::before{content:"终端  ·  NRadio 8080";position:fixed;top:0;left:0;right:0;height:48px;
+	display:flex;align-items:center;padding:0 18px 0 36px;box-sizing:border-box;
+	background:rgba(15,23,32,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+	border-bottom:1px solid rgba(255,255,255,.07);color:#cbd5e1;font-size:13.5px;
+	letter-spacing:.02em;z-index:99998}
+/* 状态灯 */
+body::after{content:"";position:fixed;top:20px;left:18px;width:8px;height:8px;border-radius:50%;
+	background:#64748b;box-shadow:0 0 0 3px rgba(100,116,139,.15);
+	transition:background .3s,box-shadow .3s;z-index:99999}
+body.kp-live::after{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.22)}
+
+/* 终端区域 */
+.xterm{padding:14px 18px 18px!important}
+.xterm-viewport{background:#0b1218!important}
+.xterm-viewport::-webkit-scrollbar{width:10px}
+.xterm-viewport::-webkit-scrollbar-track{background:transparent}
+.xterm-viewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:5px}
+.xterm-viewport::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+.xterm .xterm-screen canvas{image-rendering:-webkit-optimize-contrast}
+
+/* ttyd 自带的“已断开/重连”提示，弱化成暗色胶囊 */
+#overlay,.modal,.reconnect{background:rgba(11,18,24,.86)!important}
+#overlay > div,.modal > div{background:#141e28!important;border:1px solid rgba(255,255,255,.08)!important;
+	border-radius:10px!important;color:#e6edf3!important}
+
+@media (max-width:600px){
+	body::before{font-size:12.5px;padding-left:34px}
+	.xterm{padding:10px 10px 12px!important}
+}
+</style>
+<script>
+(function () {
+	/* 终端渲染出来后再点亮状态灯（xterm 由 ttyd 的 React 异步挂载） */
+	var tries = 0;
+	var timer = setInterval(function () {
+		tries++;
+		if (document.querySelector('.xterm')) {
+			document.body.classList.add('kp-live');
+			clearInterval(timer);
+		}
+		if (tries > 100) clearInterval(timer);
+	}, 200);
+
+	/* 断线时熄灭状态灯 */
+	window.addEventListener('offline', function () { document.body.classList.remove('kp-live'); });
+	window.addEventListener('online', function () { document.body.classList.add('kp-live'); });
+})();
+</script>

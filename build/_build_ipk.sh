@@ -45,6 +45,16 @@ for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/ini
     fi
 done
 
+echo "== 收集 ttyd 主题首页（设备上已生成才打包） =="
+if [ -d /etc/ttyd ]; then
+	mkdir -p "$W/data/etc/ttyd"
+	for f in /etc/ttyd/*.html; do
+		[ -f "$f" ] || continue
+		cp "$f" "$W/data/etc/ttyd/"
+		echo "  + $f"
+	done
+fi
+
 echo "== 收集 cgi-bin（跳过 .bak） =="
 for f in luci mwrt-wifi mwrt-svc; do
     if [ -f "$D/www/cgi-bin/$f" ]; then cp "$D/www/cgi-bin/$f" "$R/www/cgi-bin/$f"; fi
@@ -106,6 +116,15 @@ chmod 755 /etc/init.d/kpsmsfwd 2>/dev/null
 chmod 755 /etc/init.d/kpswap 2>/dev/null
 [ -x /etc/init.d/kpswap ] && [ -f /overlay/swapfile ] && /etc/init.d/kpswap enable 2>/dev/null
 [ -x /etc/init.d/kpswap ] && /etc/init.d/kpswap start >/dev/null 2>&1
+
+# ttyd 主题首页（有文件才启用，避免 --index 指向不存在的路径导致起不来）
+if [ -f /etc/ttyd/index.html ]; then
+	uci -q get ttyd.@server[0] >/dev/null 2>&1 && {
+		uci set ttyd.@server[0].index='/etc/ttyd/index.html'
+		uci commit ttyd
+		/etc/init.d/ttyd restart >/dev/null 2>&1
+	}
+fi
 
 # 复用系统已有的静态资源，避免重复占用（argon 是本地相对链接）
 if [ -d "$D/www/luci-static/bootstrap" ] && [ ! -e "$D/www/luci-static/argon" ]; then
