@@ -1,0 +1,190 @@
+#!/usr/bin/lua
+-- 短信转发守护（8080 面板配套）
+-- 轮询 ubus smsd，把新短信按模板 POST 到 webhook。
+-- 配置：/etc/config/kpsmsfwd   section main
+--   enable    1/0
+--   url       webhook 地址
+--   body      JSON 模板，支持 {sender} {text} {time} 占位（需自行保证 JSON 转义由本脚本完成）
+--   interval  轮询秒数，默认 20
+-- 状态：/tmp/kpsmsfwd.seen（已转发过的短信序号）、/tmp/kpsmsfwd.log
+
+local JSONC = "/usr/lib/lua/luci/jsonc.lua"
+local ok_jsonc, jsonc = pcall(require, "luci.jsonc")
+if not ok_jsonc then jsonc = nil end
+
+local SEEN_FILE = "/tmp/kpsmsfwd.seen"
+local LOG_FILE  = "/tmp/kpsmsfwd.log"
+local SEEN_MAX  = 400
+
+local function sh(cmd)
+	local f = io.popen(cmd .. " 2>/dev/null")
+	if not f then return "" end
+	local out = f:read("*a") or ""
+	f:close()
+	return out
+end
+
+local function trim(s)
+	return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+local function log(msg)
+	local f = io.open(LOG_FILE, "a")
+	if f then
+		f:write(os.date("%Y-%m-%d %H:%M:%S") .. " " .. msg .. "\n")
+		f:close()
+	end
+end
+
+local function get(k, def)
+	local v = trim(sh("uci -q get kpsmsfwd.main." .. k))
+	if v == "" then return def end
+	return v
+end
+
+local function seen_load()
+	local set, order = {}, {}
+	local f = io.open(SEEN_FILE, "r")
+	if f then
+		for line in f:lines() do
+			line = trim(line)
+			if line ~= "" and not set[line] then
+				set[line] = true
+				order[#order + 1] = line
+			end
+		end
+		f:close()
+	end
+	return set, order
+end
+
+local function seen_save(set, order)
+	local f = io.open(SEEN_FILE, "w")
+	if not f then return end
+	local start = math.max(1, #order - SEEN_MAX + 1)
+	for i = start, #order do
+		if set[order[i]] then f:write(order[i], "\n") end
+	end
+	f:close()
+end
+
+-- 极简 JSON 字符串转义
+local function jesc(s)
+	s = tostring(s or "")
+	s = s:gsub("\\", "\\\\"):gsub('"', '\\"'):gsub("\r", "\\r"):gsub("\n", "\\n"):gsub("\t", "\\t")
+	-- 去掉不可见控制字符
+	s = s:gsub("[%z\1-\8\11\12\14-\31]", "")
+	return s
+end
+
+local function render_body(tpl, sender, text, tm)
+	local body = tpl
+	body = body:gsub("{sender}", jesc(sender))
+	body = body:gsub("{text}", jesc(text))
+	body = body:gsub("{time}", jesc(tm))
+	return body
+end
+
+local function post(url, body)
+	-- 用 --data-binary @- 避免命令行长度与转义问题
+	local cmd = string.format(
+		"printf '%%s' %s | curl -s -m 10 -X POST -H 'Content-Type: application/json' --data-binary @- %s",
+		"'" .. body:gsub("'", "'\\''") .. "'",
+		"'" .. url:gsub("'", "'\\''") .. "'"
+	)
+	local out = sh(cmd)
+	return trim(out)
+end
+
+local function poll_once()
+	local enable = get("enable", "0")
+	if enable ~= "1" then return false end
+
+	local url = get("url", "")
+	if url == "" then
+		log("启用但 url 为空，跳过")
+		return false
+	end
+	-- 模板单独存文件：含引号/空格，走 uci 会被转义坏掉
+	local tpl = ""
+	local bf = io.open("/etc/kpsmsfwd.body", "r")
+	if bf then
+		tpl = bf:read("*a") or ""
+		bf:close()
+		tpl = trim(tpl)
+	end
+	if tpl == "" then tpl = '{"sender":"{sender}","text":"{text}","time":"{time}"}' end
+
+	local raw = sh("ubus call smsd list")
+	if raw == "" then return false end
+
+	local data
+	if jsonc then
+		local okp, obj = pcall(jsonc.parse, raw)
+		if okp then data = obj end
+	end
+	if type(data) ~= "table" then
+		log("smsd 返回无法解析")
+		return false
+	end
+
+	local list = type(data.smslist) == "table" and data.smslist or {}
+	local set, order = seen_load()
+	local fresh = 0
+
+	for _, m in ipairs(list) do
+		if type(m) == "table" then
+			local idx = trim(m.index or m.id or "")
+			if idx ~= "" and not set[idx] then
+				local number = trim(m.number or m.phone or m.originating or "")
+				local text   = trim(m.text or m.content or m.body or "")
+				local tm     = trim(m.time or m.date or m.timestamp or "") or os.date("%Y-%m-%d %H:%M:%S")
+				local body = render_body(tpl, number, text, tm)
+				local resp = post(url, body)
+				log(string.format("转发 #%s 来自 %s -> %s", idx, number, (resp ~= "" and resp:sub(1, 120) or "无响应")))
+				set[idx] = true
+				order[#order + 1] = idx
+				fresh = fresh + 1
+			end
+		end
+	end
+
+	if fresh > 0 then
+		seen_save(set, order)
+	end
+	return true
+end
+
+-- 首轮把已有短信标记为“已见”，避免开启转发时把历史短信全推一遍
+local function bootstrap()
+	local raw = sh("ubus call smsd list")
+	local data
+	if jsonc then
+		local okp, obj = pcall(jsonc.parse, raw)
+		if okp then data = obj end
+	end
+	if type(data) ~= "table" then return end
+	local list = type(data.smslist) == "table" and data.smslist or {}
+	local set, order = seen_load()
+	for _, m in ipairs(list) do
+		if type(m) == "table" then
+			local idx = trim(m.index or m.id or "")
+			if idx ~= "" and not set[idx] then
+				set[idx] = true
+				order[#order + 1] = idx
+			end
+		end
+	end
+	seen_save(set, order)
+end
+
+log("kpsmsfwd 启动")
+bootstrap()
+while true do
+	local okp, err = pcall(poll_once)
+	if not okp then log("轮询异常：" .. tostring(err)) end
+	local iv = tonumber(get("interval", "20")) or 20
+	if iv < 10 then iv = 10 end
+	if iv > 300 then iv = 300 end
+	os.execute("sleep " .. iv)
+end

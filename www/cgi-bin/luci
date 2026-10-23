@@ -1820,7 +1820,7 @@ do
 			      web_listen = true, web_listen_apply = true,
 			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
 			      swap = true, simlock = true }
-			or  { sms_send = true }
+			or  { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
 		if not actions[action] then return false end
 
 		-- 鉴权（必须在任何输出之前）
@@ -2304,6 +2304,60 @@ do
 		if action == "sms_send" then
 			local ok, msg = kp_do_sms(form)
 			kp_write_json({ code = ok and 0 or 1, msg = msg })
+			return true
+		end
+
+		-- 短信转发：读取配置 + 守护状态
+		if action == "sms_fwd_get" then
+			local sys = require "luci.sys"
+			local function q(k)
+				return kp_trim(sys.exec("uci -q get kpsmsfwd.main." .. k .. " 2>/dev/null"))
+			end
+			local body = ""
+			local bf = io.open("/etc/kpsmsfwd.body", "r")
+			if bf then body = bf:read("*a") or ""; bf:close() end
+			kp_write_json({
+				code = 0,
+				enable = (q("enable") == "1"),
+				url = q("url"),
+				body = body,
+				interval = tonumber(q("interval")) or 20,
+				running = ((tonumber(kp_trim(sys.exec("ps w 2>/dev/null | grep -c '[k]psmsfwd'"))) or 0) > 0),
+				seen = tonumber(kp_trim(sys.exec("wc -l < /tmp/kpsmsfwd.seen 2>/dev/null"))) or 0,
+				log = kp_trim(sys.exec("tail -3 /tmp/kpsmsfwd.log 2>/dev/null")),
+			})
+			return true
+		end
+
+		-- 短信转发：保存配置并重启守护
+		if action == "sms_fwd_set" then
+			local sys = require "luci.sys"
+			local enable = (kp_trim(form.enable) == "1") and "1" or "0"
+			local url = kp_trim(form.url)
+			local body = form.body or ""
+			local interval = tonumber(kp_trim(form.interval)) or 20
+			if interval < 10 then interval = 10 end
+			if interval > 300 then interval = 300 end
+			if enable == "1" and url == "" then
+				kp_write_json({ code = 1, msg = "启用前需要填写 webhook 地址" })
+				return true
+			end
+			if url ~= "" and not url:match("^https?://") then
+				kp_write_json({ code = 1, msg = "地址需以 http:// 或 https:// 开头" })
+				return true
+			end
+			-- 本固件 uci 不能新建配置文件，先落骨架再 set
+			sys.call("[ -f /etc/config/kpsmsfwd ] || printf \"config main 'main'\\n\\toption enable '0'\\n\\toption interval '20'\\n\\toption url ''\\n\" > /etc/config/kpsmsfwd")
+			sys.call("uci -q get kpsmsfwd.main >/dev/null 2>&1 || uci set kpsmsfwd.main=main")
+			sys.call("uci set kpsmsfwd.main.enable='" .. enable .. "'")
+			sys.call("uci set kpsmsfwd.main.url='" .. url:gsub("'", "") .. "'")
+			sys.call("uci set kpsmsfwd.main.interval='" .. interval .. "'")
+			sys.call("uci commit kpsmsfwd")
+			-- 模板含引号/空格，走文件而不是 uci
+			local f = io.open("/etc/kpsmsfwd.body", "w")
+			if f then f:write(body); f:close() end
+			sys.call("/etc/init.d/kpsmsfwd restart >/dev/null 2>&1")
+			kp_write_json({ code = 0, msg = "已保存，转发守护已重启" })
 			return true
 		end
 

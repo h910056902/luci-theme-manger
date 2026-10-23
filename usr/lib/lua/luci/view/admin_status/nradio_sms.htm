@@ -213,4 +213,87 @@ body.dark .kpc-msg.kpc-msg-warn { background: rgba(216,160,26,.18); border-color
 	<% end %>
 </fieldset>
 
+<fieldset class="cbi-section" id="sf-card">
+	<h3>短信转发<span class="kpc-pill kpc-off" id="sf-state">—</span></h3>
+	<div style="padding:10px 0">
+		<div class="kpc-grid" style="margin-bottom:10px">
+			<div class="kpc-item"><span>守护进程</span><strong id="sf-run">-</strong></div>
+			<div class="kpc-item"><span>已记录短信</span><strong id="sf-seen">-</strong></div>
+		</div>
+		<label style="display:flex;gap:6px;align-items:center;margin-bottom:8px;font-size:13px">
+			<input type="checkbox" id="sf-enable"> 启用转发
+		</label>
+		<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+			<input id="sf-url" type="text" placeholder="https://api.day.app/xxx 或企业微信机器人地址"
+				style="flex:1;min-width:260px;padding:6px 8px">
+			<input id="sf-iv" type="number" min="10" max="300" value="20" style="width:88px;padding:6px 8px">
+			<span style="font-size:12px;opacity:.7">秒轮询</span>
+		</div>
+		<textarea id="sf-body" rows="3" spellcheck="false"
+			style="width:100%;font-family:monospace;font-size:12px;padding:6px 8px"
+			placeholder='{"sender":"{sender}","text":"{text}","time":"{time}"}'></textarea>
+		<div style="margin-top:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+			<button class="cbi-button cbi-button-apply" type="button" id="sf-save">保存并应用</button>
+			<span id="sf-msg" style="font-size:12px;opacity:.75"></span>
+		</div>
+		<pre id="sf-log" style="margin-top:8px;font-size:11px;opacity:.7;white-space:pre-wrap;max-height:120px;overflow:auto">—</pre>
+		<p style="font-size:12px;opacity:.65;margin-top:6px">新短信会按上面的模板 POST 到填写的地址；<code>{sender}</code> / <code>{text}</code> / <code>{time}</code> 会被替换并自动做 JSON 转义。开启时会把当前已有短信记为「已转发」，不会把历史短信全部推一遍。常见可用地址：Bark、企业微信/钉钉/飞书机器人、Server酱。</p>
+	</div>
+</fieldset>
+
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+	function el(id) { return document.getElementById(id); }
+	function txt(id, v) { var n = el(id); if (n) n.textContent = (v === undefined || v === null) ? '-' : String(v); }
+
+	function load() {
+		fetch('?action=sms_fwd_get&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				el('sf-enable').checked = !!d.enable;
+				el('sf-url').value = d.url || '';
+				el('sf-iv').value = d.interval || 20;
+				el('sf-body').value = d.body || '';
+				txt('sf-run', d.running ? '运行中' : '未运行');
+				txt('sf-seen', (d.seen || 0) + ' 条');
+				txt('sf-log', d.log || '—');
+				var st = el('sf-state');
+				if (st) {
+					st.textContent = d.enable ? '已启用' : '未启用';
+					st.className = 'kpc-pill ' + (d.enable ? 'kpc-on' : 'kpc-off');
+				}
+			})
+			.catch(function () {});
+	}
+
+	el('sf-save').addEventListener('click', function () {
+		var btn = this, msg = el('sf-msg');
+		var fd = new FormData();
+		fd.append('enable', el('sf-enable').checked ? '1' : '0');
+		fd.append('url', el('sf-url').value.trim());
+		fd.append('interval', el('sf-iv').value || '20');
+		fd.append('body', el('sf-body').value);
+		btn.disabled = true;
+		if (msg) msg.textContent = '保存中…';
+		fetch('?action=sms_fwd_set', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				btn.disabled = false;
+				if (msg) msg.textContent = (d && d.msg) || '';
+				setTimeout(load, 1200);
+			})
+			.catch(function (e) {
+				btn.disabled = false;
+				if (msg) msg.textContent = '失败：' + e;
+			});
+	});
+
+	load();
+})();
+//]]>
+</script>
+
 <%+footer%>
