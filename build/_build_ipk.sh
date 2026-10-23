@@ -26,7 +26,7 @@ done
 
 echo "== 收集系统级脚本（监听地址同步 / 短信转发） =="
 # 注意：这些脚本落在系统路径，不在 8080 实例目录下
-for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/init.d/kpsmsfwd; do
+for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/init.d/kpsmsfwd etc/init.d/kpswap; do
     src=""
     if [ -f "/$f" ]; then
         src="/$f"
@@ -101,6 +101,11 @@ chmod 755 /etc/init.d/kpsmsfwd 2>/dev/null
 [ -f /etc/config/kpsmsfwd ] || printf "config main 'main'\n\toption enable '0'\n\toption interval '20'\n\toption url ''\n" > /etc/config/kpsmsfwd
 [ -f /etc/kpsmsfwd.body ] || printf '{"sender":"{sender}","text":"{text}","time":"{time}"}' > /etc/kpsmsfwd.body
 [ -x /etc/init.d/kpsmsfwd ] && /etc/init.d/kpsmsfwd restart >/dev/null 2>&1
+
+# 开机挂载 /overlay/swapfile（固件 fstab 不处理 swap，只能自带脚本）
+chmod 755 /etc/init.d/kpswap 2>/dev/null
+[ -x /etc/init.d/kpswap ] && [ -f /overlay/swapfile ] && /etc/init.d/kpswap enable 2>/dev/null
+[ -x /etc/init.d/kpswap ] && /etc/init.d/kpswap start >/dev/null 2>&1
 
 # 复用系统已有的静态资源，避免重复占用（argon 是本地相对链接）
 if [ -d "$D/www/luci-static/bootstrap" ] && [ ! -e "$D/www/luci-static/argon" ]; then

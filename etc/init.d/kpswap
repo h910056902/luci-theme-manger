@@ -1,0 +1,29 @@
+#!/bin/sh /etc/rc.common
+# 8080 面板配套：开机挂载 /overlay/swapfile
+# 背景：本固件的 /etc/init.d/fstab 不处理 swap（grep swap 为空），
+#       写 fstab 记录重启后不会生效，因此照固件 mwrt-swapfile 的做法自带脚本。
+# 只挂已存在的文件，不自动生成；生成由面板触发（分块写 + .tmp 改名）。
+
+START=12
+STOP=88
+
+SWAP=/overlay/swapfile
+PRIO=10
+
+start() {
+	[ -f "$SWAP" ] || return 0
+	grep -q "^$SWAP " /proc/swaps 2>/dev/null && return 0
+	if ! swapon -p "$PRIO" "$SWAP" 2>/dev/null; then
+		# 文件头无效（例如掉电残留）则重建头再挂
+		mkswap "$SWAP" >/dev/null 2>&1
+		swapon -p "$PRIO" "$SWAP" 2>/dev/null
+	fi
+}
+
+stop() {
+	swapoff "$SWAP" >/dev/null 2>&1
+}
+
+boot() {
+	start "$@"
+}

@@ -1227,18 +1227,19 @@
 			<div class="cell-grid">
 				<div class="cell-kv is-key"><span>Swap</span><strong id="kpc-swap-state">-</strong></div>
 				<div class="cell-kv"><span>已用 / 总量</span><strong id="kpc-swap-usage">-</strong></div>
+				<div class="cell-kv"><span>优先级 / zram</span><strong id="kpc-swap-prio">-</strong></div>
 				<div class="cell-kv"><span>Swap 文件</span><strong id="kpc-swap-file" style="font-size:.76rem">-</strong></div>
 				<div class="cell-kv"><span>卡锁（SIM 保护）</span><strong id="kpc-lock-state">-</strong></div>
 			</div>
 			<div class="cell-formrow" style="margin-top:8px;flex-wrap:wrap;gap:8px">
 				<label>大小
-					<input id="kpc-swap-size" class="kpc-num" type="number" min="64" max="1024" step="64" value="256"> <span class="cell-tip" style="margin:0">MB</span>
+					<input id="kpc-swap-size" class="kpc-num" type="number" min="128" max="1024" step="64" value="512"> <span class="cell-tip" style="margin:0">MB</span>
 				</label>
 				<button class="cbi-button cbi-button-action" type="button" id="kpc-swap-on">创建并启用</button>
 				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-swap-off">关闭并移除</button>
 				<span class="cell-tip" id="kpc-swap-msg" style="margin:0"></span>
 			</div>
-			<p class="cell-tip">swap 文件写在 <code>/mnt/storage/data</code>，并登记到 <code>fstab</code>，重启后自动启用。eMMC 上长期大量换页会加速磨损，建议 256~512 MB 且仅在内存吃紧时开启。<br>卡锁是厂商的 SIM 保护（防止换卡），密钥由板 ID 派生、只存在于厂商侧——这里<strong>只显示状态，不提供解锁</strong>。</p>
+			<p class="cell-tip">对齐固件 <code>mwrt-swapfile</code> 的做法：文件放在 <code>/overlay/swapfile</code>，<strong>64 MB 分块写入</strong>（每块 <code>sync</code>），先写 <code>.tmp</code> 再改名，掉电不会留下半截文件；<code>swapon -p 10</code> 用低优先级；首次生成在后台跑，不阻塞页面。生成结束后写入 <code>fstab</code>，重启自动启用。<br>固件是「zram（pri 100）主 + 文件（pri 10）兜底」双层，本机内核 <code>CONFIG_ZSMALLOC</code> 未开启、没有 zram 模块，<strong>只能做文件这一层</strong>。eMMC 上长期换页会加速磨损，建议 512 MB 以内、按需开启。<br>卡锁是厂商的 SIM 保护（防止换卡），密钥由板 ID 派生、只存在于厂商侧——这里<strong>只显示状态，不提供解锁</strong>。</p>
 		</div>
 	</fieldset>
 
@@ -1956,23 +1957,43 @@
 				var us = document.getElementById('kpc-swap-usage');
 				var fl = document.getElementById('kpc-swap-file');
 				var note = document.getElementById('kpc-swap-note');
-				if (st) st.textContent = d.on ? '已启用' : '未启用';
+				var pr = document.getElementById('kpc-swap-prio');
+				var msg = document.getElementById('kpc-swap-msg');
+
+				if (st) st.textContent = d.on ? '已启用' : (d.building ? '生成中' : '未启用');
 				if (us) us.textContent = d.on ? (fmtKB(d.used_kb) + ' / ' + fmtKB(d.total_kb)) : '—';
+				if (pr) {
+					pr.textContent = (d.on && d.priority !== null && d.priority !== undefined)
+						? ('pri ' + d.priority + ' · ' + (d.zram ? 'zram 可用' : '无 zram'))
+						: (d.zram ? '无 swap · zram 可用' : '无 zram');
+				}
 				if (fl) {
 					fl.textContent = d.file_mb
 						? (d.path + ' · ' + d.file_mb + ' MB' + (d.persist ? ' · 开机启用' : ''))
 						: '未创建';
 				}
-				if (note) note.textContent = d.on ? 'swap 在线' : '无 swap';
+				if (note) note.textContent = d.building ? '生成中' : (d.on ? 'swap 在线' : '无 swap');
+				if (d.building && msg) msg.textContent = '正在生成：' + (d.progress_mb || 0) + ' MB';
 			})
 			.catch(function () {});
 	}
 
+	var swapPoll = null;
+	function swapPollStart() {
+		if (swapPoll) return;
+		var n = 0;
+		swapPoll = setInterval(function () {
+			n++;
+			loadSwap();
+			if (n >= 40) { clearInterval(swapPoll); swapPoll = null; }
+		}, 5000);
+	}
+
 	function swapOp(op) {
 		var msg = document.getElementById('kpc-swap-msg');
-		var size = (document.getElementById('kpc-swap-size') || {}).value || 256;
+		var size = (document.getElementById('kpc-swap-size') || {}).value || 512;
 		var tip = op === 'on'
-			? ('将在 eMMC 上创建 ' + size + ' MB 的 swap 文件并启用，继续？')
+			? ('将在 /overlay 上创建 ' + size + ' MB swap 文件（分块写入，约需 30~60 秒），继续？')
 			: '将关闭 swap 并删除 swap 文件，继续？';
 		if (!confirm(tip)) return;
 		var fd = new FormData();
@@ -1983,8 +2004,9 @@
 		fetch(URL_BASE + '?action=swap', { method: 'POST', credentials: 'same-origin', body: fd })
 			.then(function (r) { return r.json(); })
 			.then(function (d) {
-				if (msg) msg.textContent = (d && d.code === 0) ? '完成' : ('失败：' + (d && d.msg));
+				if (msg) msg.textContent = (d && d.code === 0) ? (d.msg || '完成') : ('失败：' + (d && d.msg));
 				loadSwap();
+				if (d && d.building) swapPollStart();
 			})
 			.catch(function (e) { if (msg) msg.textContent = '失败：' + e; });
 	}

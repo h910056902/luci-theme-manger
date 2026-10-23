@@ -2097,54 +2097,107 @@ do
 			return true
 		end
 
-		-- swap 管理：文件型 swap，落在数据分区，默认 256MB
+		-- swap 管理：对齐固件 mwrt-swapfile 的安全设计
+		-- 固件是「zram(pri 100) 主 + SD 文件(pri 10) 兜底」双层策略；
+		-- 本机内核 CONFIG_ZSMALLOC 未开启、没有 zram 模块，所以只做文件这一层，
+		-- 但沿用固件的：路径 /overlay/swapfile、64MB 分块写、先写 .tmp 再改名、
+		-- 空间检查（需求 +256MB 余量）、swapon -p 10、后台生成不阻塞请求。
 		if action == "swap" then
 			local sys = require "luci.sys"
-			local SWAPFILE = "/mnt/storage/data/swapfile"
+			local SWAPFILE = "/overlay/swapfile"
+			local TMPFILE  = "/overlay/swapfile.tmp"
+			local BUSY     = "/tmp/kpswap.busy"
+			local PRIO     = 10
+			local CHUNK    = 64
 			local op = kp_trim(form.op)
-			if op == "on" or op == "off" then
+
+			if op == "on" then
 				if kp_trim(form.confirm) ~= "1" then
 					kp_write_json({ code = 1, msg = "需要确认" })
 					return true
 				end
-				local mb = tonumber(kp_trim(form.size)) or 256
-				if op == "on" and (mb < 64 or mb > 1024) then
-					kp_write_json({ code = 1, msg = "swap 大小需在 64~1024 MB" })
+				local mb = tonumber(kp_trim(form.size)) or 512
+				if mb < 128 or mb > 1024 then
+					kp_write_json({ code = 1, msg = "swap 大小需在 128~1024 MB" })
 					return true
 				end
-				if op == "on" then
-					sys.call("[ -f " .. SWAPFILE .. " ] || dd if=/dev/zero of=" .. SWAPFILE ..
-						" bs=1M count=" .. mb .. " 2>/dev/null")
-					sys.call("chmod 600 " .. SWAPFILE)
-					sys.call("mkswap " .. SWAPFILE .. " >/dev/null 2>&1")
-					sys.call("swapon " .. SWAPFILE .. " >/dev/null 2>&1")
-					sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci add fstab swap >/dev/null 2>&1")
-					sys.call("uci set fstab.@swap[-1].device='" .. SWAPFILE .. "'")
-					sys.call("uci set fstab.@swap[-1].enabled='1'")
-					sys.call("uci commit fstab")
-				else
-					sys.call("swapoff " .. SWAPFILE .. " >/dev/null 2>&1")
-					sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci commit fstab")
+				local avail = tonumber(kp_trim(sys.exec("df -m /overlay 2>/dev/null | awk 'NR==2{print $4}'"))) or 0
+				if avail < mb + 256 then
+					kp_write_json({ code = 1,
+						msg = string.format("/overlay 剩余 %d MB，至少需要 %d MB（文件 %d + 余量 256）", avail, mb + 256, mb) })
+					return true
 				end
+				-- 持久化：本固件的 /etc/init.d/fstab 不处理 swap（实测 grep 为空），
+				-- 所以不用 fstab，改由自带的 /etc/init.d/kpswap 开机挂载
+				sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci commit fstab")
+				sys.call("/etc/init.d/kpswap enable >/dev/null 2>&1")
+
+				if kp_trim(sys.exec("[ -f " .. SWAPFILE .. " ] && echo 1")) == "1" then
+					sys.call("swapon -p " .. PRIO .. " " .. SWAPFILE .. " >/dev/null 2>&1")
+					kp_write_json({ code = 0, msg = "已启用现有 swap 文件（priority " .. PRIO .. "）" })
+					return true
+				end
+
+				-- 首次生成：后台跑，避免请求超时（512MB 在 f2fs 上要几十秒）
+				local n = math.floor(mb / CHUNK)
+				local script = string.format(
+					"rm -f %s; i=0; while [ $i -lt %d ]; do " ..
+					"dd if=/dev/zero of=%s bs=1M count=%d seek=$((i*%d)) conv=notrunc 2>/dev/null || { rm -f %s; exit 1; }; " ..
+					"sync; i=$((i+1)); done; " ..
+					"chmod 600 %s; mkswap %s >/dev/null 2>&1 && mv -f %s %s && sync && " ..
+					"swapon -p %d %s >/dev/null 2>&1; rm -f %s",
+					TMPFILE, n, TMPFILE, CHUNK, CHUNK, TMPFILE,
+					TMPFILE, TMPFILE, TMPFILE, SWAPFILE, PRIO, SWAPFILE, BUSY)
+				sys.exec("( " .. script .. " ) >/tmp/kpswap.log 2>&1 & echo $! > " .. BUSY)
+				kp_write_json({ code = 0, building = true,
+					msg = string.format("正在后台生成 %d MB（分 %d 块写），完成后自动启用", mb, n) })
+				return true
 			end
-			local total, used = 0, 0
+
+			if op == "off" then
+				if kp_trim(form.confirm) ~= "1" then
+					kp_write_json({ code = 1, msg = "需要确认" })
+					return true
+				end
+				sys.call("/etc/init.d/kpswap disable >/dev/null 2>&1")
+				sys.call("swapoff " .. SWAPFILE .. " >/dev/null 2>&1")
+				sys.call("uci -q delete fstab.@swap[0] 2>/dev/null; uci commit fstab")
+				sys.call("rm -f " .. SWAPFILE .. " " .. TMPFILE .. " " .. BUSY)
+				kp_write_json({ code = 0, msg = "已关闭并删除 swap 文件" })
+				return true
+			end
+
+			-- 状态
+			local total, used, prio = 0, 0, nil
 			local f = io.open("/proc/swaps", "r")
 			if f then
 				f:read("*l")
 				for line in f:lines() do
-					local sz, us = line:match("%s(%d+)%s+(%d+)%s+%-?%d+$")
-					if sz then total = total + tonumber(sz); used = used + tonumber(us) end
+					local sz, us, pr = line:match("%s(%d+)%s+(%d+)%s+(%-?%d+)$")
+					if sz then
+						total = total + tonumber(sz)
+						used = used + tonumber(us)
+						prio = tonumber(pr)
+					end
 				end
 				f:close()
 			end
 			local exists = kp_trim(sys.exec("[ -f " .. SWAPFILE .. " ] && du -m " .. SWAPFILE .. " 2>/dev/null | cut -f1"))
-			local persist = kp_trim(sys.exec("uci -q get fstab.@swap[0].device 2>/dev/null"))
+			local building = kp_trim(sys.exec("[ -f " .. BUSY .. " ] && echo 1")) == "1"
+			local progress = 0
+			if building then
+				progress = tonumber(kp_trim(sys.exec("du -m " .. TMPFILE .. " 2>/dev/null | cut -f1"))) or 0
+			end
+			local persist = kp_trim(sys.exec("[ -e /etc/rc.d/S12kpswap ] && echo 1"))
 			kp_write_json({
 				code = 0, on = (total > 0),
-				total_kb = total, used_kb = used,
+				total_kb = total, used_kb = used, priority = prio,
 				file_mb = tonumber(exists) or 0,
 				persist = (persist ~= ""),
 				path = SWAPFILE,
+				building = building, progress_mb = progress,
+				zram = (kp_trim(sys.exec("ls -d /sys/block/zram0 2>/dev/null")) ~= ""),
+				swappiness = tonumber(kp_trim(sys.exec("cat /proc/sys/vm/swappiness 2>/dev/null"))) or 60,
 			})
 			return true
 		end
