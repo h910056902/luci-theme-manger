@@ -1,0 +1,123 @@
+<script type="text/javascript">
+//<![CDATA[
+(function () {
+	'use strict';
+	var PORT = '<%=port%>';
+	var dot = document.getElementById('kpt-dot');
+	var meta = document.getElementById('kpt-meta');
+	var sizeEl = document.getElementById('kpt-size');
+	var nameEl = document.getElementById('kpt-name');
+	var box = document.getElementById('kpt-term');
+
+	if (nameEl) nameEl.textContent = 'root@' + (location.hostname || 'router');
+
+	var term = new Terminal({
+		fontFamily: '"JetBrains Mono", Menlo, Consolas, "Courier New", monospace',
+		fontSize: 14,
+		lineHeight: 1.2,
+		cursorBlink: true,
+		cursorStyle: 'bar',
+		scrollback: 5000,
+		theme: {
+			background: '#0f1720', foreground: '#e6edf3', cursor: '#34d399',
+			cursorAccent: '#0f1720', selection: 'rgba(52,211,153,0.30)',
+			black: '#1c2430', red: '#f87171', green: '#34d399', yellow: '#fbbf24',
+			blue: '#60a5fa', magenta: '#c084fc', cyan: '#22d3ee', white: '#cbd5e1',
+			brightBlack: '#64748b', brightRed: '#fca5a5', brightGreen: '#6ee7b7',
+			brightYellow: '#fde68a', brightBlue: '#93c5fd', brightMagenta: '#d8b4fe',
+			brightCyan: '#67e8f9', brightWhite: '#f1f5f9'
+		}
+	});
+	term.open(box);
+
+	function fit() { try { term.fit(); } catch (e) { } }
+	function setState(cls, txt) {
+		if (dot) dot.className = 'kpt-dot' + (cls ? ' ' + cls : '');
+		if (meta) meta.textContent = txt;
+	}
+
+	var ws = null, ping = null, retry = null;
+
+	function writeRaw(b64) {
+		var bin = atob(b64);
+		if (typeof term.writeUTF8 === 'function') {
+			try { term.writeUTF8(bin); return; } catch (e) { }
+		}
+		var bytes = new Uint8Array(bin.length);
+		for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+		try { term.write(new TextDecoder('utf-8').decode(bytes)); }
+		catch (e) { term.write(bin); }
+	}
+
+	function connect() {
+		if (retry) { clearTimeout(retry); retry = null; }
+		if (ws && ws.readyState <= 1) { try { ws.close(); } catch (e) { } }
+		setState('', '连接中…');
+		var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+		ws = new WebSocket(proto + location.hostname + ':' + PORT + '/ws', ['tty']);
+
+		ws.onopen = function () {
+			setState('on', '已连接');
+			try { ws.send(JSON.stringify({ AuthToken: null })); } catch (e) { }
+			fit();
+			ping = setInterval(function () {
+				if (ws && ws.readyState === 1) ws.send('1');
+			}, 30000);
+		};
+
+		ws.onmessage = function (ev) {
+			var d = ev.data || '', code = d.charAt(0), body = d.slice(1);
+			if (code === '0') { writeRaw(body); }
+			else if (code === '2') { if (body) document.title = body; }
+			else if (code === '3') {
+				try {
+					var o = JSON.parse(body);
+					Object.keys(o).forEach(function (k) {
+						try { term.setOption(k, o[k]); } catch (e) { }
+					});
+					fit();
+				} catch (e) { }
+			}
+		};
+
+		ws.onclose = function () {
+			if (ping) { clearInterval(ping); ping = null; }
+			setState('err', '已断开，3 秒后重连');
+			retry = setTimeout(connect, 3000);
+		};
+		ws.onerror = function () { };
+	}
+
+	term.onData(function (x) { if (ws && ws.readyState === 1) ws.send('0' + x); });
+	term.onResize(function (s) {
+		if (sizeEl) sizeEl.textContent = s.cols + ' × ' + s.rows;
+		if (ws && ws.readyState === 1) {
+			ws.send('2' + JSON.stringify({ columns: s.cols, rows: s.rows }));
+		}
+	});
+
+	document.getElementById('kpt-clear').addEventListener('click', function () { term.clear(); });
+	document.getElementById('kpt-reconnect').addEventListener('click', function () { connect(); });
+	document.getElementById('kpt-full').addEventListener('click', function () {
+		var el = document.getElementById('kpt');
+		if (!document.fullscreenElement) {
+			(el.requestFullscreen || el.webkitRequestFullscreen || function () { }).call(el);
+		} else {
+			(document.exitFullscreen || document.webkitExitFullscreen || function () { }).call(document);
+		}
+		setTimeout(fit, 220);
+	});
+
+	var rt = null;
+	window.addEventListener('resize', function () {
+		clearTimeout(rt);
+		rt = setTimeout(fit, 150);
+	});
+
+	connect();
+	setTimeout(fit, 120);
+})();
+//]]>
+</script>
+
+<%+footer%>

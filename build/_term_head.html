@@ -1,0 +1,65 @@
+<%#
+ 内嵌终端（自建界面）
+ 复用 luci-app-ttyd 内联的 xterm.js / fit 插件 / UTF-8 解码补丁，
+ 连接逻辑按 ttyd 协议自行实现（子协议 tty，前缀 0=输出 1=ping 2=标题 3=选项 4=重连）。
+ 依赖：ttyd 后端 /ws，且 check_origin 必须为 0（跨端口）。
+-%>
+<%
+	local uci = require "luci.model.uci".cursor()
+	-- 注意：这里不能用 local，后面的 tail 片段还要引用它
+	port = uci:get("ttyd", "@server[0]", "port") or "7681"
+-%>
+<%+header%>
+
+<style type="text/css">
+.kpt{border:1px solid rgba(15,23,32,.14);border-radius:12px;overflow:hidden;background:#0f1720;
+	box-shadow:0 8px 24px rgba(15,23,32,.10);margin-bottom:16px}
+.kpt-bar{display:flex;align-items:center;gap:9px;padding:9px 14px;background:#141e28;
+	border-bottom:1px solid rgba(255,255,255,.07);color:#cbd5e1;font-size:12.5px;
+	font-family:-apple-system,"Segoe UI",Roboto,"PingFang SC",sans-serif}
+.kpt-dot{width:8px;height:8px;border-radius:50%;background:#64748b;flex:0 0 8px;
+	transition:background .3s,box-shadow .3s}
+.kpt-dot.on{background:#34d399;box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+.kpt-dot.err{background:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,.2)}
+.kpt-name{color:#e6edf3;font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:12px}
+.kpt-meta{color:#8a93a0}
+.kpt-sp{margin-left:auto}
+.kpt-btn{background:rgba(255,255,255,.07);border:0;color:#cbd5e1;font-size:11.5px;
+	padding:4px 10px;border-radius:6px;cursor:pointer;transition:background .15s,color .15s;
+	font-family:inherit}
+.kpt-btn:hover{background:rgba(255,255,255,.16);color:#fff}
+.kpt-body{padding:10px 12px;background:#0f1720}
+#kpt-term{height:calc(100vh - 268px);min-height:380px}
+.kpt-foot{display:flex;align-items:center;gap:12px;padding:6px 14px;
+	border-top:1px solid rgba(255,255,255,.06);background:#141e28;color:#8a93a0;
+	font-size:11.5px;font-family:"JetBrains Mono",Menlo,Consolas,monospace}
+.kpt-foot .dim{color:#5c6773}
+.kpt:fullscreen{border-radius:0;border:0}
+.kpt:fullscreen #kpt-term{height:calc(100vh - 96px)}
+@media (max-width:600px){
+	#kpt-term{height:calc(100vh - 240px);min-height:300px}
+	.kpt-bar{font-size:12px;padding:8px 10px}
+	.kpt-body{padding:6px 8px}
+}
+</style>
+
+<h2 name="content">终端</h2>
+
+<div class="kpt" id="kpt">
+	<div class="kpt-bar">
+		<span class="kpt-dot" id="kpt-dot"></span>
+		<span class="kpt-name" id="kpt-name">root@…</span>
+		<span class="kpt-meta" id="kpt-meta">连接中…</span>
+		<span class="kpt-sp"></span>
+		<button class="kpt-btn" type="button" id="kpt-clear">清屏</button>
+		<button class="kpt-btn" type="button" id="kpt-reconnect">重连</button>
+		<button class="kpt-btn" type="button" id="kpt-full">全屏</button>
+	</div>
+	<div class="kpt-body"><div id="kpt-term"></div></div>
+	<div class="kpt-foot">
+		<span id="kpt-size">—</span>
+		<span class="dim">Ctrl+Shift+V 粘贴 · 选中即复制</span>
+		<span class="kpt-sp"></span>
+		<span id="kpt-port">:<%=port%></span>
+	</div>
+</div>
