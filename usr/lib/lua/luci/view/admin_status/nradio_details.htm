@@ -1042,9 +1042,10 @@
 			n = 0;
 			try {
 				localStorage.setItem('kp_oc_unlock', '1');
-				localStorage.setItem('kp_oc_jump', '1');
 			} catch (e) { }
-			location.href = '<%=luci.dispatcher.build_url("admin", "status", "cellular")%>';
+			// 直接打开主 LuCI（80 端口）的 OpenClash 页面，不回蜂窝页
+			location.href = location.protocol + '//' + location.hostname
+				+ '/cgi-bin/luci/admin/services/openclash';
 		}
 	});
 })();
