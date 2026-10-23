@@ -208,8 +208,9 @@ function luci.dispatcher.createtree()
 			status.nodes.details = {
 				nodes = {},
 				target = luci.dispatcher.template("admin_status/nradio_details"),
-				title = "设备总览",
-				order = 0,
+				-- 方案 A：与固件 admin/status 对齐，扁平挂在「状态」下，顺序紧随固件 overview
+				title = "概览",
+				order = 1,
 				leaf = true
 			}
 			-- KP-CELLULAR-MENU-BEGIN
@@ -217,21 +218,21 @@ function luci.dispatcher.createtree()
 				nodes = {},
 				target = luci.dispatcher.template("admin_status/nradio_cellular"),
 				title = "蜂窝状态",
-				order = 10,
+				order = 2,
 				leaf = true
 			}
 			status.nodes.device = {
 				nodes = {},
 				target = luci.dispatcher.template("admin_status/nradio_device"),
 				title = "设备状态",
-				order = 20,
+				order = 3,
 				leaf = true
 			}
 			status.nodes.sms = {
 				nodes = {},
 				target = luci.dispatcher.template("admin_status/nradio_sms"),
 				title = "短信",
-				order = 30,
+				order = 4,
 				leaf = true
 			}
 			-- KP-CELLULAR-MENU-END

@@ -392,7 +392,9 @@
 				}
 			});
 
-			// 对齐固件：精简「状态」菜单；蜂窝相关页面移入独立「蜂窝」一级菜单
+			// 方案 A（严格对齐固件）：状态菜单保持扁平，
+			// 概览/蜂窝状态/设备状态/短信 由 CGI 注入时给定 title 与 order，
+			// 这里只做定位，不再搬动节点、也不重排路由表与防火墙。
 			var statusSlide = null, homeSlide = null;
 			Array.prototype.slice.call(nav.children).forEach(function (li) {
 				var a = li.querySelector(':scope > a.menu');
@@ -408,19 +410,10 @@
 						var a = li.querySelector('a');
 						if (!a) return;
 						var href = a.getAttribute('href') || '';
-						if (/\/admin\/status\/details/.test(href)) { statusMenu.removeChild(li); return; }
-						if (/\/admin\/status\/(cellular|device|sms)(\/|$)/.test(href)) {
-							cellLinks.push(li); statusMenu.removeChild(li);
-						}
+						// 方案 A（严格对齐固件）：状态菜单保持扁平，
+						// 概览/蜂窝/设备/短信 的标题与顺序由 CGI 注入时给定，
+						// 这里不再搬动，也不调整路由表与防火墙的相对位置。
 					});
-					// 固件顺序：路由在防火墙之前
-					var routeLi = null, fwLi = null;
-					Array.prototype.slice.call(statusMenu.children).forEach(function (li) {
-						var a = li.querySelector('a'); var txt = a ? a.textContent.trim() : '';
-						if (txt === '路由表') routeLi = li;
-						if (txt === '防火墙') fwLi = li;
-					});
-					if (routeLi && fwLi) statusMenu.insertBefore(routeLi, fwLi);
 					if (cellLinks.length) {
 						var cellSlide = document.createElement('li');
 						cellSlide.className = 'slide';
