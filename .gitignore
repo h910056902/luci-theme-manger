@@ -16,4 +16,8 @@ cookies.txt
 _askpass*
 *.session
 
+# 固件解包产物（单个 rootfs 就上百 MB，绝不入库）
+build/_fw*/
+*.bin
+
 

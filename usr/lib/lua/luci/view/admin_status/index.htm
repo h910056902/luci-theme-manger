@@ -113,7 +113,13 @@
 		return n + ' B';
 	}
 	function ispName(code) {
-		var m = { '46000': '中国移动', '46001': '中国联通', '46003': '中国电信', '46015': '中国广电' };
+		var m = {
+			'46000': '中国移动', '46002': '中国移动', '46004': '中国移动',
+			'46007': '中国移动', '46008': '中国移动',
+			'46001': '中国联通', '46006': '中国联通', '46009': '中国联通', '46010': '中国联通',
+			'46003': '中国电信', '46005': '中国电信', '46011': '中国电信', '46012': '中国电信',
+			'46015': '中国广电', '46020': '中国铁通'
+		};
 		return m[code] || code || '无服务';
 	}
 	function lvl(v, w, c) { return v >= c ? 'is-bad' : (v >= w ? 'is-warn' : ''); }
@@ -162,6 +168,8 @@
 			kpi('温度', temp + '℃', lvl(temp, 70, 80)) +
 			kpi('连接', ctPct.toFixed(1) + '%', lvl(ctPct, 60, 85)) +
 			kpi('进程', num(proc.total), '') +
+			kpi('信号', (d.cell && d.cell.rsrp) ? (d.cell.rsrp + 'dBm') : '--',
+				(d.cell && d.cell.rsrp) ? (d.cell.rsrp >= -85 ? '' : (d.cell.rsrp >= -105 ? 'is-warn' : 'is-bad')) : '') +
 			kpi('在线', num(d.clients), '') +
 			kpi('异常', bad, lvl(bad, 1, 10));
 
@@ -175,8 +183,18 @@
 		h += row('蜂窝', c.mode ? (ispName(c.isp) + ' · ' + esc(c.mode) + (c.band ? ' · n' + esc(c.band) : ''))
 			: '无服务', '', c.simno ? ('卡 ' + esc(c.simno) + '/' + esc(c.simcount)) : '');
 		h += row('信号', c.rsrp ? (esc(c.rsrp) + ' dBm · SINR ' + esc(c.sinr) + ' dB · RSRQ ' + esc(c.rsrq) + ' dB')
-			: '—', '', c.pci ? ('PCI ' + esc(c.pci)) : '');
+			: '—', '', [c.pci ? ('PCI ' + esc(c.pci)) : '', c.tac ? ('TAC ' + esc(c.tac)) : '',
+			c.cqi ? ('CQI ' + esc(c.cqi)) : ''].filter(Boolean).join(' · '));
 		h += row('频点', c.earfcn ? esc(c.earfcn) : '—', 'mono', '');
+		if (c.model) {
+			h += row('模块', esc(c.model) + (c.revision ? ' · ' + esc(c.revision) : ''), 'mono',
+				c.temp ? (esc(c.temp) + ' ℃') : '');
+		}
+		if (c.imei || c.iccid) {
+			var msk = function (v) { v = String(v || ''); return v.length > 6 ? '…' + v.slice(-6) : v; };
+			h += row('SIM 卡', '卡 ' + esc(c.simno || '-') + '/' + esc(c.simcount || '-'), 'mono',
+				'IMEI ' + esc(msk(c.imei)) + ' · ICCID ' + esc(msk(c.iccid)));
+		}
 		h += row('IPv4', ip.v4 ? esc(ip.v4) : '—', 'mono', '');
 		h += row('IPv6', ip.v6 ? esc(ip.v6) : '—', 'mono', '');
 		h += row('DNS', ip.dns ? esc(ip.dns) : '—', 'mono', '');

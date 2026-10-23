@@ -228,11 +228,14 @@
 					up = state == 0,
 					mode = trim(item.mode),
 					band = band_text(item.mode, item.band),
+					mon = trim(item.sim_mon),
+					total_flow = trim(item.sim_flow),
 					rsrp = metric(item.rsrp, " dBm"),
 					rsrq = metric(item.rsrq, " dB"),
 					sinr = metric(item.sinr, " dB"),
 					temperature = metric(item.model_temp, " °C"),
 					operator = trim(item.sim_company) ~= "" and trim(item.sim_company) or trim(item.isp_company),
+					plmn = trim(item.isp),
 					sim_name = trim(item.sim_name),
 					ipaddr = addresses[item.name] or "-",
 					default_route = tonumber(item.gateway_if) == 1,
@@ -490,7 +493,30 @@
 		hero_level, hero_level_text, hero_color = "poor", "信号弱", "#f87171"
 	end
 	local hero_bars = math.max(1, math.min(5, math.floor(hero_sig_pct / 20 + 0.5)))
-	local hero_operator = hero_cell and hero_cell.operator or "无蜂窝模组"
+
+	-- 运营商以 PLMN 为准（模块返回的 sim_company 多为英文串）；
+	-- PLMN 优先，其次按英文名兜底，最后原样显示。
+	local function operator_cn(plmn, raw)
+		local map = {
+			["46000"] = "中国移动", ["46002"] = "中国移动", ["46004"] = "中国移动",
+			["46007"] = "中国移动", ["46008"] = "中国移动",
+			["46001"] = "中国联通", ["46006"] = "中国联通", ["46009"] = "中国联通",
+			["46010"] = "中国联通",
+			["46003"] = "中国电信", ["46005"] = "中国电信", ["46011"] = "中国电信",
+			["46012"] = "中国电信",
+			["46015"] = "中国广电", ["46020"] = "中国铁通",
+		}
+		local p = trim(plmn)
+		if map[p] then return map[p] end
+		local u = string.upper(trim(raw))
+		if u:find("UNICOM", 1, true) then return "中国联通" end
+		if u:find("CMCC", 1, true) or u:find("MOBILE", 1, true) then return "中国移动" end
+		if u:find("TELECOM", 1, true) or u:find("CTCC", 1, true) then return "中国电信" end
+		if u:find("BROADNET", 1, true) or u:find("CBN", 1, true) then return "中国广电" end
+		return trim(raw)
+	end
+
+	local hero_operator = hero_cell and operator_cn(hero_cell.plmn, hero_cell.operator) or "无蜂窝模组"
 	if hero_operator == "" or hero_operator == "-" then hero_operator = "无蜂窝模组" end
 	local hero_status = hero_cell and hero_cell.connection or "未连接"
 	local hero_mode = hero_cell and (hero_cell.mode or "") or ""
@@ -500,6 +526,19 @@
 	local hero_pci = hero_cell and (hero_cell.pci or "") or ""
 	local hero_earfcn = hero_cell and (hero_cell.earfcn or "") or ""
 	local hero_up = hero_cell and hero_cell.up or false
+
+	-- 本月流量：模块 sim_mon 是字节，转成易读单位；0 表示读不到
+	local hero_mon_txt = ""
+	do
+		local n = tonumber(hero_cell and hero_cell.mon or "") or 0
+		if n > 0 then
+			if n >= 1073741824 then
+				hero_mon_txt = string.format("%.1f GB", n / 1073741824)
+			else
+				hero_mon_txt = string.format("%.0f MB", n / 1048576)
+			end
+		end
+	end
 
 
 	-- P3: 蜂窝/无线/终端等扩展信息（ubus infocd runtime）
@@ -529,6 +568,8 @@
 	local sim_operator_rt = rt_trim(rt_cpe.sim_company)
 	if sim_operator_rt == "" then sim_operator_rt = rt_trim(rt_cpe.isp_company) end
 	if sim_operator_rt == "" then sim_operator_rt = hero_operator end
+	-- 同样以 PLMN 为准，避免出现英文运营商名
+	sim_operator_rt = operator_cn(rt_trim(rt_cpe.isp), sim_operator_rt)
 	local sim_name_rt = rt_trim(rt_cpe.sim_name)
 	if sim_name_rt == "" then sim_name_rt = "--" end
 	local sim_imei = rt_mask(rt_cpe.imei)
@@ -631,8 +672,8 @@
 	<div class="h-id">
 		<div class="h-brand"><i class="fas fa-broadcast-tower" aria-hidden="true"></i></div>
 		<div class="h-id-t">
-			<div class="h-op-row"><div class="h-op-name" data-nradio-hero="op"><%=pcdata(hero_operator)%></div><div class="h-bdg"><b class="h-badge"><%=pcdata(hero_mode_short)%></b></div></div>
-			<div class="h-op-sub"><span class="h-dot"></span><span data-nradio-hero="status"><%=pcdata(hero_status)%></span><span class="h-sep">·</span><span class="h-mode" data-nradio-hero="mode"><%=pcdata(hero_mode ~= "" and (hero_mode .. (hero_band ~= "" and (" · " .. hero_band) or "")) or "蜂窝未连接")%></span><span class="h-sep">·</span><span class="h-simname" data-nradio-hero="simname"><%=pcdata(hero_sim)%></span></div>
+			<div class="h-op-row"><div class="h-op-name" data-nradio-hero="op"><%=pcdata(hero_operator)%></div><div class="h-bdg"><b class="h-badge" data-nradio-hero="badge"><%=pcdata(hero_mode_short .. (hero_band ~= "" and (" · " .. hero_band) or ""))%></b></div></div>
+			<div class="h-op-sub"><span class="h-dot"></span><span data-nradio-hero="status"><%=pcdata(hero_status)%></span><span class="h-sep">·</span><span class="h-mode" data-nradio-hero="mode"><%=pcdata(hero_mon_txt ~= "" and ("本月 " .. hero_mon_txt) or "本月 --")%></span><span class="h-sep">·</span><span class="h-simname" data-nradio-hero="simname"><%=pcdata(hero_sim)%></span></div>
 		</div>
 	</div>
 	<div class="h-mx">
@@ -751,17 +792,46 @@
 	function heroNum(value) { var m = String(value == null ? '' : value).match(/-?\d+(\.\d+)?/); return m ? parseFloat(m[0]) : 0; }
 	function heroPct(value, lo, hi) { var p = (value - lo) / (hi - lo) * 100; return Math.max(0, Math.min(100, p)); }
 	function heroSet(name, value) { var n = heroNode(name); if (n) n.textContent = text(value); }
+	function opName(plmn, raw) {
+		var p = String(plmn || '').trim();
+		var map = {
+			'46000': '中国移动', '46002': '中国移动', '46004': '中国移动', '46007': '中国移动', '46008': '中国移动',
+			'46001': '中国联通', '46006': '中国联通', '46009': '中国联通', '46010': '中国联通',
+			'46003': '中国电信', '46005': '中国电信', '46011': '中国电信', '46012': '中国电信',
+			'46015': '中国广电', '46020': '中国铁通'
+		};
+		if (map[p]) return map[p];
+		var u = String(raw || '').toUpperCase();
+		if (u.indexOf('UNICOM') >= 0) return '中国联通';
+		if (u.indexOf('CMCC') >= 0 || u.indexOf('MOBILE') >= 0) return '中国移动';
+		if (u.indexOf('TELECOM') >= 0 || u.indexOf('CTCC') >= 0) return '中国电信';
+		if (u.indexOf('BROADNET') >= 0 || u.indexOf('CBN') >= 0) return '中国广电';
+		return String(raw || '');
+	}
+	function shortMode(m) {
+		var u = String(m || '').toUpperCase();
+		if (u.indexOf('NR') >= 0) return u.indexOf('SA') >= 0 ? '5G SA' : '5G NSA';
+		if (u.indexOf('LTE') >= 0 || u.indexOf('4G') >= 0) return '4G LTE';
+		return m || '蜂窝';
+	}
+	function fmtGB(v) {
+		var n = Number(v) || 0;
+		if (n <= 0) return '';
+		return n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : Math.round(n / 1048576) + ' MB';
+	}
 	function updateHero(lines) {
 		if (!lines || !lines.length) return;
 		var c = lines[0] || {};
-		var op = c.operator || '无蜂窝模组';
+		var op = opName(c.plmn, c.operator) || '无蜂窝模组';
 		if (op === '' || op === '-') op = '无蜂窝模组';
 		var sim = c.sim_name || 'SIM 卡';
 		if (sim === '' || sim === '-') sim = 'SIM 卡';
 		heroSet('op', op);
 		heroSet('status', c.connection || '未连接');
-		var modeText = [c.mode || '', c.band || ''].filter(Boolean).join(' · ') || '蜂窝未连接';
-		heroSet('mode', modeText);
+		// 制式合并进徽标，副标题位置改显示本月流量
+		var badge = [shortMode(c.mode), c.band || ''].filter(Boolean).join(' · ');
+		heroSet('badge', badge || '蜂窝');
+		heroSet('mode', c.mon ? ('本月 ' + fmtGB(c.mon)) : '本月 --');
 		heroSet('simname', sim);
 		var rsrp = c.rsrp ? heroNum(c.rsrp) : 0;
 		var sinr = c.sinr ? heroNum(c.sinr) : 0;

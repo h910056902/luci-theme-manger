@@ -1249,14 +1249,16 @@ do
 		for _, p in ipairs(hist) do
 			local r = tonumber(p.rsrp) or 0
 			if r < 0 then
-				rb[kp_bin_index(r, RSRP_EDGES)] = rb[kp_bin_index(r, RSRP_EDGES)] + 1
+				local ri = kp_bin_index(r, RSRP_EDGES)
+				rb[ri] = rb[ri] + 1
 				rv[#rv + 1] = r
 			end
 			local raw = p.sinr
 			if raw ~= nil and raw ~= "" then
 				local s = tonumber(raw)
 				if s then
-					sb[kp_bin_index(s, SINR_EDGES)] = sb[kp_bin_index(s, SINR_EDGES)] + 1
+					local si = kp_bin_index(s, SINR_EDGES)
+					sb[si] = sb[si] + 1
 					sv[#sv + 1] = s
 				end
 			end
@@ -1806,7 +1808,8 @@ do
 			and { neighbor = true, lock_apply = true, lock_clear = true, poll = true,
 			      stats = true, cell = true, ta_cal = true, diag = true, at = true,
 			      devices = true, qos_apply = true, qos_reset = true,
-			      web_listen = true, web_listen_apply = true }
+			      web_listen = true, web_listen_apply = true,
+			      at_raw = true, modem_reboot = true, terminal = true, hnat = true }
 			or  { sms_send = true }
 		if not actions[action] then return false end
 
@@ -1856,10 +1859,7 @@ do
 					cands[#cands + 1] = { ip = ip, label = curdev }
 				end
 			end
-			local eff = ""
-			if pcall(function() sys.exec("test -x /usr/bin/kp8080-listen") end) then
-				eff = kp_trim(sys.exec("[ -x /usr/bin/kp8080-listen ] && /usr/bin/kp8080-listen resolve 2>/dev/null"))
-			end
+			local eff = kp_trim(sys.exec("[ -x /usr/bin/kp8080-listen ] && /usr/bin/kp8080-listen resolve 2>/dev/null"))
 			kp_write_json({ code = 0, current = q("uhttpd.openwrt8080.listen_http"),
 				mode = mode, port = port, lan = q("network.lan.ipaddr"),
 				effective = eff, candidates = cands })
@@ -1974,6 +1974,115 @@ do
 				cmd = cmd,
 				ok = (type(res) == "table" and tostring(res.code) == "0"),
 				resp = (txt ~= "" and txt or "(无响应)"),
+			})
+			return true
+		end
+
+		-- 高级 AT：任意命令，必须显式确认（白名单之外的写入类命令有风险）
+		if action == "at_raw" then
+			local cmd = kp_trim(form.cmd)
+			if kp_trim(form.confirm) ~= "1" then
+				kp_write_json({ code = 1, msg = "高级命令需要先勾选确认" })
+				return true
+			end
+			if cmd == "" or #cmd > 200 then
+				kp_write_json({ code = 1, msg = "命令为空或过长（上限 200 字符）" })
+				return true
+			end
+			if not cmd:upper():match("^AT") then
+				kp_write_json({ code = 1, msg = "只接受 AT 开头的命令" })
+				return true
+			end
+			local res = kp_at("atsdcpe", cmd, 3000)
+			local txt = kp_at_text(res)
+			kp_write_json({
+				code = 0, cmd = cmd,
+				ok = (type(res) == "table" and tostring(res.code) == "0"),
+				resp = (txt ~= "" and txt or "(无响应)"),
+			})
+			return true
+		end
+
+		-- 模块重启：AT+CFUN=1,1，会自动脱网数十秒
+		if action == "modem_reboot" then
+			if kp_trim(form.confirm) ~= "1" then
+				kp_write_json({ code = 1, msg = "需要确认" })
+				return true
+			end
+			local res = kp_at("atsdcpe", "AT+CFUN=1,1", 2500)
+			kp_write_json({ code = 0, msg = "已下发模块重启指令，约 20~60 秒恢复",
+				resp = kp_at_text(res) })
+			return true
+		end
+
+		-- 网页终端：本机已有 ttyd，这里只做状态与启停
+		if action == "terminal" then
+			local sys = require "luci.sys"
+			local op = kp_trim(form.op)
+			if op == "start" or op == "stop" then
+				sys.call("/etc/init.d/ttyd " .. op .. " >/dev/null 2>&1")
+				sys.exec("sleep 1")
+			end
+			local pid = kp_trim(sys.exec("pidof ttyd 2>/dev/null"))
+			-- ttyd 的 section 类型是 server（ttyd.default=server），
+			-- 之前写 @ttyd[0] 永远取不到，会静默回落到 7681
+			local function uget(keys)
+				for _, k in ipairs(keys) do
+					local v = kp_trim(sys.exec("uci -q get " .. k .. " 2>/dev/null"))
+					if v ~= "" then return v end
+				end
+				return ""
+			end
+			local port = uget({ "ttyd.@server[0].port", "ttyd.default.port" })
+			if port == "" then port = "7681" end
+			local lan = kp_trim(sys.exec("uci -q get network.lan.ipaddr 2>/dev/null"))
+			local cred = uget({ "ttyd.@server[0].credential", "ttyd.default.credential" })
+			kp_write_json({
+				code = 0, running = (pid ~= ""), pid = pid, port = port,
+				url = "http://" .. (lan ~= "" and lan or "192.168.66.1") .. ":" .. port,
+				credential = (cred ~= "" and cred ~= "0"), lan = lan,
+			})
+			return true
+		end
+
+		-- 硬件加速：只读展示 HNAT，开关仅动软件 flow_offloading
+		if action == "hnat" then
+			local sys = require "luci.sys"
+			local op = kp_trim(form.op)
+			local function rd(p, n)
+				local f = io.open(p, "r")
+				if not f then return "" end
+				local v = f:read(n or 200) or ""
+				f:close()
+				return kp_trim(v)
+			end
+			if op == "on" or op == "off" then
+				if kp_trim(form.confirm) ~= "1" then
+					kp_write_json({ code = 1, msg = "需要确认" })
+					return true
+				end
+				sys.call("uci set firewall.@defaults[0].flow_offloading='" .. (op == "on" and "1" or "0") .. "'")
+				sys.call("uci commit firewall")
+				sys.call("/etc/init.d/firewall reload >/dev/null 2>&1")
+				sys.exec("sleep 1")
+			end
+			local mod = sys.exec("lsmod 2>/dev/null | grep -c mtkhnat") or "0"
+			local hook = rd("/sys/kernel/debug/hnat/hook_toggle", 32)
+			local ver = rd("/sys/kernel/debug/hnat/hnat_version", 64)
+			local entry_raw = rd("/sys/kernel/debug/hnat/hnat_entry", 64)
+			local n_entry = 0
+			local f = io.open("/sys/kernel/debug/hnat/all_entry", "r")
+			if f then
+				for _ in f:lines() do n_entry = n_entry + 1 end
+				f:close()
+			end
+			local sw = kp_trim(sys.exec("uci -q get firewall.@defaults[0].flow_offloading 2>/dev/null"))
+			kp_write_json({
+				code = 0,
+				module_loaded = (tonumber(kp_trim(mod)) or 0) > 0,
+				hook = hook, version = ver, entry_head = entry_raw,
+				entries = n_entry,
+				soft_offload = (sw == "1"),
 			})
 			return true
 		end
@@ -2649,6 +2758,76 @@ do
 				isp      = trim(st.isp or st.isp_company),
 				simno    = trim(st.simno),
 				simcount = trim(st.simcount),
+			}
+		end)
+
+		-- 蜂窝概况：与固件总览对齐（运营商 / 制式 / 频段 / 信号 / 温度 / 本月流量）
+		-- 一次 ubus 调用，任一字段缺失只让该项为空，不影响整页
+		pcall(function()
+			local raw = sys.exec("ubus call infocd cpestatus '{\"name\":\"cpe\"}' 2>/dev/null") or ""
+			if raw == "" then return end
+			local function g(k)
+				local v = raw:match('"' .. k .. '"%s*:%s*"([^"]*)"')
+				return v and trim(v) or ""
+			end
+			local plmn = g("isp")
+			local company = g("sim_company") ~= "" and g("sim_company") or g("isp_company")
+
+			-- 版本号：正则取首个 "rev" 会撞到别的空字段，改用 jsonc 定位「同时有 mode + rev」的对象
+			local rev = ""
+			local okp, obj = pcall(jsonc.parse, raw)
+			if okp and type(obj) == "table" then
+				local hit
+				local function walk(t, depth)
+					if type(t) ~= "table" or hit or depth > 6 then return end
+					if t.rev ~= nil and tostring(t.rev) ~= "" and t.mode ~= nil then hit = t; return end
+					for _, v in pairs(t) do walk(v, depth + 1) end
+				end
+				walk(obj, 0)
+				if hit then rev = trim(tostring(hit.rev)) end
+			end
+			local OPMAP = {
+				["46000"] = "中国移动", ["46002"] = "中国移动", ["46004"] = "中国移动",
+				["46007"] = "中国移动", ["46008"] = "中国移动",
+				["46001"] = "中国联通", ["46006"] = "中国联通", ["46009"] = "中国联通",
+				["46010"] = "中国联通",
+				["46003"] = "中国电信", ["46005"] = "中国电信", ["46011"] = "中国电信",
+				["46012"] = "中国电信",
+				["46015"] = "中国广电", ["46020"] = "中国铁通",
+			}
+			local op = OPMAP[plmn]
+			if not op then
+				local u = string.upper(company)
+				if u:find("UNICOM", 1, true) then op = "中国联通"
+				elseif u:find("CMCC", 1, true) or u:find("MOBILE", 1, true) then op = "中国移动"
+				elseif u:find("TELECOM", 1, true) or u:find("CTCC", 1, true) then op = "中国电信"
+				elseif u:find("BROADNET", 1, true) or u:find("CBN", 1, true) then op = "中国广电"
+				else op = company end
+			end
+			d.cell = {
+				-- isp 用 PLMN：前端 ispName() 直接吃这个值
+				isp      = plmn,
+				operator = op,
+				plmn     = plmn,
+				simno    = g("simno"),
+				simcount = g("simcount"),
+				mode     = g("mode"),
+				band     = g("band"),
+				arfcn    = g("earfcn"),
+				model    = g("model"),
+				revision = rev,
+				imei     = g("imei"),
+				iccid    = g("iccid"),
+				pci      = g("pci"),
+				tac      = g("tac"),
+				rsrp     = tonumber(g("rsrp")) or 0,
+				rsrq     = tonumber(g("rsrq")) or 0,
+				sinr     = tonumber(g("sinr")) or 0,
+				cqi      = tonumber(g("CQI")) or 0,
+				temp     = tonumber(g("model_temp")) or 0,
+				mon      = tonumber(g("sim_mon")) or 0,
+				sim      = g("sim_name"),
+				online   = (g("mode") ~= "" and g("status") ~= "-1"),
 			}
 		end)
 

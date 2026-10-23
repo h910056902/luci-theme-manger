@@ -1159,6 +1159,57 @@
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>网页终端<span class="cell-live" id="kpc-term-state">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>服务状态</span><strong id="kpc-term-run">-</strong></div>
+				<div class="cell-kv"><span>访问地址</span><strong id="kpc-term-url" style="font-size:.78rem">-</strong></div>
+			</div>
+			<div class="cell-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-term-open">打开终端</button>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-start">启动</button>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-term-stop">停止</button>
+				<span class="cell-tip" id="kpc-term-msg" style="margin:0"></span>
+			</div>
+			<p class="cell-tip">终端由本机 <code>ttyd</code> 提供，跑在独立端口、独立会话。<strong>它给的是 root shell</strong>：任何能访问该端口的人都能完全控制设备，且当前<strong>没有设置用户名密码</strong>。请只在可信内网使用，用完点「停止」。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>硬件加速<span class="cell-live" id="kpc-hnat-note">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-grid">
+				<div class="cell-kv is-key"><span>HNAT 模块</span><strong id="kpc-hnat-mod">-</strong></div>
+				<div class="cell-kv"><span>加速条目</span><strong id="kpc-hnat-cnt">-</strong></div>
+				<div class="cell-kv"><span>软件 offload</span><strong id="kpc-hnat-sw">-</strong></div>
+				<div class="cell-kv"><span>驱动版本</span><strong id="kpc-hnat-ver" style="font-size:.76rem">-</strong></div>
+			</div>
+			<div class="cell-actions" style="margin-top:10px;flex-wrap:wrap;gap:8px">
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-hnat-on">开启软件 offload</button>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kpc-hnat-off">关闭软件 offload</button>
+				<span class="cell-tip" id="kpc-hnat-msg" style="margin:0"></span>
+			</div>
+			<p class="cell-tip">HNAT 是 MTK 的硬件转发通道，由驱动接管，这里只读展示。软件 offload 对应 <code>firewall.flow_offloading</code>，切换会 reload 防火墙（连接瞬断）。<strong>与「限速」互斥</strong>：启用分设备限速时会挂起 HNAT，否则限速不生效。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
+		<h3>AT 高级命令<span class="cell-live">绕过白名单</span></h3>
+		<div class="cell-sec">
+			<div class="cell-formrow" style="flex-wrap:wrap;gap:8px">
+				<input id="kpc-atraw-cmd" class="kpc-num" style="flex:1;min-width:220px;width:auto" placeholder="例如 AT+CSQ / AT^HCSQ?">
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-atraw-run">执行</button>
+				<button class="cbi-button cbi-button-negative" type="button" id="kpc-atraw-reset">重启模块</button>
+			</div>
+			<label class="cell-tip" style="display:flex;align-items:center;gap:6px;margin:8px 0 0">
+				<input type="checkbox" id="kpc-atraw-confirm"> 我确认这些命令会直接作用于模块（可能脱网或改动配置）
+			</label>
+			<pre class="kpc-at-pre" id="kpc-atraw-out">—</pre>
+			<p class="cell-tip">卡槽切换该模块不支持：<code>AT+QUIMSLOT?</code> 与 <code>AT^SIMSLOT?</code> 均返回 ERROR，故不提供。模块重启用 <code>AT+CFUN=1,1</code>，通常 20~60 秒恢复。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>监听地址<span class="cell-live" id="kpc-listen-note">—</span></h3>
 		<div class="cell-sec">
 			<div class="cell-grid">
@@ -1681,6 +1732,135 @@
 	setInterval(pollTrend, 10000);
 	pollTrend();
 
+	/* ---- 网页终端 ---- */
+	var TERM_URL = '';
+
+	function termLoad() {
+		fetch(URL_BASE + '?action=terminal&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				TERM_URL = d.url || '';
+				var run = document.getElementById('kpc-term-run');
+				var url = document.getElementById('kpc-term-url');
+				var st = document.getElementById('kpc-term-state');
+				var openBtn = document.getElementById('kpc-term-open');
+				if (run) run.textContent = d.running ? ('运行中' + (d.pid ? ' · PID ' + d.pid : '')) : '已停止';
+				if (url) url.textContent = d.url || '-';
+				if (st) st.textContent = d.credential ? '有密码保护' : '无密码（注意暴露）';
+				if (openBtn) openBtn.disabled = !d.running;
+			})
+			.catch(function () {});
+	}
+
+	function termOp(op) {
+		var msg = document.getElementById('kpc-term-msg');
+		var fd = new FormData();
+		fd.append('op', op);
+		fetch(URL_BASE + '?action=terminal', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (msg) msg.textContent = (d && d.code === 0) ? ('已' + (op === 'start' ? '启动' : '停止')) : ('失败：' + (d && d.msg));
+				setTimeout(termLoad, 900);
+			})
+			.catch(function (e) { if (msg) msg.textContent = '失败：' + e; });
+	}
+
+	var _tOpen = document.getElementById('kpc-term-open');
+	if (_tOpen) _tOpen.addEventListener('click', function () {
+		if (TERM_URL) window.open(TERM_URL, '_blank');
+	});
+	var _tStart = document.getElementById('kpc-term-start');
+	if (_tStart) _tStart.addEventListener('click', function () { termOp('start'); });
+	var _tStop = document.getElementById('kpc-term-stop');
+	if (_tStop) _tStop.addEventListener('click', function () { termOp('stop'); });
+
+	/* ---- 硬件加速 ---- */
+	function hnatLoad() {
+		fetch(URL_BASE + '?action=hnat&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d || d.code !== 0) return;
+				var mod = document.getElementById('kpc-hnat-mod');
+				var cnt = document.getElementById('kpc-hnat-cnt');
+				var sw = document.getElementById('kpc-hnat-sw');
+				var ver = document.getElementById('kpc-hnat-ver');
+				var note = document.getElementById('kpc-hnat-note');
+				if (mod) mod.textContent = d.module_loaded ? '已加载' : '未加载';
+				if (cnt) cnt.textContent = (d.entries || 0) + ' 条';
+				if (sw) sw.textContent = d.soft_offload ? '开启' : '关闭';
+				if (ver) ver.textContent = d.version || '模块内置';
+				if (note) note.textContent = d.module_loaded ? '硬件通道在线' : '仅软件转发';
+			})
+			.catch(function () {});
+	}
+
+	function hnatSet(op) {
+		var msg = document.getElementById('kpc-hnat-msg');
+		if (!confirm('切换会 reload 防火墙，现有连接会瞬断。继续？')) return;
+		var fd = new FormData();
+		fd.append('op', op);
+		fd.append('confirm', '1');
+		fetch(URL_BASE + '?action=hnat', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (msg) msg.textContent = (d && d.code === 0) ? '已切换' : ('失败：' + (d && d.msg));
+				setTimeout(hnatLoad, 1500);
+			})
+			.catch(function (e) { if (msg) msg.textContent = '失败：' + e; });
+	}
+
+	var _hOn = document.getElementById('kpc-hnat-on');
+	if (_hOn) _hOn.addEventListener('click', function () { hnatSet('on'); });
+	var _hOff = document.getElementById('kpc-hnat-off');
+	if (_hOff) _hOff.addEventListener('click', function () { hnatSet('off'); });
+
+	/* ---- AT 高级命令 ---- */
+	function atRawOut(text) {
+		var pre = document.getElementById('kpc-atraw-out');
+		if (pre) pre.textContent = text;
+	}
+
+	function atRawConfirm() {
+		var cb = document.getElementById('kpc-atraw-confirm');
+		if (!cb || !cb.checked) {
+			atRawOut('请先勾选「我确认…」再执行。');
+			return false;
+		}
+		return true;
+	}
+
+	var _aRun = document.getElementById('kpc-atraw-run');
+	if (_aRun) _aRun.addEventListener('click', function () {
+		if (!atRawConfirm()) return;
+		var cmd = (document.getElementById('kpc-atraw-cmd') || {}).value || '';
+		if (!cmd) { atRawOut('请输入命令。'); return; }
+		var fd = new FormData();
+		fd.append('cmd', cmd);
+		fd.append('confirm', '1');
+		atRawOut('执行中…');
+		fetch(URL_BASE + '?action=at_raw', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (!d) { atRawOut('无响应'); return; }
+				atRawOut('$ ' + (d.cmd || cmd) + '\n' + (d.resp || d.msg || ''));
+			})
+			.catch(function (e) { atRawOut('请求失败：' + e); });
+	});
+
+	var _aReset = document.getElementById('kpc-atraw-reset');
+	if (_aReset) _aReset.addEventListener('click', function () {
+		if (!atRawConfirm()) return;
+		if (!confirm('将下发 AT+CFUN=1,1 重启模块，网络会中断约 20~60 秒。确定？')) return;
+		var fd = new FormData();
+		fd.append('confirm', '1');
+		atRawOut('正在重启模块…');
+		fetch(URL_BASE + '?action=modem_reboot', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) { atRawOut((d && (d.msg + '\n' + (d.resp || ''))) || '无响应'); })
+			.catch(function (e) { atRawOut('失败：' + e); });
+	});
+
 	/* ---- 监听地址 ---- */
 	function listenSync() {
 		var mode = document.getElementById('kpc-listen-mode');
@@ -1802,6 +1982,8 @@
 	loadCellDetail();
 	setInterval(function () { if (!document.hidden) loadCellDetail(); }, 30000);
 	loadListen();
+	termLoad();
+	hnatLoad();
 
 	document.getElementById('kpc-diag').addEventListener('click', function () {
 		window.location.href = URL_BASE + '?action=diag&t=' + Date.now();
