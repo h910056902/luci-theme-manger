@@ -176,7 +176,9 @@ local function inject_plugin_menu(tree, admin)
 				require("luci.http").redirect(luci.dispatcher.build_url("admin", "status", "details") .. "#nradio-plugin-links")
 			end
 		}
-		admin.nodes.nradio_plugins = menu
+		-- 对齐固件：固件没有「插件」一级菜单。
+		-- 注意 nradio_8080_links 仍要保留，首页的「全部插件入口」区块依赖它。
+		-- admin.nodes.nradio_plugins = menu
 	end
 end
 
@@ -200,7 +202,8 @@ function luci.dispatcher.createtree()
 		admin.sysauth_template = "admin_status/nradio_8080_sysauth"
 		local status = admin.nodes.status
 		if not status then
-			status = { nodes = {}, target = luci.dispatcher.firstchild(), title = "状态", order = 10 }
+			-- order 与固件 controller/admin/status.lua 一致（固件为 20）
+			status = { nodes = {}, target = luci.dispatcher.firstchild(), title = "状态", order = 20 }
 			admin.nodes.status = status
 		end
 		if status then
@@ -246,11 +249,15 @@ function luci.dispatcher.createtree()
 		admin.nodes.quickstart = {
 			nodes = {},
 			target = luci.dispatcher.template("quickstart/home"),
-			title = "首页",
+			-- 对齐固件 menu.d/luci-app-quickstart.json：title=QuickStart，order=1
+			title = "QuickStart",
 			order = 1,
 			leaf = true
 		}
 		admin.nodes.network_guide = {
+			-- 对齐固件：固件没有这个一级菜单，这里只保留路由（首页的「设置向导」按钮依赖它），
+			-- hidden=true 表示不进侧栏
+			hidden = true,
 			nodes = {
 				-- 隐藏分发节点：仅供刷新/深链接 /admin/network_guide/network(/pppoe|/dhcp|/gateway)
 				-- 返回同一个 SPA 壳页。无 title + hidden=true → dispatcher.node_visible()==false
@@ -424,7 +431,8 @@ do
 					http.redirect(kp_panel_base() .. "/containers")
 				end
 			}
-			admin.nodes.kp_services = svc
+			-- 对齐固件：固件的「服务」下没有 鲲鹏商店/1Panel/Docker 这三项
+			-- admin.nodes.kp_services = svc
 		end
 		return tree
 	end
