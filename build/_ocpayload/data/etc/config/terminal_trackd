@@ -1,0 +1,43 @@
+
+config rule 'default'
+	option up_url 'https://wireless.cmonelink.com/wireless/terminalOnline'
+	option down_url 'https://wireless.cmonelink.com/wireless/terminalOffline'
+	option list_url 'https://wireless.cmonelink.com/wireless/getTerminalList'
+	option send_sms 'https://wireless.cmonelink.com/wireless/sendSms'
+	option terminal_auth 'https://wireless.cmonelink.com/wireless/terminalAuth'
+	option token_url 'https://wireless.cmonelink.com/wireless/get/token'
+	option auth_strategy 'https://wireless.cmonelink.com/wireless/getAuthStrategy'
+	option ct_up_url 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/terminalOnline'
+	option ct_down_url 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/terminalOffline'
+	option ct_list_url 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/getTerminalList'
+	option ct_send_sms 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/sendSms'
+	option ct_terminal_auth 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/terminalAuth'
+	option ct_auth_strategy 'https://cmp-api.ctwing.cn:20164/openapi/v1/device/getTerminalList'
+	option local '1'
+
+config token 'quectel'
+	option class_type 'quectel'
+	option custom_id 'R4DLlLFo4Yt+Oc/oD8o0cvNnNutNgxTdzPxvr7+XC0o='
+	option password 'hfA6tFO+ciFDLsnP0IB3SA=='
+	option custom 'https://api.quectel.com/openapi/wireless/getToken'
+	option type '1'
+
+config token 'henanmobile'
+	option appid 'v7BqXPU8kcVqdn8wqxFxCTV1Wl8a5cNZNZ42wHwcISQ='
+	option password 'FjSDO5Wx4MluRWcWgzVbDg=='
+
+config token 'dongguanmobile'
+	option appid 'VvtzWyiWuQcyWmi82Oh+B2wwScMYcQJ6I1vuvqgKj04='
+	option password 'v2wwH1PPsqsCXhsgs60HuQ=='
+
+config token 'yiran'
+	option custom 'https://auxiliary.szyczl.cn/v2/auth/token'
+	option custom_id 'GpGxesZcff1P/bRl3DMCQZ/VcQH1IDJ2Mf5arRKGvxc='
+	option password '8oZr4T6UaImc0D09IkFShv3WfyHwXE1tud94SN3jVMSABejcXe8ZG5EYrhv3c9jH'
+	option type '1'
+	option method 'get'
+
+config token 'guangheyunchuang'
+	option appid 'o4Xdr5NN0hPvF08hNj0T/3TPv1pr9dBHWpQ9Hnw6Omo='
+	option password 'ZxK4sj1xGOTb6vx8ru3mbw=='
+

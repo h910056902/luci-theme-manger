@@ -1,0 +1,5 @@
+
+config istore 'istore'
+	option super_arch 'aarch64'
+	option last_path '/mnt/storage/data'
+

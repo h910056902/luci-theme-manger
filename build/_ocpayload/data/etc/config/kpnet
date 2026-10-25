@@ -1,0 +1,5 @@
+
+config web 'web'
+	option port '8080'
+	option listen 'auto'
+

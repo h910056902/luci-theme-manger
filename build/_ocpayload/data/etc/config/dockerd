@@ -1,0 +1,12 @@
+
+config globals 'globals'
+	option log_level 'warn'
+	option iptables '1'
+	option data_root '/mnt/storage/data/docker'
+	list registry_mirrors 'https://docker.1ms.run'
+	list registry_mirrors 'https://docker.m.daocloud.io'
+
+config firewall 'firewall'
+	option device 'docker0'
+	list blocked_interfaces 'wan'
+

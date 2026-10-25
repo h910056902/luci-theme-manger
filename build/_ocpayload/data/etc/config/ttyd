@@ -1,0 +1,11 @@
+
+config server 'default'
+	option once '0'
+	option port '7681'
+	option shell '/bin/sh'
+	option interface 'br-lan'
+	option credential '0'
+	option max_clients '4'
+	option index '/etc/ttyd/index.html'
+	option check_origin '0'
+

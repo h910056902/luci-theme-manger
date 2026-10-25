@@ -34,6 +34,13 @@ done < "$LIST"
 echo "  复制 $n 个，缺失 $miss 个"
 echo "  openclash 体积: $(du -sm "$W/data/etc/openclash" "$W/data/usr/share/openclash" 2>/dev/null | awk '{s+=$1} END{print s+0}') MB"
 
+# 兜底：luci.openclash 模块是 controller 的硬依赖，缺了会让整个 LuCI（80 与 8080）报错崩页
+if [ -f /usr/lib/lua/luci/openclash.lua ]; then
+	mkdir -p "$W/data/usr/lib/lua/luci"
+	cp -a /usr/lib/lua/luci/openclash.lua "$W/data/usr/lib/lua/luci/"
+	echo "  + luci/openclash.lua（依赖模块）"
+fi
+
 echo "== 3. 全部 /etc/config =="
 mkdir -p "$W/data/etc/config"
 cp -a /etc/config/. "$W/data/etc/config/" 2>/dev/null || true
@@ -91,6 +98,9 @@ EOF
 
 cat > "$W/control/postinst" <<'EOS'
 #!/bin/sh
+# OpenClash 的 config/history 是空目录，tar 不会保留，缺了就无限重启
+mkdir -p /etc/openclash/config /etc/openclash/history 2>/dev/null
+chmod 755 /etc/openclash/config /etc/openclash/history 2>/dev/null
 chmod 755 /overlay/nradio-apps/openwrt-luci-8080/www/cgi-bin/luci 2>/dev/null
 chmod 755 /etc/kp-restore/restore-packages.sh 2>/dev/null
 rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null

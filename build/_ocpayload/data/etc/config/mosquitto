@@ -1,0 +1,30 @@
+
+config owrt 'owrt'
+	option use_uci '1'
+
+config mosquitto 'mosquitto'
+	option log_dest 'syslog'
+	option log_types 'warning'
+	option allow_anonymous '1'
+
+config listener 'listener'
+	option port '1883'
+	option no_remote_access '0'
+
+config bridge 'bridge'
+	option connection 'FC83C61842FA'
+	option keepalive_interval '10'
+	option remote_clientid 'FC83C61842FA'
+	option notifications '1'
+	option notifications_local_only '1'
+	option try_private '0'
+	list topic 'sysinfo/# out 1 "" FC83C61842FA/'
+	list topic 'exec/# both 1 rpc/ FC83C61842FA/'
+	list topic 'kp/mosca/FC83C61842FA/# out 1 "" ""'
+	list topic 'kp/FC83C61842FA/+/# in 1 "" ""'
+	list topic 'mosca/# in 1 kp/FC83C61842FA/ kp/FFFFFFFFFFFF/'
+	option remote_username 'FC83C61842FA'
+	option remote_password 'e51061832c19a48b02f407ce2c69e02b'
+	option restart_timeout '1'
+	option address 'FC83C61842FA.pro.nradio.com.cn'
+

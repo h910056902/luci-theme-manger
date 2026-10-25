@@ -1,0 +1,8 @@
+NRadio 8080 完整恢复包
+生成时间: 2026-10-25 19:42:10
+设备型号: HC-WT9500
+固件版本: OpenWrt 21.02-SNAPSHOT 2.3.0.n0.c1
+已装插件: 643 个
+
+离线包含：8080 面板、OpenClash（程序/内核/规则/UI）、全部 /etc/config（含订阅）
+在线补装：其余插件执行 sh /etc/kp-restore/restore-packages.sh

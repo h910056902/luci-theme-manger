@@ -1,0 +1,24 @@
+
+config cpecfg 'config'
+
+config cpesim 'cpesim1'
+	option threshold_smds '0.00000'
+
+config cpesim 'cpesim2'
+	option custom_freq '0'
+	option custom_earfcn5 '0'
+	option custom_earfcn4 '0'
+	option threshold_smds '125.97918'
+	option threshold_cds '201.60291'
+
+config cpesim 'cpesim3'
+	option threshold_smds '0.00000'
+
+config cpesim 'cpesim4'
+
+config cpesim 'cpe1sim1'
+	option threshold_smds '0.00000'
+
+config cpesim 'cpe1sim2'
+	option threshold_smds '0.00000'
+

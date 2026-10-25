@@ -1,0 +1,23 @@
+
+config cpesel 'sim'
+	option max '3'
+	option stype '0,0,4'
+	option gval '0-2,1-1,1-2'
+	option mode '0'
+	option default '1'
+	option cur '2'
+
+config cpesel 'sim1'
+	option max '2'
+	option gval '1-1,1-2'
+	option stype '0,0'
+	option mode '1'
+	option cur '1'
+	option default '1'
+
+config iccid '89863026000007034320'
+	option name 'unknown'
+
+config iccid '89860624720081353997'
+	option name '鲲鹏寂寞卡'
+

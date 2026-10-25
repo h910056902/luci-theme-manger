@@ -1,0 +1,311 @@
+
+config rule 'config'
+	option md5 '3ed6da68bcd315795180a5b959a46eb2'
+	option timestamp '1789398245545'
+
+config package
+	option name 'FileBrowser'
+	option version '1.0.3'
+	option icon 'filebrowser.png'
+	option des '文件管理系统,默认账号/密码admin/admin'
+	option size '9620965'
+	option status '0'
+	option has_luci '0'
+	option open '0'
+
+config package_list
+	option name 'filebrowser'
+	option parent 'FileBrowser'
+	option size '9614994'
+	option version '2.23.0-2'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/FileBrowser/1.0.1/filebrowser_2.23.0-2_aarch64_cortex-a53.ipk'
+	option md5 '1ffb587f76d0a63459917975101bd61d'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-app-nradio-filebrowser'
+	option parent 'FileBrowser'
+	option size '1912'
+	option version 'git-25.317.10927-d50d646-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/FileBrowser/1.0.2/luci-app-nradio-filebrowser_git-25.317.10927-d50d646-1_all.ipk'
+	option md5 'aacfa33836a0d0ff1e7fe7f0f036e0f3'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-filebrowser-en'
+	option parent 'FileBrowser'
+	option size '1323'
+	option version 'git-26.238.28566-a08f084-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/FileBrowser/1.0.3/luci-i18n-nradio-filebrowser-en_git-26.238.28566-a08f084-1_all.ipk'
+	option md5 'f5ee62dcf5e45d4a292fa36f9517170e'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-filebrowser-zh-cn'
+	option parent 'FileBrowser'
+	option size '1364'
+	option version 'git-26.238.28566-a08f084-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/FileBrowser/1.0.3/luci-i18n-nradio-filebrowser-zh-cn_git-26.238.28566-a08f084-1_all.ipk'
+	option md5 'faba21c1ff77375f30431bb7d1e7a438'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-filebrowser-zh-tw'
+	option parent 'FileBrowser'
+	option size '1372'
+	option version 'git-26.238.28566-a08f084-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/FileBrowser/1.0.3/luci-i18n-nradio-filebrowser-zh-tw_git-26.238.28566-a08f084-1_all.ipk'
+	option md5 'a89c2e9544509026aebc0c78a4e460c8'
+	option has_luci '0'
+	option type '0'
+
+config package
+	option name '鲲鹏智能体'
+	option version '0.0.6'
+	option icon 'aiagent-icon.png'
+	option des '鲲鹏智能体是一款AI Agent，可以对接各种大模型，在微信中与AI互动。'
+	option size '14285268'
+	option status '1'
+	option has_luci '1'
+	option open '0'
+
+config package_list
+	option name 'nradio-skills'
+	option pkg_name 'nradio-skills'
+	option parent '鲲鹏智能体'
+	option size '5950'
+	option version '1.0-20260727'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.2/nradio-skills_1.0-20260727_aarch64_cortex-a53.ipk'
+	option md5 'fe9972f0686a6393d469881c00568c41'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'zeroclaw'
+	option pkg_name 'zeroclaw'
+	option parent '鲲鹏智能体'
+	option size '14150890'
+	option version '0.8.3-20260727'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.6/zeroclaw_0.8.3-20260727_all.ipk'
+	option md5 'b8193e99ca7a0e2089144c47c2ac1917'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-app-nradio-ai'
+	option pkg_name 'luci-app-nradio-ai'
+	option parent '鲲鹏智能体'
+	option size '112673'
+	option luci_module_file '/usr/lib/lua/luci/controller/nradio/ai.lua'
+	option version 'git-26.245.24656-41ab4b1-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.6/luci-app-nradio-ai_git-26.245.24656-41ab4b1-1_all.ipk'
+	option md5 '982ab20b670d021d586d13ad71a135ff'
+	option has_luci '1'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-ai-zh-cn'
+	option pkg_name 'luci-i18n-nradio-ai-zh-cn'
+	option parent '鲲鹏智能体'
+	option size '5324'
+	option version 'git-26.245.24656-41ab4b1-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.6/luci-i18n-nradio-ai-zh-cn_git-26.245.24656-41ab4b1-1_all.ipk'
+	option md5 '5288feca01bacb56b555fa337223696e'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-ai-en'
+	option pkg_name 'luci-i18n-nradio-ai-en'
+	option parent '鲲鹏智能体'
+	option size '5122'
+	option version 'git-26.245.24656-41ab4b1-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.6/luci-i18n-nradio-ai-en_git-26.245.24656-41ab4b1-1_all.ipk'
+	option md5 'f8145b4595f1baabad6f155cad2f0afb'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-ai-zh-tw'
+	option pkg_name 'luci-i18n-nradio-ai-zh-tw'
+	option parent '鲲鹏智能体'
+	option size '5309'
+	option version 'git-26.245.24656-41ab4b1-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/鲲鹏智能体/0.0.6/luci-i18n-nradio-ai-zh-tw_git-26.245.24656-41ab4b1-1_all.ipk'
+	option md5 'c3bad794ad60cb622c5c64ffcfdaa983'
+	option has_luci '0'
+	option type '0'
+
+config package
+	option name 'VPN'
+	option version '1.0.2'
+	option icon 'vpn.png'
+	option des '虚拟专网（VPN），其主要功能是在公用网络上建立专用网络，进行加密通讯。在企业网络中有广泛应用。VPN网关通过对数据包的加密和数据包目标地址的转换实现远程访问'
+	option size '5542'
+	option status '0'
+	option has_luci '0'
+	option open '0'
+
+config package_list
+	option name 'luci-app-nradio-vpn'
+	option parent 'VPN'
+	option size '2974'
+	option version 'git-26.240.35681-c71c6ba-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/VPN/1.0.2/luci-app-nradio-vpn_git-26.240.35681-c71c6ba-1_all.ipk'
+	option md5 '3a6f132c1f52eec5b3f587f2050ee4f6'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-vpn-zh-cn'
+	option parent 'VPN'
+	option size '1282'
+	option version 'git-26.238.28566-a08f084-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/VPN/1.0.2/luci-i18n-nradio-vpn-zh-cn_git-26.238.28566-a08f084-1_all.ipk'
+	option md5 '885dea4d3516e9e676c4f66f53087ba6'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-vpn-zh-tw'
+	option parent 'VPN'
+	option size '1286'
+	option version 'git-26.238.28566-a08f084-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/VPN/1.0.2/luci-i18n-nradio-vpn-zh-tw_git-26.238.28566-a08f084-1_all.ipk'
+	option md5 '2054f218ea2fc55969498fcfbea6e9eb'
+	option has_luci '0'
+	option type '0'
+
+config package
+	option name 'UU加速器'
+	option version '1.0.3'
+	option icon 'uu.png'
+	option des 'UU 加速一键优化网络，降低延迟，畅玩游戏'
+	option size '1742404'
+	option status '0'
+	option has_luci '0'
+	option open '0'
+
+config package_list
+	option name 'uuplugin'
+	option parent 'UU加速器'
+	option size '1734739'
+	option version '1.0-20240701'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/UU加速器/1.0.3/uuplugin_1.0-20240701_aarch64_cortex-a53.ipk'
+	option md5 '70105ef089774d608c086b5344824f63'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-app-nradio-uu'
+	option parent 'UU加速器'
+	option size '1988'
+	option version 'git-26.240.35681-c71c6ba-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/UU加速器/1.0.3/luci-app-nradio-uu_git-26.240.35681-c71c6ba-1_all.ipk'
+	option md5 '43b0e9952a8d37eb72f7e6491dcdcc68'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-uu-zh-cn'
+	option parent 'UU加速器'
+	option size '1985'
+	option version 'git-26.240.35681-c71c6ba-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/UU加速器/1.0.3/luci-i18n-nradio-uu-zh-cn_git-26.240.35681-c71c6ba-1_all.ipk'
+	option md5 '1efb8e80c94674d86f4205cea372e57e'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-uu-en'
+	option parent 'UU加速器'
+	option size '1709'
+	option version 'git-26.240.35681-c71c6ba-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/UU加速器/1.0.3/luci-i18n-nradio-uu-en_git-26.240.35681-c71c6ba-1_all.ipk'
+	option md5 '7b0d9cdccf062e796bc81302527ab9b1'
+	option has_luci '0'
+	option type '0'
+
+config package_list
+	option name 'luci-i18n-nradio-uu-zh-tw'
+	option parent 'UU加速器'
+	option size '1983'
+	option version 'git-26.240.35681-c71c6ba-1'
+	option url 'https://www.appstore.vapyun.com/nradio-appstore/aarch64_cortex-a53/UU加速器/1.0.3/luci-i18n-nradio-uu-zh-tw_git-26.240.35681-c71c6ba-1_all.ipk'
+	option md5 '80198417f347158ba117a296e36cf814'
+	option has_luci '0'
+	option type '0'
+
+config package
+	option name 'OpenClash'
+	option version '0.47.156'
+	option icon 'openclash.png'
+	option des 'Clash Meta 内核的代理客户端，支持订阅管理与规则分流'
+	option size '469028864'
+	option status '1'
+	option has_luci '1'
+	option open '1'
+
+config package
+	option name 'ocspeed'
+	option version '3.3'
+	option icon 'ocspeed.png'
+	option des 'OpenClash 自动测速：定时全量测延迟并切到最快节点，含故障切换与备用节点预选'
+	option size '188416'
+	option status '1'
+	option has_luci '1'
+	option open '0'
+
+config package
+	option name '1Panel'
+	option version '1.10.34'
+	option icon 'app_default.png'
+	option des 'Linux 服务器运维管理面板，可视化管理 Docker 容器、文件与监控'
+	option size '117956608'
+	option status '1'
+	option has_luci '1'
+	option open '1'
+
+config package
+	option name 'OpenList'
+	option version 'latest'
+	option icon 'openlist.svg'
+	option size '46889801'
+	option status '1'
+	option has_luci '1'
+	option open '1'
+
+config package_list
+	option name 'OpenList'
+	option pkg_name 'OpenList'
+	option parent 'OpenList'
+	option size '46889801'
+	option luci_module_file '/usr/lib/lua/luci/controller/nradio_adv/openlist.lua'
+	option version 'latest'
+	option has_luci '1'
+	option type '1'
+
+config package
+	option name 'MT5700 WebUI'
+	option version '3.0.3'
+	option icon 'mt5700.png'
+	option des 'MT5700M-CN 5G 模组管理界面（React + Semi Design）'
+	option size '3070620'
+	option status '1'
+	option has_luci '1'
+	option open '0'
+
+config package_list
+	option name 'MT5700 WebUI'
+	option pkg_name 'at-webserver'
+	option parent 'MT5700 WebUI'
+	option size '3070620'
+	option luci_module_file '/usr/lib/lua/luci/controller/nradio_adv/mt5700.lua'
+	option version '3.0.3-r1'
+	option has_luci '1'
+	option type '1'
+

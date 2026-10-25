@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Security</title>
+		<meta name="viewport" content="initial-scale=1.0">
+
+
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/bootstrap-dialog.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/cascade.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/main.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/nradio.min.css?v=git-26.289.29354-9915aac">
+		
+		<link rel="shortcut icon" href="/luci-static/nradio/favicon.ico">
+		<script defer src="/luci-static/nradio/js/nradio.min.js?v=git-26.289.29354-9915aac"></script>
+		<script defer src="/luci-static/nradio/js/fontawesome.min.js?v=git-26.289.29354-9915aac"></script>
+		<script defer src="/luci-static/nradio/js/v4-shims.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/jquery.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/jquery.validate.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap-filestyle.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap-dialog.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/main.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/clipboard.min.js?v=git-26.289.29354-9915aac"></script>
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="/luci-static/nradio/js/html5shiv.min.js?v=git-26.289.29354-9915aac"></script>
+			<script src="/luci-static/nradio/js/respond.min.js?v=git-26.289.29354-9915aac"></script>
+		<![endif]-->
+		<script src="/luci-static/resources/xhr.js?v=git-26.289.29354-9915aac"></script>
+		<style>
+			.lang-drawer-item {
+				text-align: center;
+				padding: 12px 0;
+			}
+			.next-button-lang::before {
+				transition: transform 0.3s ease;
+				transform: rotate(136deg) translateX(-50%);
+			}
+			.next-button-lang.expanded::before {
+				transform: rotate(225deg) translateX(-50%);
+			}
+			.sms-li {
+				position: relative;
+			}
+			.sms-badge {
+				position: absolute;
+				top: -6px;
+				right: -3px;
+				min-width: 15px;
+				border-radius: 8px;
+				font-size: 10px;
+				line-height: 16px;
+				text-align: center;
+			}
+			.sms-badge.hide {
+				display: none;
+			}
+		</style>
+		<script>
+		var languages_info = {"en":"English","zh_cn":"简体中文"};
+		function uptime2dhms(uptime, max = 5, delim = ' '){
+			if(!uptime){
+				return "-";
+			}
+			var dhms=[];
+			if (uptime >= 60*60*24){
+				dhms.push(Math.floor(uptime/(60*60*24))+'d');
+			}
+			if (uptime >= 60*60){
+				dhms.push(Math.floor(uptime%(60*60*24)/60/60)+'h');
+			}
+			if (uptime >= 60){
+				dhms.push(Math.floor(uptime%(60*60)/60)+'m');
+			}
+			dhms.push(Math.floor(uptime%60)+'s');
+			return dhms.slice(0, max).join(delim);
+		}
+
+		$.validator.addMethod("wpakey-invalid", function(value, element) {
+			return false;
+		}, "Invalid WPA password.")
+
+		$.validator.addMethod("ipaddr-invalid", function(value, element) {
+			return false;
+		}, "Invalid IP address.")
+
+		$.validator.addMethod("ip4addr-invalid", function(value, element) {
+			return false;
+		}, "Invalid IPv4 address.")
+
+		$.validator.addMethod("dataneeded", function(value, element) {
+			return !this.optional(element);
+		}, "This field is required.")
+
+		var reloadFieldset = '';
+
+		$(document).ready(function() {
+			nradio_style_onload();
+			$(':file').not('.hide').filestyle({
+				buttonBefore: true,
+				buttonText: "Choose File...",
+				iconName: "far fa-folder-open"
+			});
+			$(':file').click(function() {
+				$(this).closest('div.cbi-value').removeClass('cbi-value-error');
+			});
+
+			$('form').each(function() {
+				var v = $(this).validate({
+					errorPlacement: function(error, element) {
+						if ($(element).next('span.glyphicon').length > 0) {
+							if ($(element).parent().hasClass('dylist-input-group')) {
+								$(element).parent().next('div.empty').prepend(error);
+							} else {
+								$(element).parent().after(error);
+							}
+						} else {
+							$(element).parents('div.cbi-value-field')
+								.children('div.error').remove();
+							$(element).parents('div.cbi-value-field')
+								.children().last().after(error);
+						}
+					},
+					errorElement: "div",
+				});
+
+				$('.cbi-button-next').click(function(event) {
+					if (v.form()) {
+						$('ul.cbi-tabmenu > li.cbi-tab').nextAll('li').first().children('a').click();
+					}
+				});
+				$('.cbi-button-apply').click(function() {
+					v.form();
+				});
+			});
+
+			$(document).on("click", "#select_all", function(){
+				$("input[name='sel_check']").not(':disabled').prop('checked', $(this).is(":checked"));
+			});
+			document.onkeydown=function(e){
+				e=e||window.event;
+				if(e.keyCode==116){
+					e.preventDefault();
+					location.replace(document.URL);
+				}
+			}
+			if ( window.history.replaceState ) {
+				window.history.replaceState( null, null, window.location.href );
+			}
+		});
+		</script>
+	</head>
+	<body class=" lang_enSecurity body-total-"  >
+	
+			
+		<header>
+			
+			<div class="row logo-nradio hidden-xs large_banner">							
+				<div class="nradio-logo
+ main-logo-size"></div>
+			</div>
+			<div class="container menu-top">
+				<div class="row logo-nradio hidden-xs small_banner" style="margin-top:10px">
+					<div class="col-xs-4 col-sm-4 text-left"><div class="nradio-logo
+ main-logo-size"></div></div>
+					<div class="col-xs-8 col-sm-8 text-right qmenu" tabindex=0 style="outline:none" onblur="show_icon_menu(1);">
+					</div>
+				</div>
+				<div class="row hidden-xs">
+					<div class="flex menu-tab" >
+					</div>
+				</div>
+			</div>
+			<div class="large_banner qmenu" tabindex=0 style="outline:none" onblur="show_icon_menu(1);">
+			</div>
+			
+		</header>
+		
+		<a name="top_position"></a>
+
+		<div class="container visible-xs-block mobile menu_mobile">
+				
+			<div class="col-xs-4 col-sm-4  text-left"></div>
+			<div class="col-xs-4 col-sm-4 text-center"><div class="nradio-logo
+ mobile-logo-size"></div></div>
+				
+					<div class="col-xs-4 text-right hide" id="mobile_apply" ></div>
+				
+
+			
+		</div>	
+
+	<iframe id='background_form' name='background_form' style='display: none'>
+	</iframe>
+	<script>
+		var	gSmsIfaces = null;
+		var gSmsUnread = 0;
+		
+		GlobalSyncRQ.sms_unread = 1;
+		
+		
+		
+		function render_sms_badge(count,clean){
+			var $badge = $('.sms-badge');
+			if(!$badge.length) return;
+			if(clean){
+				$('.sms-li').addClass("blink");
+				$badge.removeClass('hide').html('<i class="far fa-nradio-del fa-fw" ></i> ');
+			}
+			else if(!count || count <= 0){
+				$('.sms-li').removeClass("blink");
+				$badge.addClass('hide').text('');
+			}else{
+				$('.sms-li').removeClass("blink");
+				$badge.removeClass('hide').text(count > 99 ? '99+' : String(count));
+			}
+		}
+		function sms_unread_core(data){
+			gSmsIfaces = null;
+			var count = 0;
+			var total = 0;
+			var used = 0;
+			var clean_flag = 0;
+			
+			if(data){
+				for( var i = 0; i < data.length; i++){
+					var item = data[i];
+					if (item.max)
+						total+=item.max;
+					if (item.used)
+						used+=item.used;
+					if(item.count > 0 && item.iface){
+						gSmsIfaces = item.iface;
+						count = item.count + count;
+					}
+				}
+				gSmsUnread = count;
+				if(total && (used*100/total >= 90))
+					clean_flag = 1;
+				
+				//console.log("used:"+used+",total:"+total+" "+used*100/total);
+				render_sms_badge(count,clean_flag);
+			}
+		}
+		function refresh_sms_badge(){
+			if(GlobalSyncRQ.runtime || GlobalSyncRQ.cellinfo || GlobalSyncRQ.celldevice || GlobalSyncRQ.siminfo || GlobalSyncRQ.client)
+				return;
+			(new XHR()).get('/cgi-bin/luci/nradio/cellular/sms/unread', null, function(xhr){
+				if (xhr.getResponseHeader("Content-Type") == "application/json") {
+					try {
+						var data_res = eval('(' + xhr.responseText + ')');
+						if(data_res && data_res.result && data_res.result.sms_unread && data_res.result.sms_unread.length > 0){
+							sms_unread_core(data_res.result.sms_unread);
+						}					
+					}
+					catch(e) {
+					}
+				}
+			});
+		}
+		function goto_cellular_sms(){
+			if (!gSmsIfaces)
+				window.location = '/cgi-bin/luci//nradio/cellular/sms';
+			else
+				window.location = '/cgi-bin/luci//nradio/cellular/sms/model/' + gSmsIfaces;
+		}
+
+		function apply_lang(lang){
+			var data={};
+			data['lang']=lang;
+			(new XHR()).post('/cgi-bin/luci/admin/syslang', data, function(){
+				location.reload();
+			});
+		}
+		function toggle_lang_drawer(){
+			$("#mobile_lang_drawer").slideToggle();
+			$(".next-button-lang").toggleClass("expanded");
+		}
+		function confirm_lang(){
+			$(".sub_lang_list").html("");
+			var htm = `
+				<li class="click_pointer" data-lang="auto" onclick="apply_lang('auto')">Auto</li>
+			`
+			for (const key in languages_info) {
+				if (languages_info.hasOwnProperty(key)) {
+					if (key.charAt(0)=='.')
+						continue;
+					htm+='<li class="click_pointer" data-lang="'+key+'" onclick="apply_lang(\''+key+'\')">'+languages_info[key]+'</li>';
+				}
+			}		
+			
+			$(".sub_lang_list").append(htm);
+		}
+		function generate_qmenu(){
+			var htm = '<ul class="list-inline nradio-right-btn">'+
+				
+					  '	<li class="click_pointer sms-li" style="margin-right:10px" onclick="goto_cellular_sms();"><i class="far fa-nradio-sms-header fa-2x"></i><span class="sms-badge hide" id="sms_badge"></span></li>'+
+				
+					  '	<li class="click_pointer"  onclick="show_icon_menu();"><i class="far fa-nradio-menu fa-2x" ></i></li>'+
+					  '</ul>'+
+					  '	<ul class="sub_icon_list sub_lang_list hide">'+
+			
+					  '	<li class="click_pointer" onclick="confirm_lang(this)">Language<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradioadv/system/restart\'">Reboot<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradioadv/system/passwd\'">Admin<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradio/logout\'">Log Out<div class="next-button">&nbsp;</div></li>'+
+					  '</ul>';
+			$(".qmenu").html("");
+			$(".qmenu").append(htm);
+							
+				render_sms_badge(gSmsUnread);
+			
+		}
+		generate_qmenu();
+		function show_icon_menu(hide){
+			if(hide){
+				generate_qmenu();
+				$(".sub_icon_list").addClass("hide");
+			}
+			else{
+				generate_qmenu();
+				$(".sub_icon_list").toggleClass("hide");
+			}
+		}
+		function confirm_jump_qsetup(){
+			var msg = {};
+			msg.message = '<div style="padding:0 20px;text-align:left"><i class="far fa-nradio-note fa-fw icon_disable" ></i>Quick Installation will overwrite the current configuration of the router, which may cause the router or clients to be offline. Please confirm whether to start the Quick Installation?</div>';
+			msg.confirm = "Yes";
+			msg.cancel = "No";
+			msg.callback = function(){
+				location.href="/cgi-bin/luci/nradio/qsetup/second";
+			}
+			confirm_box(msg);
+		}
+		function confirm_quit_qsetup(){
+			var msg = {};
+			msg.message = '<i class="far fa-nradio-note fa-fw icon_disable" ></i>Are you sure to exit the Quick Setup';
+			msg.confirm = "Confirm";
+			msg.cancel = "Cancel";
+			msg.callback = function(){
+				var data={};
+				data['token']='a5baf87bda3aa05c229c75641495b065';
+				(new XHR()).post('/cgi-bin/luci/nradio/qsetup/next', data, function(){
+					setTimeout(function(){
+						location.href="/cgi-bin/luci/nradio/system/overview";
+					},1000);
+				});
+			}
+			confirm_box(msg);
+		}
+		function get_each_menu(menu,index,lastname){
+			var box_class="";
+			var menu_index=index;
+			var menu_data = menu;
+			var menu_list = null;
+			var father_name = "";
+			var style = "";
+			var pre_name = lastname?lastname:"main";
+			if(!menu_index){
+				father_name="main";
+				menu_list = menu_data;
+			}
+			else{
+				father_name=menu.name;		
+				menu_list = menu_data.sub_menu;
+				style = "style='display:none'";
+			}
+			box_class=father_name+"_menu_box";
+			if(!menu_list)
+				return "";
+			var sub_htm = "";
+			var htm = "";
+				htm+='	<div data-father="'+pre_name+'" class="mobile_bg_color panel panel-info device-panel menu_box '+box_class+'" '+style+'>';
+				htm+='		<div class="panel-heading">';
+				htm+='			<h3 class="panel-title"</h3>';
+				htm+='		</div>';
+				htm+='		<div class="panel-body info-box2">';
+			var line = "";
+			var has_sub = 0;
+			var first_index = 0;
+			for(var i=0;i<menu_list.length;i++){
+				var icon_info = "";
+				if(menu_list[i].name == "index"){
+					first_index=1;
+					continue;
+				}
+
+				if(i>first_index)
+					line="line_top_class";
+				has_sub = 0;
+				if(menu_list[i].sub_menu){
+					sub_htm+=get_each_menu(menu_list[i],(menu_index+1),father_name);
+					has_sub=1;
+				}
+				if(menu_list[i].name == "cellular")
+					icon_info='<i class="far fa-podcast"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wifi")
+					icon_info='<i class="far fa-nradio-wifi" style="width:14px"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wan")
+					icon_info='<i class="far fa-nradio-internet"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "client")
+					icon_info='<i class="far fa-nradio-terminal"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "appcenter" && father_name!="system")
+					icon_info='<i class="far fa-nradio-appcenter"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "advanced")
+					icon_info='<i class="far fa-nradio-advanced-setting"></i>&nbsp;&nbsp;';
+
+				htm+='			<div class="row '+line+'">';
+				htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="'+father_name+'" data-name="'+menu_list[i].name+'"  data-url="'+menu_list[i].url+'" data-language="'+menu_list[i].language+'" onclick="show_menu(this,'+has_sub+')">';
+				htm+='					<div class="row padding_fix ">';
+				htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+				htm+='							'+((father_name=="advanced")?"":icon_info)+menu_list[i].language;
+				htm+='						</div>';
+				htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+				htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+				htm+='							<div class="next-button" >';
+				htm+='								&nbsp;';
+				htm+='							</div>';
+				htm+='						</div>';
+				htm+='					</div>';
+				htm+='				</div>';
+				htm+='			</div>';
+
+			}		
+				htm+='		</div>';
+				htm+='	</div>';
+				htm+=sub_htm;
+				return htm;
+		}
+		function get_pc_menu(menu_list){
+			var htm = "";		
+			for(var i=0;i<menu_list.length;i++){
+				var active_class = "";
+				if(menu_list[i].name == "index")
+					icon_info='<i class="far fa-nradio-home fa-5x fa-fw nradio-home-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "cellular")
+					icon_info='<i class="far fa-podcast fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wifi")
+					icon_info='<i class="far fa-nradio-wifi fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wan")
+					icon_info='<i class="far fa-nradio-internet fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "client")
+					icon_info='<i class="far fa-nradio-terminal fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "appcenter")
+					icon_info='<i class="far fa-nradio-appcenter fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "advanced")
+					icon_info='<i class="far fa-nradio-advanced-setting fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				if(menu_list[i].match)
+					active_class="active";
+				htm+='			<p  class="item flex-col '+active_class+'"  onclick="location.href=\''+menu_list[i].url+'\';">';
+				htm+='				'+icon_info;
+				htm+='					<span class="title">'+menu_list[i].language+'</span>';
+				htm+='					<span class="bottomline"></span>';
+				htm+='			</p>';
+	
+			}
+			
+			$(".menu-tab").html(htm);
+		}
+		function format_mobile_menu(menu,sub){
+			var top = 0;
+			var class_name="";
+			var htm = "";
+				htm+= get_each_menu(menu,0);
+
+				if(sub){
+
+					htm+='	<div class="mobile_bg_color panel panel-info device-panel menu_box main_menu_box">';
+					htm+='		<div class="panel-heading">';
+					htm+='			<h3 class="panel-title"</h3>';
+					htm+='		</div>';
+					htm+='		<div class="panel-body info-box2">';
+					
+					if(top)
+						class_name="line_top_class";
+					top++;
+					htm+='			<div class="row click_pointer '+class_name+'" onclick="toggle_lang_drawer()">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding">';
+					htm+='					<div class="row padding_fix ">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-syslang"></i>&nbsp;&nbsp;Language';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color">';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button next-button-lang" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='			<div id="mobile_lang_drawer" style="display:none;">';
+					htm+='				<div class="col-xs-12 click_pointer lang-drawer-item" onclick="apply_lang(\'auto\')">Auto</div>';
+					for (const key in languages_info) {
+						if (languages_info.hasOwnProperty(key)) {
+								if (key.charAt(0)=='.')
+								continue;
+							htm+='<div class="col-xs-12 click_pointer lang-drawer-item" onclick="apply_lang(\''+key+'\')">'+languages_info[key]+'</div>';
+						}
+					}	
+					htm+='			</div>';
+					if(top)
+						class_name="line_top_class";
+					top++;
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding"  data-father="main" data-name="restart"  data-url="/cgi-bin/luci/nradioadv/system/restart" data-language="Reboot" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix ">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-reset"></i>&nbsp;&nbsp;Reboot';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color">';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';		
+					htm+='			</div>';
+					if(top)
+						class_name="line_top_class";
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="main" data-name="passwd"  data-url="/cgi-bin/luci/nradioadv/system/passwd" data-language="Admin" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-pwd-change"></i>&nbsp;&nbsp;Admin';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="main" data-name="logout"  data-url="/cgi-bin/luci/nradio/logout" data-language="Log Out" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-login-out"></i>&nbsp;&nbsp;Log Out';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='		</div>';
+					htm+='	</div>';
+					htm+='	<div style="padding:5px 0px;" class="mobile_bg_color panel panel-info device-panel menu_box main_menu_box" onclick="location.href=\'/cgi-bin/luci/nradio/simple\'">';
+					htm+='		<div class="panel-heading">';
+					htm+='			<h3 class="panel-title"></h3>';
+					htm+='		</div>';
+					htm+='		<div class="panel-body info-box no_padding">';
+					htm+='			<div class="row">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left ">';
+					htm+='					<div class="row">';
+					htm+='						<div class="col-sm-12 col-xs-12 text-center sub_label_color">';
+					htm+='							Switch to Basic';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='		</div>';
+					htm+='	</div>';
+				}
+			
+			$(".mobile_index_box").html(htm);
+		}
+
+		function goto_innter_menu(name){
+			var class_name = name+"_menu_box";
+			$(".menu_mobile").find("div").first().data("father",name);
+			$(".menu_mobile").find("div").first().addClass("back-button").html("&nbsp;").off("click").on("click",function(){
+				var father = $(this).data("father");
+				var father_class = father+"_menu_box";
+				var pre = $("."+father+"_menu_box").data("father");
+				if (pre == father)
+					$(this).removeClass("back-button");
+				$(this).data("father",pre);
+				$(".menu_box").css("display","none");
+				$("."+father+"_menu_box").css("display","block");
+			});
+		}
+		function show_menu(obj,has_sub){
+			var url = $(obj).data("url");
+			var name = $(obj).data("name");
+			var language = $(obj).data("language");
+			var father = $(obj).data("father");
+			if(!has_sub){
+				if(url && url.length)
+					location.href=url;
+			}
+			else{
+				var class_name = name+"_menu_box";
+				var father_name = father+"_menu_box";
+				$(".menu_box").css("display","none");		
+				$("."+class_name).css("display","block");
+				goto_innter_menu(father);
+			}
+		}
+		function goto_father_menu(father_item,main_item){
+			var name = null;
+			if(father_item)
+				name = father_item.name;
+			$(".menu_mobile").find("div").first().data("father",name?name:"");
+			$(".menu_mobile").find("div").first().addClass("back-button").html("&nbsp;").off("click").on("click",function(){
+				if(name && (father_item && father_item.sub_menu && father_item.sub_menu.length > 1))
+					location.href=main_item.url+"?menu="+name;
+				else
+					location.href=main_item.url;
+			});
+		}
+	</script>
+		
+		
+		<div class="mobile_bg_color container body-container visible-xs-block">
+			<div class="main-content">
+				<div class="mobile_index_box visible-xs-block hide" >
+				</div>
+			</div>
+		</div>
+		
+		<script>
+			var top_menu=[{"index":1,"support":true,"name":"index","url":"\/cgi-bin\/luci\/nradio\/system\/overview","language":"Home","match":false},{"index":2,"support":true,"name":"cellular","url":"\/cgi-bin\/luci\/nradio\/cellular","language":"Cellular","match":false},{"index":3,"support":true,"name":"wan","url":"\/cgi-bin\/luci\/nradio\/basic\/wan","language":"Internet","match":false},{"index":4,"support":true,"name":"wifi","url":"\/cgi-bin\/luci\/nradio\/basic\/wifi","language":"Wi-Fi","match":false},{"index":5,"support":true,"name":"client","url":"\/cgi-bin\/luci\/nradio\/system\/client","language":"Client","match":false},{"index":6,"support":true,"name":"appcenter","url":"\/cgi-bin\/luci\/nradioadv\/system\/appcenter","language":"App Center","match":false},{"support":true,"index":6,"name":"advanced","sub_menu":[{"name":"network","index":1,"support":true,"sub_menu":[{"index":1,"support":true,"name":"dhcp","url":"\/cgi-bin\/luci\/nradioadv\/network\/dhcp","language":"DHCP","match":false},{"index":2,"support":true,"name":"diag","url":"\/cgi-bin\/luci\/nradioadv\/network\/diag","language":"Diagnostics","match":false},{"index":3,"support":true,"name":"wanchk","url":"\/cgi-bin\/luci\/nradioadv\/network\/wanchk","language":"Net Monitor","match":false},{"index":4,"support":true,"name":"dmz","url":"\/cgi-bin\/luci\/nradioadv\/network\/dmz","language":"DMZ","match":false},{"index":5,"support":true,"name":"lan","url":"\/cgi-bin\/luci\/nradioadv\/network\/lan","language":"LAN","match":false},{"index":6,"support":true,"name":"modeselect","url":"\/cgi-bin\/luci\/nradioadv\/network\/modeselect","language":"Mode Select","match":false},{"index":7,"support":true,"name":"forwarding","url":"\/cgi-bin\/luci\/nradioadv\/network\/forwarding","language":"Port Fwd","match":false},{"index":8,"support":true,"name":"ttl","url":"\/cgi-bin\/luci\/nradioadv\/network\/ttl","language":"TTL","match":false},{"index":9,"support":true,"name":"dividing","url":"\/cgi-bin\/luci\/nradioadv\/network\/dividing","language":"Traffic Dist","match":false},{"index":10,"support":true,"name":"firewall","url":"\/cgi-bin\/luci\/nradioadv\/network\/firewall","language":"Firewall","match":false},{"index":11,"support":true,"name":"simpleroutes","url":"\/cgi-bin\/luci\/nradioadv\/network\/simpleroutes","language":"Static Routes","match":false},{"index":12,"support":true,"name":"ipv6","url":"\/cgi-bin\/luci\/nradioadv\/network\/ipv6","language":"IPv6 Setting","match":false},{"index":13,"support":true,"name":"access","url":"\/cgi-bin\/luci\/nradioadv\/network\/access","language":"Access","match":false},{"index":14,"support":true,"name":"upnp","url":"\/cgi-bin\/luci\/nradioadv\/network\/upnp","language":"UPnP","match":false},{"index":15,"support":true,"name":"nbcpe","url":"\/cgi-bin\/luci\/nradioadv\/network\/nbcpe","language":"5G Turbo","match":false},{"index":16,"support":true,"name":"cpedata","url":"\/cgi-bin\/luci\/nradioadv\/network\/cpedata","language":"SIM Mgt.","match":false}],"url":"","language":"Network","match":false},{"name":"wireless","index":2,"support":true,"sub_menu":[{"index":1,"support":true,"name":"acl","url":"\/cgi-bin\/luci\/nradioadv\/wireless\/acl","language":"Wi-Fi ACL","match":false},{"index":2,"support":true,"name":"apcli","url":"\/cgi-bin\/luci\/nradioadv\/wireless\/apcli","language":"Wireless Bridge","match":false}],"url":"","language":"Wireless","match":false},{"name":"vpn","index":3,"support":true,"sub_menu":[{"index":1,"support":true,"name":"vpn","url":"\/cgi-bin\/luci\/nradioadv\/vpn\/vpn","language":"VPDN","match":false}],"url":"","language":"VPN","match":false},{"name":"system","index":4,"support":true,"sub_menu":[{"index":1,"support":true,"name":"reset","url":"\/cgi-bin\/luci\/nradioadv\/system\/reset","language":"Upgrade","match":false},{"index":2,"support":true,"name":"at","url":"\/cgi-bin\/luci\/nradioadv\/system\/at","language":"AT Command","match":false},{"index":3,"support":true,"name":"passwd","url":"\/cgi-bin\/luci\/nradioadv\/system\/passwd","language":"Account","match":false},{"index":4,"support":true,"name":"memory","url":"\/cgi-bin\/luci\/nradioadv\/system\/memory","language":"Storage Manager","match":false},{"index":5,"support":true,"name":"restart","url":"\/cgi-bin\/luci\/nradioadv\/system\/restart","language":"Reboot","match":false},{"index":6,"support":true,"name":"logread","url":"\/cgi-bin\/luci\/nradioadv\/system\/logread","language":"System Log","match":false},{"index":7,"support":true,"name":"ledctrl","url":"\/cgi-bin\/luci\/nradioadv\/system\/ledctrl","language":"LED Control","match":false},{"index":8,"support":true,"name":"fanctrl","url":"\/cgi-bin\/luci\/nradioadv\/system\/fanctrl","language":"Fan","match":false},{"index":9,"support":true,"name":"auth","url":"\/cgi-bin\/luci\/nradioadv\/system\/auth","language":"Re-Auth","match":false}],"url":"","language":"System","match":false}],"url":"\/cgi-bin\/luci\/nradio\/advanced","language":"Advanced","match":false}];
+			var navigation = [];
+			var navigation_index =0;
+			var father_obj = null;
+			function get_match_menu(menu){
+				for(var i=0;i<menu.length;i++){
+					var item = menu[i];
+					if(item.match){
+						navigation[navigation_index] = item;
+						navigation_index++;
+						if (item.sub_menu){
+							get_match_menu(item.sub_menu);
+						}
+					}					
+				}
+			}
+			function get_match_menu_byname(menu,name){
+				for(var i=0;i<menu.length;i++){
+					var item = menu[i];
+					if(item.name == name){
+						father_obj = null;
+						return item;
+					}
+					else{
+						if (item.sub_menu){
+							var target = get_match_menu_byname(item.sub_menu,name);
+							if(target){
+								father_obj = item;
+								return target;
+							}								
+						}
+					}
+				}
+				return null;
+			}
+			function getQueryString(name) {
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+				var r = window.location.search.substr(1).match(reg);
+				if (r != null) return unescape(r[2]);
+				return null;
+			}
+				
+			var menu = getQueryString("menu");
+			get_match_menu(top_menu);
+			get_pc_menu(top_menu);
+			if(!menu && (navigation.length == 1) && (navigation[0].name == "index"))
+				format_mobile_menu(top_menu,true);
+			else{				
+				if(menu){
+					var menu_list = get_match_menu_byname(top_menu,menu);
+					format_mobile_menu(menu_list.sub_menu,false);
+					if(father_obj)
+						goto_father_menu(father_obj,top_menu[0]);
+					else
+						goto_father_menu(null,top_menu[0]);
+				}
+				else{
+					goto_father_menu(navigation[navigation.length-2],top_menu[0]);
+				}				
+			}
+				
+		</script>
+		<div class="container body-container body-">
+			<div class="main ">
+				<div class="main-content">
+					
+		<script>
+							
+				setInterval(refresh_sms_badge, 3000);
+			
+		</script>
+
+
+<form method="post" name="cbi" action="/cgi-bin/luci/admin/system/security" enctype="multipart/form-data" onreset="return cbi_validate_reset(this)" onsubmit="return cbi_validate_form(this, 'Invalid parameters. Save failed. Check and retry.')">
+	<div>
+		<script type="text/javascript" src="/luci-static/resources/cbi.js?v=git-26.289.29354-9915aac" data-strings="{&#34;path&#34;:{&#34;resource&#34;:&#34;\/luci-static\/resources&#34;,&#34;browser&#34;:&#34;\/cgi-bin\/luci\/admin\/filebrowser&#34;},&#34;label&#34;:{&#34;choose&#34;:&#34;-- Please choose --&#34;,&#34;custom&#34;:&#34;-- custom --&#34;}}"></script>
+		<input type="hidden" name="token" value="a5baf87bda3aa05c229c75641495b065" />
+		<input type="hidden" name="cbi.submit" value="1" />
+		<input type="submit" value="Save" class="hidden" />
+	</div>
+<div class="cbi-map" id="cbi-firewall">
+	<h2 name="content">Security</h2>
+	
+	<fieldset class="cbi-section">
+		<legend>Security Configuration</legend>
+		
+		
+		
+		<div class="cbi-section-node" id="cbi-firewall-ssh">
+			
+
+
+	
+
+<div class="cbi-value" id="cbi-firewall-ssh-target" data-index="1" data-depends="[]"><label class="cbi-value-title" >Enable SSH</label>
+		<div class="cbi-value-field">
+
+
+	<select class="cbi-input-select" data-update="change" id="cbid.firewall.ssh.target" name="cbid.firewall.ssh.target" size="1">
+		<option id="cbid.firewall.ssh.target-ACCEPT" value="ACCEPT" data-index="1" data-depends="[]">Enable</option><option id="cbid.firewall.ssh.target-REJECT" value="REJECT" data-index="2" data-depends="[]" selected="selected">Disable</option>
+	</select>
+
+		</div></div>
+
+
+<style>
+	.agreement_top{
+		text-align: left;
+	}
+	.mobile_apply_color .mobile{
+		color:#c5c5c5
+	}
+	.agreement_dialog .modal-dialog {
+		margin: 0 auto;
+	}
+	.agreement_dialog h2{
+		text-align: center;
+		color: black;
+	}
+
+	.agreement_dialog h2 span{
+		position:unset;
+		border-bottom:unset
+	}
+	.bootstrap-dialog .modal-dialog {
+			margin:100px auto;
+		}
+
+	@media (min-width: 10px) and (max-width: 768px) {
+
+		.bootstrap-dialog-message .main{
+			margin-top: 0px;
+		}
+
+		.agreement_dialog .modal-dialog .main-content{
+			padding:20px;
+		}
+
+		.bootstrap-dialog .modal-dialog{
+			width: 380px;
+		}
+	}
+</style>
+
+	
+	<input type="text" style="display: none;" />
+	<div class="cbi-value" >
+		<label class="cbi-value-title" ></label>
+		<div class="cbi-value-field">
+			<input id="click-box" type="checkbox" class="form-check-input" style="padding:unset;" value="">
+			<a id="check-agreement"  class="click_pointer">
+				I have read and agree to the Kunpeng disclaimer
+			</a>
+		</div>
+	</div>
+	
+
+<script type="text/javascript">//<![CDATA[
+	$(document).ready(function(){
+		$('#sub-cbi-sapply-btn').addClass("disable-btn-color");
+		$('#sub-cbi-sapply-btn').prop('disabled',true);
+		$("#mobile_apply").addClass("mobile_apply_color");
+		if (($("div.cbi-page-actions > input.cbi-button-apply").length == 1)){
+			$("#mobile_apply").removeClass("hide");
+		}
+	});
+	
+	var agreementDialog = null;
+	var htm='<div class="main ">';
+	htm+='<div class="main-content main-content-sub" >';
+	htm+='<div class="cbi-map">';
+	htm+='<h2 name="content"  class="content-sub"><span>Disclaimer Agreement</span></h2>';
+	htm+='<div class="agreement_top">';
+	htm+='	<fieldset class="cbi-section">';
+	htm+='		<div class="cbi-section-node sms_box_header">';
+	htm+='			<span>Important Notice: Before enabling the SSH function on this device, you must carefully read and fully understand the entire content of this Disclaimer. If you disagree with any term or do not fully understand it, please do not enable the SSH function.&#60;br /&#62;This device (referring to the 5G CPE/MiFi product developed by NRadio Technologies Co., Ltd., hereinafter referred to as “the Device”) is based on Linux technology and supports open source and SSH access. To ensure your lawful and compliant use of the Device, this Disclaimer is formulated as follows:&#60;br /&#62;&#60;br /&#62;</span>';
+	htm+='		</div>';
+	htm+='		<div class="cbi-section-node">';
+	htm+='			<span>I. Scope of Application&#60;br /&#62;This Disclaimer applies to the enabling, use, and all behaviors related to the SSH function and open-source code of the Device.&#60;br /&#62;&#60;br /&#62;II. Permitted Rights&#60;br /&#62;1. You may use the Device and its SSH function for non-commercial purposes, provided that you fully comply with this Disclaimer.&#60;br /&#62;2. You may modify the source code to suit your usage needs within the scope permitted by the Cybersecurity Law of the People&#39;s Republic of China and other applicable laws and regulations.&#60;br /&#62;3. Upon obtaining the SSH access key for the Device, you shall have the right to use the Device to build source code and all related content, and you shall independently bear all legal obligations arising therefrom.&#60;br /&#62;4. If you intend to use the Device for commercial purposes (including profit-oriented or revenue-generating activities), you must obtain a commercial license from our company. Commercial licensees are entitled to specified technical support services within the license term and may submit feedback or suggestions, but our company is not obligated to adopt them.&#60;br /&#62;&#60;br /&#62;III. Restrictions and Limitations&#60;br /&#62;1. Without obtaining a commercial license, you shall not use the Device for any commercial purpose.&#60;br /&#62;2. Without our prior written permission, you shall not rent, sell, mortgage, or sublicense the Device or any associated commercial license.&#60;br /&#62;3. You shall not develop any derivative versions, modified versions, or third-party versions based on the whole or any part of the Device for redistribution, whether in whole or in part.&#60;br /&#62;4. Once the SSH function is enabled, our company assumes no liability or warranty of any kind for your use of the Device. You assume all risks and consequences arising from your use.&#60;br /&#62;5. You shall not remove or alter any substantive content of license notices (including copyright, patent, disclaimer, or limitation of liability) contained in the source code, except as necessary to correct known factual errors.&#60;br /&#62;6. You must strictly comply with all applicable laws and regulations when using the SSH function and open-source code, and shall not use the Device for any illegal purpose.&#60;br /&#62;7. If you breach any term of this Agreement, your authorization will be automatically terminated, your permitted rights will be revoked, and you shall bear corresponding legal liability.&#60;br /&#62;&#60;br /&#62;</span>';
+	htm+='			<span>IV. Limited Warranty and Disclaimer&#60;br /&#62;1. The Device and its accompanying files are provided “as is”, without any express or implied warranty or indemnification.&#60;br /&#62;2. You use the Device and enable the SSH function voluntarily and at your own risk. Before purchasing technical support services, our company provides no technical support, warranty of use, nor assumes any liability arising from your use of the Device.&#60;br /&#62;3. This electronic version of the Disclaimer has the same legal effect as a written agreement. Once you confirm your agreement and enable the SSH function, you are deemed to have fully understood and accepted all terms of this Disclaimer. Any act beyond the scope of permitted use constitutes infringement, and our company reserves the right to terminate the authorization at any time, order the cessation of harm, and pursue relevant legal liabilities.&#60;br /&#62;4. If the Device includes demonstration or integration packages of third-party software, the copyright of such software belongs to the third parties. You must comply with the applicable license terms of such software, and unauthorized use is prohibited.&#60;br /&#62;&#60;br /&#62;V. User Responsibility Statement&#60;br /&#62;1. The user has carefully read, understood, and agreed to all the above terms and undertakes to comply with this Disclaimer.&#60;br /&#62;2. The user acknowledges that after the SSH function is enabled, the manufacturer/provider of the Device assumes no further management responsibility. The user agrees that all legal and financial liabilities arising from the use of the Device shall be borne solely by the user, and not by the manufacturer/provider of the Device.&#60;br /&#62;3. Enabling the SSH function constitutes the user’s full understanding and acceptance of the entire content of this Disclaimer.&#60;br /&#62;</span>';
+	htm+='		</div>';
+	htm+='	</fieldset>';
+	htm+='	</div>';
+	htm+='	</div>';
+	htm+='	</div>';
+	htm+='	</div>';
+	htm=htm.replace(/&#60;/g, "<");
+	htm=htm.replace(/&#62;/g, ">");
+
+	$('#click-box').click(function(){
+			if($(this).prop('checked')){
+				$('#sub-cbi-sapply-btn').removeClass("disable-btn-color");
+				$('#sub-cbi-sapply-btn').prop('disabled',false);
+				$("#mobile_apply").removeClass("mobile_apply_color");
+				$('#sub-cbi-sapply-btn').bind('click',function(){
+					$("form").submit();
+				})
+			}else{
+				$('#sub-cbi-sapply-btn').addClass("disable-btn-color");
+				$("#mobile_apply").addClass("mobile_apply_color");
+				$('#sub-cbi-sapply-btn').unbind('click');
+				$('#sub-cbi-sapply-btn').prop('disabled',true);
+			}
+			resize_mobile_button();
+		});
+
+	$('#check-agreement').click(function () {
+		if(!agreementDialog){
+			agreementDialog = BootstrapDialog.show({
+				type: BootstrapDialog.TYPE_DEFAULT,
+				cssClass: 'list-dialog agreement_dialog',
+				closeByBackdrop: true,
+				title: '',
+				message: htm,
+				onhide:function(){
+					agreementDialog = null;
+				}
+			});
+		}		
+	});
+	
+//]]></script>
+
+
+
+
+
+
+
+
+		</div>
+		<br />
+	</fieldset>
+
+<!-- /nsection -->
+
+	
+
+	<br />
+</div>
+<div class="cbi-page-actions">
+		
+
+		
+		
+			<input class="cbi-button cbi-button-apply" type="submit" name="cbi.apply" id="sub-cbi-sapply-btn" value="Save &#38; Apply" />
+		
+		
+			<input class="cbi-button cbi-button-save" type="submit" value="Save" />
+		
+		
+			<input class="cbi-button cbi-button-reset" type="button" value="Reset" onclick="location.href='/cgi-bin/luci/admin/system/security'" />
+		
+	</div></form>
+
+<script type="text/javascript">cbi_init();</script>
+
+
+		
+			<div class="container click-top hidden">
+				<div class="row">
+					<div class="col-xs-12 text-center">
+						<div onclick="window.scrollTo(0,0)">
+							<i class="far fa-nradio-top fa-2x icon_disable"></i>	
+							<span>BackTop</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		
+		</div>
+	</div>
+</div>
+	
+<footer class="footer footer- ">
+		
+	<div class="container text-center footer_container">
+		<div class="row footer_container_body">
+			<div class="col-lg-12">
+				<ul class="list-inline" style="padding-top: 0px;">					
+					<li class="click_pointer"><span id="copyright_year"></span><a class="text_white" target="_blank" href="https://nradiowifi.com/">NRadio</a></li>
+
+						
+							<li class="click_pointer">
+								<span id="powered" >Powered by</span>
+								<span id="powered_1" >NR</span>
+								<span id="powered_2" >OS</span>
+							</li>
+						
+				</ul>
+			</div>
+		</div> 
+	</div>
+</footer>
+<div class="mobile_hidden_btn"></div>
+
+
+<script>	
+function show_current_year(){
+	var date = new Date();
+	$("#copyright_year").html("©"+date.getFullYear()+"  ");
+}
+show_current_year();
+function show_wechat(){
+	var htm = "<div class='wechat'></div>";
+	BootstrapDialog.show({
+		type: BootstrapDialog.TYPE_DEFAULT,
+		title: '',
+		closable: true,
+		cssClass:'picture_box',
+		message: htm
+	});
+
+}
+function rebind_apply(){
+	if (($("div.cbi-page-actions > input.cbi-button-apply").length == 1)&& !$("div.cbi-page-actions > input.cbi-button-apply").prop("disabled") && $("div.cbi-page-actions > input.cbi-button-apply").click){;
+		$("div.cbi-page-actions > input.cbi-button-apply").click();
+	}
+}
+$(window).resize(function(){
+	adapt_symbol_menu();
+	footer_adjust();
+});
+
+function resize_mobile_button(hide_btn){
+	let apply_html = "";	
+	var hide_class = "visible-xs";
+	if (hide_btn)
+		hide_class = "hide";
+	if (($("div.cbi-page-actions > input.cbi-button-apply").length == 1) && !$("div.cbi-page-actions > input.cbi-button-apply").prop("disabled") && $("div.cbi-page-actions > input.cbi-button-apply").click){
+		apply_html = '\
+		<div class="mobile-apply-center '+hide_class+' ">\
+			<input type="button" class="cbi-button cbi-button-apply btn btn-primary mobile-apply-btn valid" onclick="rebind_apply()" value="Save &#38; Apply">\
+		</div>';
+	}
+	$('.mobile_hidden_btn').html(apply_html);
+}
+
+let lastHeight = window.innerHeight;
+document.addEventListener('click', e => {
+  if(['INPUT','BUTTON','A'].includes(e.target.tagName)) footer_adjust();
+});
+document.addEventListener('change', e => {
+  if(['SELECT'].includes(e.target.tagName)) footer_adjust();
+});
+$(document).ready(function(){
+	resize_mobile_button(HideXSSubmitBtn);
+	adapt_symbol_menu();			
+	footer_adjust();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+

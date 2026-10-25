@@ -1,0 +1,17 @@
+
+config cpesel 'sim'
+	option cur '1'
+	option max '3'
+	option stype '0,0,4'
+	option gval '0-2,1-1,1-2'
+	option mode '0'
+	option default '1'
+
+config cpesel 'sim1'
+	option max '2'
+	option gval '1-1,1-2'
+	option stype '0,0'
+	option mode '1'
+	option cur '1'
+	option default '1'
+

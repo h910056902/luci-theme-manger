@@ -1,0 +1,19 @@
+
+config system 'board'
+	option ptype 'rt'
+	option id 'FC:83:C6:18:42:FA'
+	option device_code 'LDpqbIfJ'
+	option imei '864640060028295'
+	option iccid '89863026000007034320'
+	option pname 'C2000-798'
+	option vendor 'nradio'
+	option name 'WT9500'
+	option country 'CN'
+	option sig_mode 'only'
+	option keep '1'
+
+config system 'feature'
+	option cpe '2'
+
+config system 'custom'
+

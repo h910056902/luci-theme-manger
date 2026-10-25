@@ -1,0 +1,4 @@
+
+config portal 'ui'
+	option hide_small '0'
+

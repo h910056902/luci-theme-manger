@@ -1,0 +1,15 @@
+
+config global 'global'
+
+config agent 'nradio'
+	option alias 'nradio'
+
+config channel 'wechat'
+	option alias 'owner'
+	option lang "AIWeChat"
+	option img "wechat.svg"
+	
+config channel 'whatsapp'
+	option alias 'owner'
+	option lang "AIWhatsApp"
+	option img "whatsapp.svg"

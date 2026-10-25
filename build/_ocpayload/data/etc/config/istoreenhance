@@ -1,0 +1,7 @@
+
+config istoreenhance
+	option enabled '0'
+	option port '5443'
+	option adminport '5003'
+	option cache '/mnt/storage/data/Configs/iStoreEnhance'
+

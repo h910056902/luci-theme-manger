@@ -1,0 +1,78 @@
+
+config network
+	option init 'network'
+	list affects 'dhcp'
+	list affects 'radvd'
+	list affects 'msad'
+
+config wireless
+	list affects 'network'
+
+config firewall
+	option init 'firewall'
+	list affects 'luci-splash'
+	list affects 'qos'
+	list affects 'miniupnpd'
+
+config olsr
+	option init 'olsrd'
+
+config dhcp
+	option init 'dnsmasq'
+	list affects 'odhcpd'
+
+config odhcpd
+	option init 'odhcpd'
+
+config dropbear
+	option init 'dropbear'
+
+config httpd
+	option init 'httpd'
+
+config fstab
+	option init 'fstab'
+
+config qos
+	option init 'qos'
+
+config system
+	option init 'led'
+	list affects 'luci_statistics'
+
+config luci_splash
+	option init 'luci_splash'
+
+config ntpclient
+	option init 'ntpclient'
+
+config samba
+	option init 'samba'
+
+config tinyproxy
+	option init 'tinyproxy'
+
+config msad
+	option init 'msad'
+
+config upnpd
+	option init 'miniupnpd'
+
+config openclash
+	option init 'openclash'
+
+config linkease
+	option init 'linkease'
+
+config autotimeset
+	option init 'autotimeset'
+
+config istoreenhance
+	option init 'istoreenhance'
+
+config homebox
+	option init 'homebox'
+
+config arpbind
+	option init 'arpbind'
+

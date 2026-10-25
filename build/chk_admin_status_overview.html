@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Overview</title>
+		<meta name="viewport" content="initial-scale=1.0">
+
+
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/bootstrap-dialog.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/cascade.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/main.min.css?v=git-26.289.29354-9915aac">
+		<link rel="stylesheet" type="text/css" href="/luci-static/nradio/css/nradio.min.css?v=git-26.289.29354-9915aac">
+		
+		<link rel="shortcut icon" href="/luci-static/nradio/favicon.ico">
+		<script defer src="/luci-static/nradio/js/nradio.min.js?v=git-26.289.29354-9915aac"></script>
+		<script defer src="/luci-static/nradio/js/fontawesome.min.js?v=git-26.289.29354-9915aac"></script>
+		<script defer src="/luci-static/nradio/js/v4-shims.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/jquery.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/jquery.validate.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap-filestyle.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/bootstrap-dialog.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/main.min.js?v=git-26.289.29354-9915aac"></script>
+		<script src="/luci-static/nradio/js/clipboard.min.js?v=git-26.289.29354-9915aac"></script>
+		<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="/luci-static/nradio/js/html5shiv.min.js?v=git-26.289.29354-9915aac"></script>
+			<script src="/luci-static/nradio/js/respond.min.js?v=git-26.289.29354-9915aac"></script>
+		<![endif]-->
+		<script src="/luci-static/resources/xhr.js?v=git-26.289.29354-9915aac"></script>
+		<style>
+			.lang-drawer-item {
+				text-align: center;
+				padding: 12px 0;
+			}
+			.next-button-lang::before {
+				transition: transform 0.3s ease;
+				transform: rotate(136deg) translateX(-50%);
+			}
+			.next-button-lang.expanded::before {
+				transform: rotate(225deg) translateX(-50%);
+			}
+			.sms-li {
+				position: relative;
+			}
+			.sms-badge {
+				position: absolute;
+				top: -6px;
+				right: -3px;
+				min-width: 15px;
+				border-radius: 8px;
+				font-size: 10px;
+				line-height: 16px;
+				text-align: center;
+			}
+			.sms-badge.hide {
+				display: none;
+			}
+		</style>
+		<script>
+		var languages_info = {"en":"English","zh_cn":"简体中文"};
+		function uptime2dhms(uptime, max = 5, delim = ' '){
+			if(!uptime){
+				return "-";
+			}
+			var dhms=[];
+			if (uptime >= 60*60*24){
+				dhms.push(Math.floor(uptime/(60*60*24))+'d');
+			}
+			if (uptime >= 60*60){
+				dhms.push(Math.floor(uptime%(60*60*24)/60/60)+'h');
+			}
+			if (uptime >= 60){
+				dhms.push(Math.floor(uptime%(60*60)/60)+'m');
+			}
+			dhms.push(Math.floor(uptime%60)+'s');
+			return dhms.slice(0, max).join(delim);
+		}
+
+		$.validator.addMethod("wpakey-invalid", function(value, element) {
+			return false;
+		}, "Invalid WPA password.")
+
+		$.validator.addMethod("ipaddr-invalid", function(value, element) {
+			return false;
+		}, "Invalid IP address.")
+
+		$.validator.addMethod("ip4addr-invalid", function(value, element) {
+			return false;
+		}, "Invalid IPv4 address.")
+
+		$.validator.addMethod("dataneeded", function(value, element) {
+			return !this.optional(element);
+		}, "This field is required.")
+
+		var reloadFieldset = '';
+
+		$(document).ready(function() {
+			nradio_style_onload();
+			$(':file').not('.hide').filestyle({
+				buttonBefore: true,
+				buttonText: "Choose File...",
+				iconName: "far fa-folder-open"
+			});
+			$(':file').click(function() {
+				$(this).closest('div.cbi-value').removeClass('cbi-value-error');
+			});
+
+			$('form').each(function() {
+				var v = $(this).validate({
+					errorPlacement: function(error, element) {
+						if ($(element).next('span.glyphicon').length > 0) {
+							if ($(element).parent().hasClass('dylist-input-group')) {
+								$(element).parent().next('div.empty').prepend(error);
+							} else {
+								$(element).parent().after(error);
+							}
+						} else {
+							$(element).parents('div.cbi-value-field')
+								.children('div.error').remove();
+							$(element).parents('div.cbi-value-field')
+								.children().last().after(error);
+						}
+					},
+					errorElement: "div",
+				});
+
+				$('.cbi-button-next').click(function(event) {
+					if (v.form()) {
+						$('ul.cbi-tabmenu > li.cbi-tab').nextAll('li').first().children('a').click();
+					}
+				});
+				$('.cbi-button-apply').click(function() {
+					v.form();
+				});
+			});
+
+			$(document).on("click", "#select_all", function(){
+				$("input[name='sel_check']").not(':disabled').prop('checked', $(this).is(":checked"));
+			});
+			document.onkeydown=function(e){
+				e=e||window.event;
+				if(e.keyCode==116){
+					e.preventDefault();
+					location.replace(document.URL);
+				}
+			}
+			if ( window.history.replaceState ) {
+				window.history.replaceState( null, null, window.location.href );
+			}
+		});
+		</script>
+	</head>
+	<body class=" lang_enOverview body-total-"  >
+	
+			
+		<header>
+			
+			<div class="row logo-nradio hidden-xs large_banner">							
+				<div class="nradio-logo
+ main-logo-size"></div>
+			</div>
+			<div class="container menu-top">
+				<div class="row logo-nradio hidden-xs small_banner" style="margin-top:10px">
+					<div class="col-xs-4 col-sm-4 text-left"><div class="nradio-logo
+ main-logo-size"></div></div>
+					<div class="col-xs-8 col-sm-8 text-right qmenu" tabindex=0 style="outline:none" onblur="show_icon_menu(1);">
+					</div>
+				</div>
+				<div class="row hidden-xs">
+					<div class="flex menu-tab" >
+					</div>
+				</div>
+			</div>
+			<div class="large_banner qmenu" tabindex=0 style="outline:none" onblur="show_icon_menu(1);">
+			</div>
+			
+		</header>
+		
+		<a name="top_position"></a>
+
+		<div class="container visible-xs-block mobile menu_mobile">
+				
+			<div class="col-xs-4 col-sm-4  text-left"></div>
+			<div class="col-xs-4 col-sm-4 text-center"><div class="nradio-logo
+ mobile-logo-size"></div></div>
+				
+					<div class="col-xs-4 text-right hide" id="mobile_apply" ></div>
+				
+
+			
+		</div>	
+
+	<iframe id='background_form' name='background_form' style='display: none'>
+	</iframe>
+	<script>
+		var	gSmsIfaces = null;
+		var gSmsUnread = 0;
+		
+		GlobalSyncRQ.sms_unread = 1;
+		
+		
+		
+		function render_sms_badge(count,clean){
+			var $badge = $('.sms-badge');
+			if(!$badge.length) return;
+			if(clean){
+				$('.sms-li').addClass("blink");
+				$badge.removeClass('hide').html('<i class="far fa-nradio-del fa-fw" ></i> ');
+			}
+			else if(!count || count <= 0){
+				$('.sms-li').removeClass("blink");
+				$badge.addClass('hide').text('');
+			}else{
+				$('.sms-li').removeClass("blink");
+				$badge.removeClass('hide').text(count > 99 ? '99+' : String(count));
+			}
+		}
+		function sms_unread_core(data){
+			gSmsIfaces = null;
+			var count = 0;
+			var total = 0;
+			var used = 0;
+			var clean_flag = 0;
+			
+			if(data){
+				for( var i = 0; i < data.length; i++){
+					var item = data[i];
+					if (item.max)
+						total+=item.max;
+					if (item.used)
+						used+=item.used;
+					if(item.count > 0 && item.iface){
+						gSmsIfaces = item.iface;
+						count = item.count + count;
+					}
+				}
+				gSmsUnread = count;
+				if(total && (used*100/total >= 90))
+					clean_flag = 1;
+				
+				//console.log("used:"+used+",total:"+total+" "+used*100/total);
+				render_sms_badge(count,clean_flag);
+			}
+		}
+		function refresh_sms_badge(){
+			if(GlobalSyncRQ.runtime || GlobalSyncRQ.cellinfo || GlobalSyncRQ.celldevice || GlobalSyncRQ.siminfo || GlobalSyncRQ.client)
+				return;
+			(new XHR()).get('/cgi-bin/luci/nradio/cellular/sms/unread', null, function(xhr){
+				if (xhr.getResponseHeader("Content-Type") == "application/json") {
+					try {
+						var data_res = eval('(' + xhr.responseText + ')');
+						if(data_res && data_res.result && data_res.result.sms_unread && data_res.result.sms_unread.length > 0){
+							sms_unread_core(data_res.result.sms_unread);
+						}					
+					}
+					catch(e) {
+					}
+				}
+			});
+		}
+		function goto_cellular_sms(){
+			if (!gSmsIfaces)
+				window.location = '/cgi-bin/luci//nradio/cellular/sms';
+			else
+				window.location = '/cgi-bin/luci//nradio/cellular/sms/model/' + gSmsIfaces;
+		}
+
+		function apply_lang(lang){
+			var data={};
+			data['lang']=lang;
+			(new XHR()).post('/cgi-bin/luci/admin/syslang', data, function(){
+				location.reload();
+			});
+		}
+		function toggle_lang_drawer(){
+			$("#mobile_lang_drawer").slideToggle();
+			$(".next-button-lang").toggleClass("expanded");
+		}
+		function confirm_lang(){
+			$(".sub_lang_list").html("");
+			var htm = `
+				<li class="click_pointer" data-lang="auto" onclick="apply_lang('auto')">Auto</li>
+			`
+			for (const key in languages_info) {
+				if (languages_info.hasOwnProperty(key)) {
+					if (key.charAt(0)=='.')
+						continue;
+					htm+='<li class="click_pointer" data-lang="'+key+'" onclick="apply_lang(\''+key+'\')">'+languages_info[key]+'</li>';
+				}
+			}		
+			
+			$(".sub_lang_list").append(htm);
+		}
+		function generate_qmenu(){
+			var htm = '<ul class="list-inline nradio-right-btn">'+
+				
+					  '	<li class="click_pointer sms-li" style="margin-right:10px" onclick="goto_cellular_sms();"><i class="far fa-nradio-sms-header fa-2x"></i><span class="sms-badge hide" id="sms_badge"></span></li>'+
+				
+					  '	<li class="click_pointer"  onclick="show_icon_menu();"><i class="far fa-nradio-menu fa-2x" ></i></li>'+
+					  '</ul>'+
+					  '	<ul class="sub_icon_list sub_lang_list hide">'+
+			
+					  '	<li class="click_pointer" onclick="confirm_lang(this)">Language<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradioadv/system/restart\'">Reboot<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradioadv/system/passwd\'">Admin<div class="next-button">&nbsp;</div></li>'+
+					  '	<li class="click_pointer" onclick="location.href=\'/cgi-bin/luci/nradio/logout\'">Log Out<div class="next-button">&nbsp;</div></li>'+
+					  '</ul>';
+			$(".qmenu").html("");
+			$(".qmenu").append(htm);
+							
+				render_sms_badge(gSmsUnread);
+			
+		}
+		generate_qmenu();
+		function show_icon_menu(hide){
+			if(hide){
+				generate_qmenu();
+				$(".sub_icon_list").addClass("hide");
+			}
+			else{
+				generate_qmenu();
+				$(".sub_icon_list").toggleClass("hide");
+			}
+		}
+		function confirm_jump_qsetup(){
+			var msg = {};
+			msg.message = '<div style="padding:0 20px;text-align:left"><i class="far fa-nradio-note fa-fw icon_disable" ></i>Quick Installation will overwrite the current configuration of the router, which may cause the router or clients to be offline. Please confirm whether to start the Quick Installation?</div>';
+			msg.confirm = "Yes";
+			msg.cancel = "No";
+			msg.callback = function(){
+				location.href="/cgi-bin/luci/nradio/qsetup/second";
+			}
+			confirm_box(msg);
+		}
+		function confirm_quit_qsetup(){
+			var msg = {};
+			msg.message = '<i class="far fa-nradio-note fa-fw icon_disable" ></i>Are you sure to exit the Quick Setup';
+			msg.confirm = "Confirm";
+			msg.cancel = "Cancel";
+			msg.callback = function(){
+				var data={};
+				data['token']='513d52c928696d1d27ecc5a64a4e5f7c';
+				(new XHR()).post('/cgi-bin/luci/nradio/qsetup/next', data, function(){
+					setTimeout(function(){
+						location.href="/cgi-bin/luci/nradio/system/overview";
+					},1000);
+				});
+			}
+			confirm_box(msg);
+		}
+		function get_each_menu(menu,index,lastname){
+			var box_class="";
+			var menu_index=index;
+			var menu_data = menu;
+			var menu_list = null;
+			var father_name = "";
+			var style = "";
+			var pre_name = lastname?lastname:"main";
+			if(!menu_index){
+				father_name="main";
+				menu_list = menu_data;
+			}
+			else{
+				father_name=menu.name;		
+				menu_list = menu_data.sub_menu;
+				style = "style='display:none'";
+			}
+			box_class=father_name+"_menu_box";
+			if(!menu_list)
+				return "";
+			var sub_htm = "";
+			var htm = "";
+				htm+='	<div data-father="'+pre_name+'" class="mobile_bg_color panel panel-info device-panel menu_box '+box_class+'" '+style+'>';
+				htm+='		<div class="panel-heading">';
+				htm+='			<h3 class="panel-title"</h3>';
+				htm+='		</div>';
+				htm+='		<div class="panel-body info-box2">';
+			var line = "";
+			var has_sub = 0;
+			var first_index = 0;
+			for(var i=0;i<menu_list.length;i++){
+				var icon_info = "";
+				if(menu_list[i].name == "index"){
+					first_index=1;
+					continue;
+				}
+
+				if(i>first_index)
+					line="line_top_class";
+				has_sub = 0;
+				if(menu_list[i].sub_menu){
+					sub_htm+=get_each_menu(menu_list[i],(menu_index+1),father_name);
+					has_sub=1;
+				}
+				if(menu_list[i].name == "cellular")
+					icon_info='<i class="far fa-podcast"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wifi")
+					icon_info='<i class="far fa-nradio-wifi" style="width:14px"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wan")
+					icon_info='<i class="far fa-nradio-internet"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "client")
+					icon_info='<i class="far fa-nradio-terminal"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "appcenter" && father_name!="system")
+					icon_info='<i class="far fa-nradio-appcenter"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "advanced")
+					icon_info='<i class="far fa-nradio-advanced-setting"></i>&nbsp;&nbsp;';
+
+				htm+='			<div class="row '+line+'">';
+				htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="'+father_name+'" data-name="'+menu_list[i].name+'"  data-url="'+menu_list[i].url+'" data-language="'+menu_list[i].language+'" onclick="show_menu(this,'+has_sub+')">';
+				htm+='					<div class="row padding_fix ">';
+				htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+				htm+='							'+((father_name=="advanced")?"":icon_info)+menu_list[i].language;
+				htm+='						</div>';
+				htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+				htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+				htm+='							<div class="next-button" >';
+				htm+='								&nbsp;';
+				htm+='							</div>';
+				htm+='						</div>';
+				htm+='					</div>';
+				htm+='				</div>';
+				htm+='			</div>';
+
+			}		
+				htm+='		</div>';
+				htm+='	</div>';
+				htm+=sub_htm;
+				return htm;
+		}
+		function get_pc_menu(menu_list){
+			var htm = "";		
+			for(var i=0;i<menu_list.length;i++){
+				var active_class = "";
+				if(menu_list[i].name == "index")
+					icon_info='<i class="far fa-nradio-home fa-5x fa-fw nradio-home-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "cellular")
+					icon_info='<i class="far fa-podcast fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wifi")
+					icon_info='<i class="far fa-nradio-wifi fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "wan")
+					icon_info='<i class="far fa-nradio-internet fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "client")
+					icon_info='<i class="far fa-nradio-terminal fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "appcenter")
+					icon_info='<i class="far fa-nradio-appcenter fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				else if(menu_list[i].name == "advanced")
+					icon_info='<i class="far fa-nradio-advanced-setting fa-5x nradio-normal-width"></i>&nbsp;&nbsp;';
+				if(menu_list[i].match)
+					active_class="active";
+				htm+='			<p  class="item flex-col '+active_class+'"  onclick="location.href=\''+menu_list[i].url+'\';">';
+				htm+='				'+icon_info;
+				htm+='					<span class="title">'+menu_list[i].language+'</span>';
+				htm+='					<span class="bottomline"></span>';
+				htm+='			</p>';
+	
+			}
+			
+			$(".menu-tab").html(htm);
+		}
+		function format_mobile_menu(menu,sub){
+			var top = 0;
+			var class_name="";
+			var htm = "";
+				htm+= get_each_menu(menu,0);
+
+				if(sub){
+
+					htm+='	<div class="mobile_bg_color panel panel-info device-panel menu_box main_menu_box">';
+					htm+='		<div class="panel-heading">';
+					htm+='			<h3 class="panel-title"</h3>';
+					htm+='		</div>';
+					htm+='		<div class="panel-body info-box2">';
+					
+					if(top)
+						class_name="line_top_class";
+					top++;
+					htm+='			<div class="row click_pointer '+class_name+'" onclick="toggle_lang_drawer()">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding">';
+					htm+='					<div class="row padding_fix ">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-syslang"></i>&nbsp;&nbsp;Language';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color">';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button next-button-lang" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='			<div id="mobile_lang_drawer" style="display:none;">';
+					htm+='				<div class="col-xs-12 click_pointer lang-drawer-item" onclick="apply_lang(\'auto\')">Auto</div>';
+					for (const key in languages_info) {
+						if (languages_info.hasOwnProperty(key)) {
+								if (key.charAt(0)=='.')
+								continue;
+							htm+='<div class="col-xs-12 click_pointer lang-drawer-item" onclick="apply_lang(\''+key+'\')">'+languages_info[key]+'</div>';
+						}
+					}	
+					htm+='			</div>';
+					if(top)
+						class_name="line_top_class";
+					top++;
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding"  data-father="main" data-name="restart"  data-url="/cgi-bin/luci/nradioadv/system/restart" data-language="Reboot" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix ">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-reset"></i>&nbsp;&nbsp;Reboot';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color">';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';		
+					htm+='			</div>';
+					if(top)
+						class_name="line_top_class";
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="main" data-name="passwd"  data-url="/cgi-bin/luci/nradioadv/system/passwd" data-language="Admin" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-pwd-change"></i>&nbsp;&nbsp;Admin';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+
+					htm+='			<div class="row '+class_name+'">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left no_padding" data-father="main" data-name="logout"  data-url="/cgi-bin/luci/nradio/logout" data-language="Log Out" onclick="show_menu(this,0)">';
+					htm+='					<div class="row padding_fix">';
+					htm+='						<div class="col-sm-6 col-xs-6 text-left no_padding" >';
+					htm+='							<i class="far fa-nradio-login-out"></i>&nbsp;&nbsp;Log Out';
+					htm+='						</div>';
+					htm+='						<div class="col-sm-6 col-xs-6 text-right sub_label_color" >';
+					htm+='							<div style="display: inline-block"></div>&nbsp;&nbsp;&nbsp;';
+					htm+='							<div class="next-button" >';
+					htm+='								&nbsp;';
+					htm+='							</div>';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='		</div>';
+					htm+='	</div>';
+					htm+='	<div style="padding:5px 0px;" class="mobile_bg_color panel panel-info device-panel menu_box main_menu_box" onclick="location.href=\'/cgi-bin/luci/nradio/simple\'">';
+					htm+='		<div class="panel-heading">';
+					htm+='			<h3 class="panel-title"></h3>';
+					htm+='		</div>';
+					htm+='		<div class="panel-body info-box no_padding">';
+					htm+='			<div class="row">';
+					htm+='				<div class="col-sm-12 col-xs-12 text-left ">';
+					htm+='					<div class="row">';
+					htm+='						<div class="col-sm-12 col-xs-12 text-center sub_label_color">';
+					htm+='							Switch to Basic';
+					htm+='						</div>';
+					htm+='					</div>';
+					htm+='				</div>';
+					htm+='			</div>';
+					htm+='		</div>';
+					htm+='	</div>';
+				}
+			
+			$(".mobile_index_box").html(htm);
+		}
+
+		function goto_innter_menu(name){
+			var class_name = name+"_menu_box";
+			$(".menu_mobile").find("div").first().data("father",name);
+			$(".menu_mobile").find("div").first().addClass("back-button").html("&nbsp;").off("click").on("click",function(){
+				var father = $(this).data("father");
+				var father_class = father+"_menu_box";
+				var pre = $("."+father+"_menu_box").data("father");
+				if (pre == father)
+					$(this).removeClass("back-button");
+				$(this).data("father",pre);
+				$(".menu_box").css("display","none");
+				$("."+father+"_menu_box").css("display","block");
+			});
+		}
+		function show_menu(obj,has_sub){
+			var url = $(obj).data("url");
+			var name = $(obj).data("name");
+			var language = $(obj).data("language");
+			var father = $(obj).data("father");
+			if(!has_sub){
+				if(url && url.length)
+					location.href=url;
+			}
+			else{
+				var class_name = name+"_menu_box";
+				var father_name = father+"_menu_box";
+				$(".menu_box").css("display","none");		
+				$("."+class_name).css("display","block");
+				goto_innter_menu(father);
+			}
+		}
+		function goto_father_menu(father_item,main_item){
+			var name = null;
+			if(father_item)
+				name = father_item.name;
+			$(".menu_mobile").find("div").first().data("father",name?name:"");
+			$(".menu_mobile").find("div").first().addClass("back-button").html("&nbsp;").off("click").on("click",function(){
+				if(name && (father_item && father_item.sub_menu && father_item.sub_menu.length > 1))
+					location.href=main_item.url+"?menu="+name;
+				else
+					location.href=main_item.url;
+			});
+		}
+	</script>
+		
+		
+		<div class="mobile_bg_color container body-container visible-xs-block">
+			<div class="main-content">
+				<div class="mobile_index_box visible-xs-block hide" >
+				</div>
+			</div>
+		</div>
+		
+		<script>
+			var top_menu=[{"index":1,"support":true,"name":"index","url":"\/cgi-bin\/luci\/nradio\/system\/overview","language":"Home","match":false},{"index":2,"support":true,"name":"cellular","url":"\/cgi-bin\/luci\/nradio\/cellular","language":"Cellular","match":false},{"index":3,"support":true,"name":"wan","url":"\/cgi-bin\/luci\/nradio\/basic\/wan","language":"Internet","match":false},{"index":4,"support":true,"name":"wifi","url":"\/cgi-bin\/luci\/nradio\/basic\/wifi","language":"Wi-Fi","match":false},{"index":5,"support":true,"name":"client","url":"\/cgi-bin\/luci\/nradio\/system\/client","language":"Client","match":false},{"index":6,"support":true,"name":"appcenter","url":"\/cgi-bin\/luci\/nradioadv\/system\/appcenter","language":"App Center","match":false},{"support":true,"index":6,"name":"advanced","sub_menu":[{"name":"network","index":1,"support":true,"sub_menu":[{"index":1,"support":true,"name":"dhcp","url":"\/cgi-bin\/luci\/nradioadv\/network\/dhcp","language":"DHCP","match":false},{"index":2,"support":true,"name":"diag","url":"\/cgi-bin\/luci\/nradioadv\/network\/diag","language":"Diagnostics","match":false},{"index":3,"support":true,"name":"wanchk","url":"\/cgi-bin\/luci\/nradioadv\/network\/wanchk","language":"Net Monitor","match":false},{"index":4,"support":true,"name":"dmz","url":"\/cgi-bin\/luci\/nradioadv\/network\/dmz","language":"DMZ","match":false},{"index":5,"support":true,"name":"lan","url":"\/cgi-bin\/luci\/nradioadv\/network\/lan","language":"LAN","match":false},{"index":6,"support":true,"name":"modeselect","url":"\/cgi-bin\/luci\/nradioadv\/network\/modeselect","language":"Mode Select","match":false},{"index":7,"support":true,"name":"forwarding","url":"\/cgi-bin\/luci\/nradioadv\/network\/forwarding","language":"Port Fwd","match":false},{"index":8,"support":true,"name":"ttl","url":"\/cgi-bin\/luci\/nradioadv\/network\/ttl","language":"TTL","match":false},{"index":9,"support":true,"name":"dividing","url":"\/cgi-bin\/luci\/nradioadv\/network\/dividing","language":"Traffic Dist","match":false},{"index":10,"support":true,"name":"firewall","url":"\/cgi-bin\/luci\/nradioadv\/network\/firewall","language":"Firewall","match":false},{"index":11,"support":true,"name":"simpleroutes","url":"\/cgi-bin\/luci\/nradioadv\/network\/simpleroutes","language":"Static Routes","match":false},{"index":12,"support":true,"name":"ipv6","url":"\/cgi-bin\/luci\/nradioadv\/network\/ipv6","language":"IPv6 Setting","match":false},{"index":13,"support":true,"name":"access","url":"\/cgi-bin\/luci\/nradioadv\/network\/access","language":"Access","match":false},{"index":14,"support":true,"name":"upnp","url":"\/cgi-bin\/luci\/nradioadv\/network\/upnp","language":"UPnP","match":false},{"index":15,"support":true,"name":"nbcpe","url":"\/cgi-bin\/luci\/nradioadv\/network\/nbcpe","language":"5G Turbo","match":false},{"index":16,"support":true,"name":"cpedata","url":"\/cgi-bin\/luci\/nradioadv\/network\/cpedata","language":"SIM Mgt.","match":false}],"url":"","language":"Network","match":false},{"name":"wireless","index":2,"support":true,"sub_menu":[{"index":1,"support":true,"name":"acl","url":"\/cgi-bin\/luci\/nradioadv\/wireless\/acl","language":"Wi-Fi ACL","match":false},{"index":2,"support":true,"name":"apcli","url":"\/cgi-bin\/luci\/nradioadv\/wireless\/apcli","language":"Wireless Bridge","match":false}],"url":"","language":"Wireless","match":false},{"name":"vpn","index":3,"support":true,"sub_menu":[{"index":1,"support":true,"name":"vpn","url":"\/cgi-bin\/luci\/nradioadv\/vpn\/vpn","language":"VPDN","match":false}],"url":"","language":"VPN","match":false},{"name":"system","index":4,"support":true,"sub_menu":[{"index":1,"support":true,"name":"reset","url":"\/cgi-bin\/luci\/nradioadv\/system\/reset","language":"Upgrade","match":false},{"index":2,"support":true,"name":"at","url":"\/cgi-bin\/luci\/nradioadv\/system\/at","language":"AT Command","match":false},{"index":3,"support":true,"name":"passwd","url":"\/cgi-bin\/luci\/nradioadv\/system\/passwd","language":"Account","match":false},{"index":4,"support":true,"name":"memory","url":"\/cgi-bin\/luci\/nradioadv\/system\/memory","language":"Storage Manager","match":false},{"index":5,"support":true,"name":"restart","url":"\/cgi-bin\/luci\/nradioadv\/system\/restart","language":"Reboot","match":false},{"index":6,"support":true,"name":"logread","url":"\/cgi-bin\/luci\/nradioadv\/system\/logread","language":"System Log","match":false},{"index":7,"support":true,"name":"ledctrl","url":"\/cgi-bin\/luci\/nradioadv\/system\/ledctrl","language":"LED Control","match":false},{"index":8,"support":true,"name":"fanctrl","url":"\/cgi-bin\/luci\/nradioadv\/system\/fanctrl","language":"Fan","match":false},{"index":9,"support":true,"name":"auth","url":"\/cgi-bin\/luci\/nradioadv\/system\/auth","language":"Re-Auth","match":false}],"url":"","language":"System","match":false}],"url":"\/cgi-bin\/luci\/nradio\/advanced","language":"Advanced","match":false}];
+			var navigation = [];
+			var navigation_index =0;
+			var father_obj = null;
+			function get_match_menu(menu){
+				for(var i=0;i<menu.length;i++){
+					var item = menu[i];
+					if(item.match){
+						navigation[navigation_index] = item;
+						navigation_index++;
+						if (item.sub_menu){
+							get_match_menu(item.sub_menu);
+						}
+					}					
+				}
+			}
+			function get_match_menu_byname(menu,name){
+				for(var i=0;i<menu.length;i++){
+					var item = menu[i];
+					if(item.name == name){
+						father_obj = null;
+						return item;
+					}
+					else{
+						if (item.sub_menu){
+							var target = get_match_menu_byname(item.sub_menu,name);
+							if(target){
+								father_obj = item;
+								return target;
+							}								
+						}
+					}
+				}
+				return null;
+			}
+			function getQueryString(name) {
+				var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+				var r = window.location.search.substr(1).match(reg);
+				if (r != null) return unescape(r[2]);
+				return null;
+			}
+				
+			var menu = getQueryString("menu");
+			get_match_menu(top_menu);
+			get_pc_menu(top_menu);
+			if(!menu && (navigation.length == 1) && (navigation[0].name == "index"))
+				format_mobile_menu(top_menu,true);
+			else{				
+				if(menu){
+					var menu_list = get_match_menu_byname(top_menu,menu);
+					format_mobile_menu(menu_list.sub_menu,false);
+					if(father_obj)
+						goto_father_menu(father_obj,top_menu[0]);
+					else
+						goto_father_menu(null,top_menu[0]);
+				}
+				else{
+					goto_father_menu(navigation[navigation.length-2],top_menu[0]);
+				}				
+			}
+				
+		</script>
+		<div class="container body-container body-">
+			<div class="main ">
+				<div class="main-content">
+					
+		<script>
+							
+				setInterval(refresh_sms_badge, 3000);
+			
+		</script>
+
+
+
+<script type="text/javascript" src="/luci-static/resources/cbi.js?v=git-26.289.29354-9915aac"></script>
+<script type="text/javascript">//<![CDATA[
+	function progressbar(v, m)
+	{
+		var vn = parseInt(v) || 0;
+		var mn = parseInt(m) || 100;
+		var pc = Math.floor((100 / mn) * vn);
+
+		return String.format(
+			'<div style="width:200px; position:relative; border:1px solid #999999">' +
+				'<div style="background-color:#CCCCCC; width:%d%%; height:15px">' +
+					'<div style="position:absolute; left:0; top:0; text-align:center; width:100%%; color:#000000">' +
+						'<small>%s / %s (%d%%)</small>' +
+					'</div>' +
+				'</div>' +
+			'</div>', pc, v, m, pc
+		);
+	}
+
+	function wifirate(bss, rx) {
+		var p = rx ? 'rx_' : 'tx_',
+		    s = '%.1f Mbit/s, %dMHz'
+					.format(bss[p+'rate'] / 1000, bss[p+'mhz']),
+		    ht = bss[p+'ht'], vht = bss[p+'vht'],
+			mhz = bss[p+'mhz'], nss = bss[p+'nss'],
+			mcs = bss[p+'mcs'], sgi = bss[p+'short_gi'];
+
+		if (ht || vht) {
+			if (vht) s += ', VHT-MCS %d'.format(mcs);
+			if (nss) s += ', VHT-NSS %d'.format(nss);
+			if (ht)  s += ', MCS %s'.format(mcs);
+			if (sgi) s += ', Short GI';
+		}
+
+		return s;
+	}
+
+	function duid2mac(duid) {
+		// DUID-LLT / Ethernet
+		if (duid.length === 28 && duid.substr(0, 8) === '00010001')
+			return duid.substr(16).replace(/(..)(?=..)/g, '$1:').toUpperCase();
+
+		// DUID-LL / Ethernet
+		if (duid.length === 24 && duid.substr(0, 8) === '00030001')
+			return duid.substr(8).replace(/(..)(?=..)/g, '$1:').toUpperCase();
+
+		return null;
+	}
+
+	var npoll = 1;
+	var hosts = {"08:84:FB:CA:08:59":{"ipv6":"fe80::a10d:417b:f90f:e1df","name":"rong-yaomagic7","ipv4":"192.168.66.114"},"D0:A0:D6:72:D6:CC":{"ipv6":"fe80::d2a0:d6ff:fe72:d6cc","ipv4":"10.54.30.60"},"FC:83:C6:18:42:FA":{"ipv6":"fe80::fe83:c6ff:fe18:42fa","ipv4":"192.168.66.1"},"3A:76:0C:26:B1:F3":{"ipv4":"192.168.66.100"},"02:19:18:CC:D6:72":{"ipv6":"fe80::19:18ff:fecc:d672","ipv4":"10.0.0.1"}};
+
+	function updateHosts() {
+		XHR.get('/cgi-bin/luci/admin/status/overview', { hosts: 1 }, function(x, data) {
+			hosts = data;
+		});
+	}
+
+	XHR.poll(5, '/cgi-bin/luci/admin/status/overview', { status: 1 },
+		function(x, info)
+		{
+			if (!(npoll++ % 5))
+				updateHosts();
+
+			var si = document.getElementById('wan4_i');
+			var ss = document.getElementById('wan4_s');
+			var ifc = info.wan;
+
+			if (ifc && ifc.ifname && ifc.proto != 'none')
+			{
+				var s = String.format(
+					'<strong>Type: </strong>%s<br />' +
+					'<strong>Address: </strong>%s<br />' +
+					'<strong>Netmask: </strong>%s<br />' +
+					'<strong>Gateway: </strong>%s<br />',
+						ifc.proto,
+						(ifc.ipaddr) ? ifc.ipaddr : '0.0.0.0',
+						(ifc.netmask && ifc.netmask != ifc.ipaddr) ? ifc.netmask : '255.255.255.255',
+						(ifc.gwaddr) ? ifc.gwaddr : '0.0.0.0'
+				);
+
+				for (var i = 0; i < ifc.dns.length; i++)
+				{
+					s += String.format(
+						'<strong>DNS %d: </strong>%s<br />',
+						i + 1, ifc.dns[i]
+					);
+				}
+
+				if (ifc.expires > -1)
+				{
+					s += String.format(
+						'<strong>Expires: </strong>%t<br />',
+						ifc.expires
+					);
+				}
+
+				if (ifc.uptime > 0)
+				{
+					s += String.format(
+						'<strong>Connected: </strong>%t<br />',
+						ifc.uptime
+					);
+				}
+
+				ss.innerHTML = String.format('<small>%s</small>', s);
+				si.innerHTML = String.format(
+					'<img src="/luci-static/resources/icons/ethernet.png" />' +
+					'<br /><small><a href="%s">%s</a></small>',
+						ifc.link, ifc.ifname
+				);
+			}
+			else
+			{
+				si.innerHTML = '<img src="/luci-static/resources/icons/ethernet_disabled.png" /><br /><small>?</small>';
+				ss.innerHTML = '<em>Not connected</em>';
+			}
+
+			
+			var si6 = document.getElementById('wan6_i');
+			var ss6 = document.getElementById('wan6_s');
+			var ifc6 = info.wan6;
+
+			if (ifc6 && ifc6.ifname && ifc6.proto != 'none')
+			{
+				var s = String.format(
+					'<strong>Type: </strong>%s%s<br />',
+						ifc6.proto, (ifc6.ip6prefix) ? '-pd' : ''
+				);
+				
+				if (!ifc6.ip6prefix)
+				{
+					s += String.format(
+						'<strong>Address: </strong>%s<br />',
+						(ifc6.ip6addr) ? ifc6.ip6addr : '::'
+					);
+				}
+				else
+				{
+					s += String.format(
+						'<strong>Prefix Delegated: </strong>%s<br />',
+						ifc6.ip6prefix
+					);
+					if (ifc6.ip6addr)
+					{
+						s += String.format(
+							'<strong>Address: </strong>%s<br />',
+							ifc6.ip6addr
+						);
+					}
+				}
+
+				s += String.format(
+					'<strong>Gateway: </strong>%s<br />',
+						(ifc6.gw6addr) ? ifc6.gw6addr : '::'
+				);
+
+				for (var i = 0; i < ifc6.dns.length; i++)
+				{
+					s += String.format(
+						'<strong>DNS %d: </strong>%s<br />',
+						i + 1, ifc6.dns[i]
+					);
+				}
+
+				if (ifc6.uptime > 0)
+				{
+					s += String.format(
+						'<strong>Connected: </strong>%t<br />',
+						ifc6.uptime
+					);
+				}
+
+				ss6.innerHTML = String.format('<small>%s</small>', s);
+				si6.innerHTML = String.format(
+					'<img src="/luci-static/resources/icons/ethernet.png" />' +
+					'<br /><small><a href="%s">%s</a></small>',
+						ifc6.link, ifc6.ifname
+				);
+			}
+			else
+			{
+				si6.innerHTML = '<img src="/luci-static/resources/icons/ethernet_disabled.png" /><br /><small>?</small>';
+				ss6.innerHTML = '<em>Not connected</em>';
+			}
+			
+
+			
+
+			
+			var ls = document.getElementById('lease_status_table');
+			if (ls)
+			{
+				/* clear all rows */
+				while( ls.rows.length > 1 )
+					ls.rows[0].parentNode.deleteRow(1);
+
+				for( var i = 0; i < info.leases.length; i++ )
+				{
+					var timestr;
+
+					if (info.leases[i].expires === false)
+						timestr = '<em>unlimited</em>';
+					else if (info.leases[i].expires <= 0)
+						timestr = '<em>expired</em>';
+					else
+						timestr = String.format('%t', info.leases[i].expires);
+
+					var tr = ls.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row cbi-rowstyle-' + ((i % 2) + 1);
+
+					tr.insertCell(-1).innerHTML = info.leases[i].hostname ? info.leases[i].hostname : '?';
+					tr.insertCell(-1).innerHTML = info.leases[i].ipaddr;
+					tr.insertCell(-1).innerHTML = info.leases[i].macaddr;
+					tr.insertCell(-1).innerHTML = timestr;
+				}
+
+				if( ls.rows.length == 1 )
+				{
+					var tr = ls.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row';
+
+					var td = tr.insertCell(-1);
+						td.colSpan = 4;
+						td.innerHTML = '<em><br />There are no active leases.</em>';
+				}
+			}
+
+			var ls6 = document.getElementById('lease6_status_table');
+			if (ls6 && info.leases6)
+			{
+				ls6.parentNode.style.display = 'block';
+
+				/* clear all rows */
+				while( ls6.rows.length > 1 )
+					ls6.rows[0].parentNode.deleteRow(1);
+
+				for( var i = 0; i < info.leases6.length; i++ )
+				{
+					var timestr;
+
+					if (info.leases6[i].expires === false)
+						timestr = '<em>unlimited</em>';
+					else if (info.leases6[i].expires <= 0)
+						timestr = '<em>expired</em>';
+					else
+						timestr = String.format('%t', info.leases6[i].expires);
+
+					var tr = ls6.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row cbi-rowstyle-' + ((i % 2) + 1);
+
+					var host = hosts[duid2mac(info.leases6[i].duid)];
+					if (host)
+						tr.insertCell(-1).innerHTML = String.format(
+							'<div style="max-width:200px;overflow:hidden;text-overflow:ellipsis">%s</div>',
+							((host.name && (host.ipv4 || host.ipv6))
+								? '%h (%s)'.format(host.name, host.ipv4 || host.ipv6)
+								: '%h'.format(host.name || host.ipv4 || host.ipv6)).nobr()
+						);
+					else
+						tr.insertCell(-1).innerHTML = info.leases6[i].hostname ? info.leases6[i].hostname : '?';
+
+					tr.insertCell(-1).innerHTML = info.leases6[i].ip6addr;
+					tr.insertCell(-1).innerHTML = info.leases6[i].duid;
+					tr.insertCell(-1).innerHTML = timestr;
+				}
+
+				if( ls6.rows.length == 1 )
+				{
+					var tr = ls6.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row';
+
+					var td = tr.insertCell(-1);
+						td.colSpan = 4;
+						td.innerHTML = '<em><br />There are no active leases.</em>';
+				}
+			}
+			
+
+			
+			var assoclist = [ ];
+
+			var ws = document.getElementById('wifi_status_table');
+			if (ws)
+			{
+				var wsbody = ws.rows[0].parentNode;
+				while (ws.rows.length > 0)
+					wsbody.deleteRow(0);
+
+				for (var didx = 0; didx < info.wifinets.length; didx++)
+				{
+					var dev = info.wifinets[didx];
+
+					var tr = wsbody.insertRow(-1);
+					var td;
+
+					td = tr.insertCell(-1);
+					td.width     = "33%";
+					td.innerHTML = dev.name;
+					td.style.verticalAlign = "top";
+
+					td = tr.insertCell(-1);
+
+					var s = '';
+
+					for (var nidx = 0; nidx < dev.networks.length; nidx++)
+					{
+						var net = dev.networks[nidx];
+						var is_assoc = (net.bssid != '00:00:00:00:00:00' && net.channel && !net.disabled);
+
+						var icon;
+						if (!is_assoc)
+							icon = "/luci-static/resources/icons/signal-none.png";
+						else if (net.quality == 0)
+							icon = "/luci-static/resources/icons/signal-0.png";
+						else if (net.quality < 25)
+							icon = "/luci-static/resources/icons/signal-0-25.png";
+						else if (net.quality < 50)
+							icon = "/luci-static/resources/icons/signal-25-50.png";
+						else if (net.quality < 75)
+							icon = "/luci-static/resources/icons/signal-50-75.png";
+						else
+							icon = "/luci-static/resources/icons/signal-75-100.png";
+
+						s += String.format(
+							'<table><tr><td style="text-align:center; width:32px; padding:3px">' +
+								'<img src="%s" title="Signal: %d dBm / Noise: %d dBm" />' +
+								'<br /><small>%d%%</small>' +
+							'</td><td style="text-align:left; padding:3px"><small>' +
+								'<strong>SSID:</strong> <a href="%s">%h</a><br />' +
+								'<strong>Mode:</strong> %s<br />' +
+								'<strong>Channel:</strong> %d (%.3f GHz)<br />' +
+								'<strong>Bitrate:</strong> %s Mbit/s<br />',
+								icon, net.signal, net.noise,
+								net.quality,
+								net.link, net.ssid || '?',
+								net.mode,
+								net.channel, net.frequency,
+								net.bitrate || '?'
+						);
+
+						if (is_assoc)
+						{
+							s += String.format(
+								'<strong>BSSID:</strong> %s<br />' +
+								'<strong>Encryption:</strong> %s',
+									net.bssid || '?',
+									net.encryption
+							);
+						}
+						else
+						{
+							s += '<em>Wireless is disabled or not associated</em>';
+						}
+
+						s += '</small></td></tr></table>';
+
+						for (var bssid in net.assoclist)
+						{
+							var bss = net.assoclist[bssid];
+
+							bss.bssid  = bssid;
+							bss.link   = net.link;
+							bss.name   = net.name;
+							bss.ifname = net.ifname;
+							bss.radio  = dev.name;
+
+							assoclist.push(bss);
+						}
+					}
+
+					if (!s)
+						s = '<em>No information available</em>';
+
+					td.innerHTML = s;
+				}
+			}
+
+			var ac = document.getElementById('wifi_assoc_table');
+			if (ac)
+			{
+				/* clear all rows */
+				while( ac.rows.length > 1 )
+					ac.rows[0].parentNode.deleteRow(1);
+
+				assoclist.sort(function(a, b) {
+					return (a.name == b.name)
+						? (a.bssid < b.bssid)
+						: (a.name  > b.name )
+					;
+				});
+
+				for( var i = 0; i < assoclist.length; i++ )
+				{
+					var tr = ac.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row cbi-rowstyle-' + (1 + (i % 2));
+
+					var icon;
+					var q = (-1 * (assoclist[i].noise - assoclist[i].signal)) / 5;
+					if (q < 1)
+						icon = "/luci-static/resources/icons/signal-0.png";
+					else if (q < 2)
+						icon = "/luci-static/resources/icons/signal-0-25.png";
+					else if (q < 3)
+						icon = "/luci-static/resources/icons/signal-25-50.png";
+					else if (q < 4)
+						icon = "/luci-static/resources/icons/signal-50-75.png";
+					else
+						icon = "/luci-static/resources/icons/signal-75-100.png";
+
+					tr.insertCell(-1).innerHTML = String.format(
+						'<span class="ifacebadge" title="%q"><img src="/luci-static/resources/icons/wifi.png" /> %h</span>',
+						assoclist[i].radio, assoclist[i].ifname
+					);
+
+					tr.insertCell(-1).innerHTML = String.format(
+						'<a href="%s">%s</a>',
+							assoclist[i].link,
+							'%h'.format(assoclist[i].name).nobr()
+					);
+
+					tr.insertCell(-1).innerHTML = assoclist[i].bssid;
+
+					var host = hosts[assoclist[i].bssid];
+					if (host)
+						tr.insertCell(-1).innerHTML = String.format(
+							'<div style="max-width:200px;overflow:hidden;text-overflow:ellipsis">%s</div>',
+							((host.name && (host.ipv4 || host.ipv6))
+								? '%h (%s)'.format(host.name, host.ipv4 || host.ipv6)
+								: '%h'.format(host.name || host.ipv4 || host.ipv6)).nobr()
+						);
+					else
+						tr.insertCell(-1).innerHTML = '?';
+
+					tr.insertCell(-1).innerHTML = String.format(
+						'<span class="ifacebadge" title="Signal: %d dBm / Noise: %d dBm / SNR: %d"><img src="%s" /> %d / %d dBm</span>',
+						assoclist[i].signal, assoclist[i].noise, assoclist[i].signal - assoclist[i].noise,
+						icon,
+						assoclist[i].signal, assoclist[i].noise
+					);
+
+					tr.insertCell(-1).innerHTML = wifirate(assoclist[i], true).nobr() + '<br />' + wifirate(assoclist[i], false).nobr();
+				}
+
+				if (ac.rows.length == 1)
+				{
+					var tr = ac.rows[0].parentNode.insertRow(-1);
+						tr.className = 'cbi-section-table-row';
+
+					var td = tr.insertCell(-1);
+						td.colSpan = 7;
+						td.innerHTML = '<br /><em>No information available</em>';
+				}
+			}
+			
+
+			var e;
+
+			if (e = document.getElementById('localtime'))
+				e.innerHTML = info.localtime;
+
+			if (e = document.getElementById('uptime'))
+				e.innerHTML = String.format('%t', info.uptime);
+
+			if (e = document.getElementById('loadavg'))
+				e.innerHTML = String.format(
+					'%.02f, %.02f, %.02f',
+					info.loadavg[0] / 65535.0,
+					info.loadavg[1] / 65535.0,
+					info.loadavg[2] / 65535.0
+				);
+
+			if (e = document.getElementById('memtotal'))
+				e.innerHTML = progressbar(
+					((info.memory.free + info.memory.buffered) / 1024) + " kB",
+					(info.memory.total / 1024) + " kB"
+				);
+
+			if (e = document.getElementById('memfree'))
+				e.innerHTML = progressbar(
+					(info.memory.free / 1024) + " kB",
+					(info.memory.total / 1024) + " kB"
+				);
+
+			if (e = document.getElementById('membuff'))
+				e.innerHTML = progressbar(
+					(info.memory.buffered / 1024) + " kB",
+					(info.memory.total / 1024) + " kB"
+				);
+
+			if (e = document.getElementById('swaptotal'))
+				e.innerHTML = progressbar(
+					(info.swap.free / 1024) + " kB",
+					(info.swap.total / 1024) + " kB"
+				);
+
+			if (e = document.getElementById('swapfree'))
+				e.innerHTML = progressbar(
+					(info.swap.free / 1024) + " kB",
+					(info.swap.total / 1024) + " kB"
+				);
+
+			if (e = document.getElementById('conns'))
+				e.innerHTML = progressbar(info.conncount, info.connmax);
+
+		}
+	);
+//]]></script>
+
+<h2 name="content">Status</h2>
+
+<fieldset class="cbi-section">
+	<legend>System</legend>
+
+	<table width="100%" cellspacing="10">
+		<tr><td width="33%">Hostname</td><td>nradio.in</td></tr>
+		<tr><td width="33%">Model</td><td>HC-WT9500</td></tr>
+		<tr><td width="33%">Firmware Version</td><td>
+			 OpenWrt 21.02-SNAPSHOT 2.3.5.n0.c1 /
+			LuCI Master (git-26.289.29354-9915aac)
+		</td></tr>
+		<tr><td width="33%">Kernel Version</td><td>5.4.281</td></tr>
+		<tr><td width="33%">Local Time</td><td id="localtime">-</td></tr>
+		<tr><td width="33%">Uptime</td><td id="uptime">-</td></tr>
+		<tr><td width="33%">Load Average</td><td id="loadavg">-</td></tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<legend>Memory</legend>
+
+	<table width="100%" cellspacing="10">
+		<tr><td width="33%">Total Available</td><td id="memtotal">-</td></tr>
+		<tr><td width="33%">Free</td><td id="memfree">-</td></tr>
+		<tr><td width="33%">Buffered</td><td id="membuff">-</td></tr>
+	</table>
+</fieldset>
+
+
+
+<fieldset class="cbi-section">
+	<legend>Network</legend>
+
+	<table width="100%" cellspacing="10">
+		<tr><td width="33%" style="vertical-align:top">IPv4 WAN Status</td><td>
+			<table><tr>
+				<td id="wan4_i" style="width:16px; text-align:center; padding:3px"><img src="/luci-static/resources/icons/ethernet_disabled.png" /><br /><small>?</small></td>
+				<td id="wan4_s" style="vertical-align:middle; padding: 3px"><em>Collecting data...</em></td>
+			</tr></table>
+		</td></tr>
+		
+		<tr><td width="33%" style="vertical-align:top">IPv6 WAN Status</td><td>
+			<table><tr>
+				<td id="wan6_i" style="width:16px; text-align:center; padding:3px"><img src="/luci-static/resources/icons/ethernet_disabled.png" /><br /><small>?</small></td>
+				<td id="wan6_s" style="vertical-align:middle; padding: 3px"><em>Collecting data...</em></td>
+			</tr></table>
+		</td></tr>
+		
+		<tr><td width="33%">Active Connections</td><td id="conns">-</td></tr>
+	</table>
+</fieldset>
+
+
+<fieldset class="cbi-section">
+	<legend>DHCP Leases</legend>
+
+	<table class="cbi-section-table" id="lease_status_table">
+		<tr class="cbi-section-table-titles">
+			<th class="cbi-section-table-cell">Hostname</th>
+			<th class="cbi-section-table-cell">IPv4-Address</th>
+			<th class="cbi-section-table-cell">MAC-Address</th>
+			<th class="cbi-section-table-cell">Leasetime remaining</th>
+		</tr>
+		<tr class="cbi-section-table-row">
+			<td colspan="4"><em><br />Collecting data...</em></td>
+		</tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section" style="display:none">
+	<legend>DHCPv6 Leases</legend>
+
+	<table class="cbi-section-table" id="lease6_status_table">
+		<tr class="cbi-section-table-titles">
+			<th class="cbi-section-table-cell">Host</th>
+			<th class="cbi-section-table-cell">IPv6-Address</th>
+			<th class="cbi-section-table-cell">DUID</th>
+			<th class="cbi-section-table-cell">Leasetime remaining</th>
+		</tr>
+		<tr class="cbi-section-table-row">
+			<td colspan="4"><em><br />Collecting data...</em></td>
+		</tr>
+	</table>
+</fieldset>
+
+
+
+
+
+<fieldset class="cbi-section">
+	<legend>Wireless</legend>
+
+	<table id="wifi_status_table" width="100%" cellspacing="10">
+		<tr><td><em>Collecting data...</em></td></tr>
+	</table>
+</fieldset>
+
+<fieldset class="cbi-section">
+	<legend>Associated Stations</legend>
+
+	<table class="cbi-section-table valign-middle" id="wifi_assoc_table">
+		<tr class="cbi-section-table-titles">
+			<th class="cbi-section-table-cell">&#160;</th>
+			<th class="cbi-section-table-cell">Network</th>
+			<th class="cbi-section-table-cell">MAC-Address</th>
+			<th class="cbi-section-table-cell">Host</th>
+			<th class="cbi-section-table-cell">Signal / Noise</th>
+			<th class="cbi-section-table-cell">RX Rate / TX Rate</th>
+		</tr>
+		<tr class="cbi-section-table-row">
+			<td colspan="6"><em><br />Collecting data...</em></td>
+		</tr>
+	</table>
+</fieldset>
+
+		
+			<div class="container click-top hidden">
+				<div class="row">
+					<div class="col-xs-12 text-center">
+						<div onclick="window.scrollTo(0,0)">
+							<i class="far fa-nradio-top fa-2x icon_disable"></i>	
+							<span>BackTop</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		
+		</div>
+	</div>
+</div>
+	
+<footer class="footer footer- ">
+		
+	<div class="container text-center footer_container">
+		<div class="row footer_container_body">
+			<div class="col-lg-12">
+				<ul class="list-inline" style="padding-top: 0px;">					
+					<li class="click_pointer"><span id="copyright_year"></span><a class="text_white" target="_blank" href="https://nradiowifi.com/">NRadio</a></li>
+
+						
+							<li class="click_pointer">
+								<span id="powered" >Powered by</span>
+								<span id="powered_1" >NR</span>
+								<span id="powered_2" >OS</span>
+							</li>
+						
+				</ul>
+			</div>
+		</div> 
+	</div>
+</footer>
+<div class="mobile_hidden_btn"></div>
+
+
+<script>	
+function show_current_year(){
+	var date = new Date();
+	$("#copyright_year").html("©"+date.getFullYear()+"  ");
+}
+show_current_year();
+function show_wechat(){
+	var htm = "<div class='wechat'></div>";
+	BootstrapDialog.show({
+		type: BootstrapDialog.TYPE_DEFAULT,
+		title: '',
+		closable: true,
+		cssClass:'picture_box',
+		message: htm
+	});
+
+}
+function rebind_apply(){
+	if (($("div.cbi-page-actions > input.cbi-button-apply").length == 1)&& !$("div.cbi-page-actions > input.cbi-button-apply").prop("disabled") && $("div.cbi-page-actions > input.cbi-button-apply").click){;
+		$("div.cbi-page-actions > input.cbi-button-apply").click();
+	}
+}
+$(window).resize(function(){
+	adapt_symbol_menu();
+	footer_adjust();
+});
+
+function resize_mobile_button(hide_btn){
+	let apply_html = "";	
+	var hide_class = "visible-xs";
+	if (hide_btn)
+		hide_class = "hide";
+	if (($("div.cbi-page-actions > input.cbi-button-apply").length == 1) && !$("div.cbi-page-actions > input.cbi-button-apply").prop("disabled") && $("div.cbi-page-actions > input.cbi-button-apply").click){
+		apply_html = '\
+		<div class="mobile-apply-center '+hide_class+' ">\
+			<input type="button" class="cbi-button cbi-button-apply btn btn-primary mobile-apply-btn valid" onclick="rebind_apply()" value="Save &#38; Apply">\
+		</div>';
+	}
+	$('.mobile_hidden_btn').html(apply_html);
+}
+
+let lastHeight = window.innerHeight;
+document.addEventListener('click', e => {
+  if(['INPUT','BUTTON','A'].includes(e.target.tagName)) footer_adjust();
+});
+document.addEventListener('change', e => {
+  if(['SELECT'].includes(e.target.tagName)) footer_adjust();
+});
+$(document).ready(function(){
+	resize_mobile_button(HideXSSubmitBtn);
+	adapt_symbol_menu();			
+	footer_adjust();
+});
+</script>
+</body>
+</html>
+
+
+
+
+
+
