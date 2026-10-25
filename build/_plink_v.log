@@ -1,0 +1,17 @@
+﻿plink.exe : Looking up host "192.168.66.1" for SSH connection
+所在位置 行:6 字符: 7
++ 'n' | & 'C:\Program Files\PuTTY\plink.exe' -v -ssh -pw admin root@$ip ...
++       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Looking up host... SSH connection:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Connecting to 192.168.66.1 port 22
+We claim version: SSH-2.0-PuTTY_Release_0.83
+Connected to 192.168.66.1 (from 192.168.66.100:53004)
+Remote version: SSH-2.0-dropbear
+Using SSH protocol version 2
+No GSSAPI security context available
+Doing ECDH key exchange with curve Curve25519, using hash SHA-256 (SHA-NI accelerated)
+Server also has rsa-sha2-256/ssh-rsa host keys, but we don't know any of them
+Host key fingerprint is:
+ssh-ed25519 255 SHA256:66RpOE4kXKmaxFdKh4czcTQI5gME54QWVKjxu1/yNhs

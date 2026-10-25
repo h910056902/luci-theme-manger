@@ -16,22 +16,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const CASES = [
   {
-    name: 'panel8080',
+    name: 'ocspeed_8080',
     start: 'http://192.168.66.1:8080/',
+    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/services/openclash/ocspeed',
+    shot: 'verify_ocspeed.png'
+  },
+  {
+    name: 'panel_details',
+    start: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/details',
     after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/details',
     shot: 'verify_panel.png'
-  },
-  {
-    name: 'openclash_8080',
-    start: 'http://192.168.66.1:8080/cgi-bin/luci/admin/services/openclash',
-    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/services/openclash/status',
-    shot: 'verify_oc8080.png'
-  },
-  {
-    name: 'luci80_openclash',
-    start: 'http://192.168.66.1/',
-    after: 'http://192.168.66.1/cgi-bin/luci/admin/services/openclash/',
-    shot: 'verify_openclash.png'
   }
 ];
 
