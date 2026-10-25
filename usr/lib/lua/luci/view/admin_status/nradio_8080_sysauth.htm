@@ -23,6 +23,27 @@
 	local fw_short = ver.distrevision or tostring(distversion)
 %>
 <style>
+/* 动效规范：尊重系统「减少动态效果」；标签页切到后台时暂停星空动画省 CPU */
+@media (prefers-reduced-motion: reduce){
+	*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+		transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state:paused!important}
+:focus-visible{outline:2px solid #1f6feb;outline-offset:2px;border-radius:4px}
+</style>
+
+<script type="text/javascript">
+//<![CDATA[
+/* 页面不可见时暂停所有 CSS 动画，回来再继续 */
+(function () {
+	function sync() { document.documentElement.classList.toggle('kp-idle', !!document.hidden); }
+	document.addEventListener('visibilitychange', sync);
+	sync();
+})();
+//]]>
+</script>
+
+<style>
 
 
 /* Hide all default argon elements */

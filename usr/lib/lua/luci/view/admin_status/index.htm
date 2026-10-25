@@ -1,4 +1,14 @@
 <%+header%>
+
+<style type="text/css">
+/* 动效规范：系统开启「减少动态效果」时关闭动画与过渡 */
+@media (prefers-reduced-motion: reduce){
+	*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+		transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state:paused!important}
+:focus-visible{outline:2px solid #1f6feb;outline-offset:2px;border-radius:4px}
+</style>
 <link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
 <script>document.body.classList.add('kpc-dash');</script>
 <%

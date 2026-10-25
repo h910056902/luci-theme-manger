@@ -258,6 +258,18 @@
 	if board.model and board.model ~= "" then model_name = board.model end
 -%>
 <%+header%>
+
+<style type="text/css">
+/* 动效规范：系统开启「减少动态效果」时关闭动画与过渡（无障碍 + 低性能设备） */
+@media (prefers-reduced-motion: reduce){
+	*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+		transition-duration:.001ms!important;scroll-behavior:auto!important}
+	/* 标签页后台时暂停所有动画，省 CPU */
+}
+html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state:paused!important}
+/* 键盘导航焦点环（鼠标点击不显示） */
+:focus-visible{outline:2px solid #1f6feb;outline-offset:2px;border-radius:4px}
+</style>
 <link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
 <%
 	-- ===== 展示层辅助（只做格式换算，不发 AT） =====
@@ -489,7 +501,8 @@
 .kpc-cell-page .cell-seg{display:inline-flex;padding:3px;border-radius:9px;background:#f2f4f7;gap:2px;flex-wrap:wrap}
 .kpc-cell-page .cell-seg label{position:relative;cursor:pointer}
 .kpc-cell-page .cell-seg input{position:absolute;opacity:0;pointer-events:none}
-.kpc-cell-page .cell-seg span{display:block;padding:6px 14px;border-radius:7px;font-size:.8rem;color:#475467;transition:all .18s ease}
+.kpc-cell-page .cell-seg span{display:block;padding:6px 14px;border-radius:7px;font-size:.8rem;color:#475467;
+	transition:background-color .18s ease,color .18s ease,box-shadow .18s ease}
 .kpc-cell-page .cell-seg input:checked + span{background:linear-gradient(180deg,#3d8c93,#388087);color:#fff;font-weight:500;
 	box-shadow:0 3px 8px -6px rgba(56,128,135,.9)}
 .kpc-cell-page .cell-seg label:hover span{color:#2f6e74}
@@ -499,7 +512,8 @@
 .kpc-cell-page .cell-bands label{position:relative;cursor:pointer}
 .kpc-cell-page .cell-bands input{position:absolute;opacity:0;pointer-events:none}
 .kpc-cell-page .cell-bands span{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;
-	font-size:.79rem;color:#344054;background:#fff;border:1px solid #d6dbe1;transition:all .16s ease;font-variant-numeric:tabular-nums}
+	font-size:.79rem;color:#344054;background:#fff;border:1px solid #d6dbe1;
+	transition:border-color .16s ease,box-shadow .16s ease;font-variant-numeric:tabular-nums}
 .kpc-cell-page .cell-bands label:hover span{border-color:#388087;color:#2f6e74;background:#f2f8f7}
 .kpc-cell-page .cell-bands input:checked + span{background:linear-gradient(180deg,#3d8c93,#388087);border-color:#2f6e74;
 	color:#fff;font-weight:500}
