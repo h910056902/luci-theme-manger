@@ -1856,7 +1856,7 @@ do
 			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
 			      swap = true, simlock = true,
 			      backup_full = true, backup_ipk = true, backup_list = true,
-			      backup_get = true, backup_del = true }
+			      backup_get = true, backup_del = true, pkg_restore = true }
 			or  { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
 		if not actions[action] then return false end
 
@@ -2236,6 +2236,85 @@ do
 				zram = (kp_trim(sys.exec("ls -d /sys/block/zram0 2>/dev/null")) ~= ""),
 				swappiness = tonumber(kp_trim(sys.exec("cat /proc/sys/vm/swappiness 2>/dev/null"))) or 60,
 			})
+			return true
+		end
+
+		-- ===== 在线恢复：按 kp-restore 清单补装缺失插件 =====
+		-- 后台跑 opkg，状态写 /tmp/kp-pkgrestore.state，前端轮询
+		if action == "pkg_restore" then
+			local sys = require "luci.sys"
+			local op = kp_trim(form.op)
+			local LIST  = "/etc/kp-restore/packages.txt"
+			local STATE = "/tmp/kp-pkgrestore.state"
+			local LOG   = "/tmp/kp-pkgrestore.log"
+			local BUSY  = "/tmp/kp-pkgrestore.busy"
+
+			if op == "stop" then
+				local pid = kp_trim(sys.exec("cat " .. BUSY .. " 2>/dev/null"))
+				if pid ~= "" then sys.call("kill " .. pid .. " 2>/dev/null") end
+				sys.call("rm -f " .. BUSY)
+				kp_write_json({ code = 0, msg = "已停止（正在安装的那个包可能已装完）" })
+				return true
+			end
+
+			if op == "start" then
+				if kp_trim(sys.exec("[ -f " .. LIST .. " ] && echo 1")) ~= "1" then
+					kp_write_json({ code = 1, msg = "缺少 " .. LIST .. "，请先安装 kp-restore 恢复包" })
+					return true
+				end
+				if kp_trim(sys.exec("[ -f " .. BUSY .. " ] && echo 1")) == "1" then
+					kp_write_json({ code = 1, msg = "已有恢复任务在运行" })
+					return true
+				end
+				local body = [[#!/bin/sh
+LOG=/tmp/kp-pkgrestore.log
+ST=/tmp/kp-pkgrestore.state
+: > $LOG
+echo "stage=update i=0 ok=0 fail=0 total=0" > $ST
+opkg update >/dev/null 2>&1
+opkg list-installed 2>/dev/null | awk '{print $1}' | sort > /tmp/kp-have.txt
+awk '{print $1}' /etc/kp-restore/packages.txt | sort > /tmp/kp-want.txt
+awk 'NR==FNR{h[$1]=1;next} !($1 in h){print $1}' /tmp/kp-have.txt /tmp/kp-want.txt > /tmp/kp-miss.txt
+total=$(wc -l < /tmp/kp-miss.txt)
+i=0; ok=0; fail=0
+echo "stage=install i=0 ok=0 fail=0 total=$total" > $ST
+while read p; do
+  [ -z "$p" ] && continue
+  i=$((i+1))
+  if opkg install "$p" >/dev/null 2>&1; then
+    ok=$((ok+1)); echo "OK   $p" >> $LOG
+  else
+    fail=$((fail+1)); echo "FAIL $p" >> $LOG
+  fi
+  echo "stage=install i=$i ok=$ok fail=$fail total=$total cur=$p" > $ST
+done < /tmp/kp-miss.txt
+echo "stage=done i=$i ok=$ok fail=$fail total=$total" > $ST
+rm -f /tmp/kp-pkgrestore.busy
+]]
+				local f = io.open("/tmp/kp-pkgrestore.sh", "w")
+				if not f then
+					kp_write_json({ code = 1, msg = "无法写入脚本" })
+					return true
+				end
+				f:write(body); f:close()
+				sys.exec("chmod 755 /tmp/kp-pkgrestore.sh")
+				sys.exec("( sh /tmp/kp-pkgrestore.sh ) >/dev/null 2>&1 & echo $! > " .. BUSY)
+				kp_write_json({ code = 0, msg = "已开始，正在更新软件源…" })
+				return true
+			end
+
+			-- status
+			local out = {
+				code = 0,
+				running  = (kp_trim(sys.exec("[ -f " .. BUSY .. " ] && echo 1")) == "1"),
+				has_list = (kp_trim(sys.exec("[ -f " .. LIST .. " ] && echo 1")) == "1"),
+				log      = kp_trim(sys.exec("tail -12 " .. LOG .. " 2>/dev/null")),
+			}
+			local st = kp_trim(sys.exec("cat " .. STATE .. " 2>/dev/null"))
+			for k, v in st:gmatch("(%w+)=(%S*)") do
+				out[k] = tonumber(v) or v
+			end
+			kp_write_json(out)
 			return true
 		end
 

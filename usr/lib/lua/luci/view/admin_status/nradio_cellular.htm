@@ -1273,6 +1273,23 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>在线恢复<span class="cell-live" id="kp-pr-note">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-actions" style="flex-wrap:wrap;gap:8px">
+				<button class="cbi-button cbi-button-action" type="button" id="kp-pr-start">开始恢复</button>
+				<button class="cbi-button cbi-button-neutral" type="button" id="kp-pr-stop">停止</button>
+				<span class="cell-tip" id="kp-pr-msg" style="margin:0"></span>
+			</div>
+			<div style="margin-top:10px;height:6px;background:rgba(15,23,32,.08);border-radius:3px;overflow:hidden">
+				<i id="kp-pr-bar" style="display:block;height:100%;width:0;background:linear-gradient(90deg,#34d399,#22a06b);transition:width .4s ease"></i>
+			</div>
+			<div class="cell-tip" id="kp-pr-stat" style="margin-top:6px">—</div>
+			<pre id="kp-pr-log" style="margin-top:8px;font-size:11px;max-height:140px;overflow:auto;white-space:pre-wrap;background:rgba(15,23,32,.04);padding:8px;border-radius:6px">—</pre>
+			<p class="cell-tip">按 <code>/etc/kp-restore/packages.txt</code> 补装缺失的插件，需要联网。只装清单里缺的包，已装的不动；失败的条目会列在日志里。装完后部分服务需要重启才生效。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>系统维护<span class="cell-live" id="kpc-swap-note">—</span></h3>
 		<div class="cell-sec">
 			<div class="cell-grid">
@@ -2106,6 +2123,67 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		bakMake('backup_ipk', _bakIpk, 'ipk');
 	});
 
+	/* ---- 在线恢复 ---- */
+	var prTimer = null;
+
+	function prRender(d) {
+		if (!d) return;
+		var bar = document.getElementById('kp-pr-bar');
+		var stat = document.getElementById('kp-pr-stat');
+		var log = document.getElementById('kp-pr-log');
+		var note = document.getElementById('kp-pr-note');
+		var total = Number(d.total) || 0, i = Number(d.i) || 0;
+		var pct = total > 0 ? Math.min(100, Math.round(i * 100 / total)) : (d.stage === 'done' ? 100 : 0);
+		if (bar) bar.style.width = pct + '%';
+		if (note) {
+			note.textContent = d.running ? '运行中' : (d.stage === 'done' ? '已完成' : (d.has_list ? '就绪' : '缺清单'));
+		}
+		if (stat) {
+			stat.textContent = '进度 ' + i + '/' + total +
+				' · 成功 ' + (Number(d.ok) || 0) + ' · 失败 ' + (Number(d.fail) || 0) +
+				(d.cur ? (' · 当前 ' + d.cur) : '') + (d.stage ? (' · ' + d.stage) : '');
+		}
+		if (log) log.textContent = d.log || '—';
+	}
+
+	function prLoad() {
+		fetch(URL_BASE + '?action=pkg_restore&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				prRender(d);
+				if (d && d.running) prPoll();
+				else if (prTimer) { clearInterval(prTimer); prTimer = null; }
+			})
+			.catch(function () {});
+	}
+
+	function prPoll() {
+		if (prTimer) return;
+		prTimer = setInterval(prLoad, 2000);
+	}
+
+	function prOp(op) {
+		var msg = document.getElementById('kp-pr-msg');
+		var fd = new FormData();
+		fd.append('op', op);
+		if (msg) msg.textContent = op === 'start' ? '正在启动…' : '正在停止…';
+		fetch(URL_BASE + '?action=pkg_restore', { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				if (msg) msg.textContent = (d && d.msg) || '';
+				prLoad();
+			})
+			.catch(function (e) { if (msg) msg.textContent = '失败：' + e; });
+	}
+
+	var _prStart = document.getElementById('kp-pr-start');
+	if (_prStart) _prStart.addEventListener('click', function () {
+		if (!confirm('将按清单补装缺失插件，需要联网，可能耗时数分钟。继续？')) return;
+		prOp('start');
+	});
+	var _prStop = document.getElementById('kp-pr-stop');
+	if (_prStop) _prStop.addEventListener('click', function () { prOp('stop'); });
+
 	/* ---- 系统维护：swap / 卡锁 ---- */
 	function fmtKB(kb) {
 		kb = Number(kb) || 0;
@@ -2318,6 +2396,7 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 	loadSwap();
 	loadLock();
 	bakLoad();
+	prLoad();
 
 	document.getElementById('kpc-diag').addEventListener('click', function () {
 		window.location.href = URL_BASE + '?action=diag&t=' + Date.now();
