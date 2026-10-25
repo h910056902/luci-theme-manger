@@ -239,20 +239,114 @@ body.dark .kpc-pill { background: rgba(94,114,228,.22); }
 body.dark .kpc-pill.kpc-off { background: rgba(255,255,255,.09); }
 </style>
 
+<style type="text/css">
+/* ---------- 视觉重构：KPI 瓷砖 + 卡片化分区 ---------- */
+.kpd-kpis{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:16px}
+.kpd-kpi{
+	border:1px solid rgba(15,23,32,.10);border-radius:12px;padding:12px 14px;background:#fff;
+	box-shadow:0 2px 10px rgba(15,23,32,.04);
+	transition:box-shadow .18s ease,transform .18s ease,border-color .18s ease
+}
+.kpd-kpi:hover{box-shadow:0 10px 24px rgba(15,23,32,.10);transform:translateY(-1px);border-color:rgba(15,23,32,.16)}
+.kpd-kpi-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.kpd-kpi-top > span{font-size:12px;color:#667085;letter-spacing:.01em}
+.kpd-kpi-top > b{font-size:22px;font-weight:700;color:#101828;line-height:1.1;
+	font-variant-numeric:tabular-nums;font-family:-apple-system,"Segoe UI",Roboto,sans-serif}
+.kpd-kpi-top > b.kpd-sm{font-size:15px;font-weight:600}
+.kpd-bar{height:6px;border-radius:3px;background:rgba(15,23,32,.08);margin:10px 0 7px;overflow:hidden}
+.kpd-bar > i{display:block;height:100%;border-radius:3px;
+	background:linear-gradient(90deg,#34d399,#22a06b);transition:width .6s ease}
+.kpd-kpi-sub{font-size:11.5px;color:#8a93a0;font-variant-numeric:tabular-nums}
+
+/* 分区卡片：把 fieldset 变成圆角卡片，标题做成条带 */
+fieldset.cbi-section{
+	border:1px solid rgba(15,23,32,.10);border-radius:12px;background:#fff;
+	padding:0;overflow:hidden;box-shadow:0 2px 10px rgba(15,23,32,.04);margin-bottom:16px
+}
+fieldset.cbi-section > h3{
+	margin:0;padding:11px 16px;font-size:14px;font-weight:600;color:#344054;
+	background:linear-gradient(180deg,#fbfcfd,#f5f7fa);
+	border-bottom:1px solid rgba(15,23,32,.08)
+}
+fieldset.cbi-section > .kpc-table,
+fieldset.cbi-section > .kpc-grid,
+fieldset.cbi-section > .kpc-hint{padding-left:16px;padding-right:16px}
+fieldset.cbi-section > .kpc-table{margin:2px 0 0}
+fieldset.cbi-section > .kpc-grid{padding-top:12px;padding-bottom:12px}
+fieldset.cbi-section > .kpc-hint{padding-top:12px;padding-bottom:12px}
+
+/* 表格：去掉生硬网格，改用行分隔 + 悬停高亮 */
+.kpc-table{font-size:13px}
+.kpc-table tr > td:first-child,
+.kpc-table tr > th:first-child{padding-left:16px}
+.kpc-table tr > td:last-child,
+.kpc-table tr > th:last-child{padding-right:16px}
+.kpc-table tr:first-child > th{
+	background:#f8fafc;font-size:11.5px;letter-spacing:.02em;text-transform:uppercase;
+	color:#667085;border-bottom:1px solid rgba(15,23,32,.10)
+}
+.kpc-table tr:hover > td{background:rgba(94,114,228,.045)}
+.kpc-table tr > td{transition:background .15s ease}
+
+/* 蜂窝卡片里的信号条 */
+.kpc-sig-bar{height:6px}
+
+/* 徽章更克制 */
+.kpc-pill{font-weight:500;letter-spacing:.01em}
+
+/* ---------- 深色适配 ---------- */
+@media (prefers-color-scheme: dark) {
+	.kpd-kpi{background:#1c1f26;border-color:rgba(255,255,255,.10)}
+	.kpd-kpi-top > b{color:#e6edf3}
+	.kpd-kpi-top > span,.kpd-kpi-sub{color:#98a2b3}
+	.kpd-bar{background:rgba(255,255,255,.10)}
+	fieldset.cbi-section{background:#1c1f26;border-color:rgba(255,255,255,.10)}
+	fieldset.cbi-section > h3{background:linear-gradient(180deg,#22262e,#1e2229);
+		border-bottom-color:rgba(255,255,255,.08);color:#cbd5e1}
+	.kpc-table tr:first-child > th{background:#22262e;color:#98a2b3;
+		border-bottom-color:rgba(255,255,255,.10)}
+	.kpc-table tr:hover > td{background:rgba(255,255,255,.04)}
+}
+body.dark .kpd-kpi{background:#1c1f26;border-color:rgba(255,255,255,.10)}
+body.dark .kpd-kpi-top > b{color:#e6edf3}
+body.dark fieldset.cbi-section{background:#1c1f26;border-color:rgba(255,255,255,.10)}
+body.dark fieldset.cbi-section > h3{background:linear-gradient(180deg,#22262e,#1e2229);
+	border-bottom-color:rgba(255,255,255,.08);color:#cbd5e1}
+body.dark .kpc-table tr:first-child > th{background:#22262e;color:#98a2b3}
+
+/* 动效与可达性 */
+@media (prefers-reduced-motion: reduce){
+	*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
+		transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+:focus-visible{outline:2px solid #1f6feb;outline-offset:2px;border-radius:4px}
+</style>
+
 <h2 name="content"><%=pcdata(model_name)%> · 设备状态</h2>
 
-<!-- ====================== 概览 ====================== -->
-<div class="kpc-cell">
-	<div class="kpc-hd"><h3>运行概览</h3></div>
-	<div class="kpc-grid">
-		<div class="kpc-item"><span>CPU 使用率</span><strong><%=pcdata((g.cpu_percent and (g.cpu_percent .. " %")) or "-")%></strong></div>
-		<div class="kpc-item"><span>内存使用率</span><strong><%=mem_pct%> % <span class="kpc-nowarn">（<%=pcdata(fmt(mem_used * 1024))%> / <%=pcdata(fmt(mem_total * 1024))%>）</span></strong></div>
-		<div class="kpc-item"><span>系统负载（1/5/15 分）</span><strong><%=string.format("%.2f / %.2f / %.2f", load1, load5, load15)%></strong></div>
-		<div class="kpc-item"><span>CPU 核心数</span><strong><%=cpu_count%> 核</strong></div>
-		<div class="kpc-item"><span>CPU 温度</span><strong><%=pcdata(cpu_temp)%></strong></div>
-		<div class="kpc-item"><span>设备温度</span><strong><%=pcdata(g.device_temp and (g.device_temp .. " °C") or "-")%></strong></div>
-		<div class="kpc-item"><span>WiFi 温度</span><strong><%=pcdata(g.wifi_temp and (g.wifi_temp .. " °C") or "-")%></strong></div>
-		<div class="kpc-item"><span>运行时间</span><strong><%=pcdata(fmt_dur(uptime))%></strong></div>
+<!-- ====================== 概览（KPI 瓷砖） ====================== -->
+<div class="kpd-kpis">
+	<div class="kpd-kpi">
+		<div class="kpd-kpi-top"><span>CPU 使用率</span><b><%=pcdata((g.cpu_percent and (g.cpu_percent .. "%")) or "-")%></b></div>
+		<div class="kpd-bar"><i style="width:<%=math.min(100, tonumber(g.cpu_percent) or 0)%>%"></i></div>
+		<div class="kpd-kpi-sub"><%=cpu_count%> 核 · 负载 <%=string.format("%.2f / %.2f / %.2f", load1, load5, load15)%></div>
+	</div>
+	<div class="kpd-kpi">
+		<div class="kpd-kpi-top"><span>内存使用率</span><b><%=mem_pct%>%</b></div>
+		<div class="kpd-bar"><i style="width:<%=math.min(100, mem_pct)%>%"></i></div>
+		<div class="kpd-kpi-sub"><%=pcdata(fmt(mem_used * 1024))%> / <%=pcdata(fmt(mem_total * 1024))%></div>
+	</div>
+	<div class="kpd-kpi">
+		<div class="kpd-kpi-top"><span>CPU 温度</span><b><%=pcdata(cpu_temp)%></b></div>
+		<div class="kpd-kpi-sub">设备 <%=pcdata(g.device_temp and (g.device_temp .. " °C") or "-")%> · WiFi <%=pcdata(g.wifi_temp and (g.wifi_temp .. " °C") or "-")%></div>
+	</div>
+	<div class="kpd-kpi">
+		<div class="kpd-kpi-top"><span>在线终端</span><b><%=#terminals%></b></div>
+		<div class="kpd-kpi-sub">蜂窝线路 <%=#cellular%> 路</div>
+	</div>
+	<div class="kpd-kpi">
+		<div class="kpd-kpi-top"><span>运行时间</span><b class="kpd-sm"><%=pcdata(fmt_dur(uptime))%></b></div>
+		<div class="kpd-kpi-sub">型号 <%=pcdata(model_name)%></div>
 	</div>
 </div>
 
