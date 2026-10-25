@@ -60,6 +60,7 @@ function parser.parse(path, ...)
 			or name == "admin_status/nradio_device.htm"
 			or name == "admin_status/nradio_sms.htm"
 			or name == "admin_status/nradio_term.htm"
+			or name == "admin_status/nradio_docker.htm"
 			or name == "admin_status/nradio_8080_sysauth.htm"
 			-- 状态总览：换成实例私有的「驾驶舱」单页（一屏汇总）
 			or name == "admin_status/index.htm"
@@ -271,6 +272,14 @@ function luci.dispatcher.createtree()
 				target = luci.dispatcher.template("admin_status/nradio_term"),
 				title = "终端",
 				order = 5,
+				leaf = true
+			}
+			-- Docker 管理（引擎状态 / 容器 / 镜像）
+			status.nodes.docker = {
+				nodes = {},
+				target = luci.dispatcher.template("admin_status/nradio_docker"),
+				title = "Docker",
+				order = 6,
 				leaf = true
 			}
 			-- KP-CELLULAR-MENU-END
@@ -1845,19 +1854,26 @@ do
 
 		local kind = nil
 		if path_info:match("^/admin/status/cellular/?$") then kind = "cellular"
-		elseif path_info:match("^/admin/status/sms/?$") then kind = "sms" end
+		elseif path_info:match("^/admin/status/sms/?$") then kind = "sms"
+		elseif path_info:match("^/admin/status/docker/?$") then kind = "docker" end
 		if not kind then return false end
 
-		local actions = kind == "cellular"
-			and { neighbor = true, lock_apply = true, lock_clear = true, poll = true,
+		local actions
+		if kind == "cellular" then
+			actions = { neighbor = true, lock_apply = true, lock_clear = true, poll = true,
 			      stats = true, cell = true, ta_cal = true, diag = true, at = true,
 			      devices = true, qos_apply = true, qos_reset = true,
 			      web_listen = true, web_listen_apply = true,
 			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
 			      swap = true, simlock = true,
 			      backup_full = true, backup_ipk = true, backup_list = true,
-			      backup_get = true, backup_del = true, pkg_restore = true }
-			or  { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
+			      backup_get = true, backup_del = true, pkg_restore = true,
+			      docker = true }
+		elseif kind == "docker" then
+			actions = { docker = true }
+		else
+			actions = { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
+		end
 		if not actions[action] then return false end
 
 		-- 鉴权（必须在任何输出之前）
@@ -2236,6 +2252,89 @@ do
 				zram = (kp_trim(sys.exec("ls -d /sys/block/zram0 2>/dev/null")) ~= ""),
 				swappiness = tonumber(kp_trim(sys.exec("cat /proc/sys/vm/swappiness 2>/dev/null"))) or 60,
 			})
+			return true
+		end
+
+		-- ===== Docker 管理（左侧菜单「Docker」页）=====
+		if action == "docker" then
+			local sys = require "luci.sys"
+			local op = kp_trim(form.op)
+
+			local function ok_id(s)
+				return s ~= nil and s ~= "" and s:match("^[%w%._%-]+$") ~= nil
+			end
+			local function lines(s)
+				local t = {}
+				for l in (s or ""):gmatch("[^\r\n]+") do t[#t + 1] = l end
+				return t
+			end
+
+			if op == "ps" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker ps -a --format '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}' 2>/dev/null"))) do
+					local id, name, img, st, ports = l:match("^([^|]*)|([^|]*)|([^|]*)|([^|]*)|(.*)$")
+					if id and id ~= "" then
+						items[#items + 1] = { id = id, name = name, image = img, status = st, ports = ports }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			if op == "images" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker images --format '{{.Repository}}|{{.Tag}}|{{.ID}}|{{.Size}}' 2>/dev/null"))) do
+					local repo, tag, id, size = l:match("^([^|]*)|([^|]*)|([^|]*)|(.*)$")
+					if repo and repo ~= "" then
+						items[#items + 1] = { repo = repo, tag = tag, id = id, size = size }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			if op == "info" then
+				local ver  = kp_trim(sys.exec("docker version --format '{{.Server.Version}}' 2>/dev/null"))
+				local drv  = kp_trim(sys.exec("docker info --format '{{.Driver}}' 2>/dev/null"))
+				local root = kp_trim(sys.exec("docker info --format '{{.DockerRootDir}}' 2>/dev/null"))
+				local run  = tonumber(kp_trim(sys.exec("docker ps -q 2>/dev/null | wc -l"))) or 0
+				local all  = tonumber(kp_trim(sys.exec("docker ps -aq 2>/dev/null | wc -l"))) or 0
+				local imgs = tonumber(kp_trim(sys.exec("docker images -q 2>/dev/null | wc -l"))) or 0
+				local up   = kp_trim(sys.exec("pidof dockerd 2>/dev/null"))
+				kp_write_json({
+					code = 0, running = (up ~= ""), pid = up,
+					version = ver, driver = drv, root = root,
+					containers = all, running_containers = run, images = imgs,
+				})
+				return true
+			end
+
+			if op == "start" or op == "stop" or op == "restart" or op == "rm" or op == "rmi" then
+				if kp_trim(form.confirm) ~= "1" then
+					kp_write_json({ code = 1, msg = "需要确认" })
+					return true
+				end
+				local target = kp_trim(form.target)
+				if not ok_id(target) then
+					kp_write_json({ code = 1, msg = "目标名非法" })
+					return true
+				end
+				local cmd
+				if op == "rm" then
+					cmd = "docker rm -f " .. target
+				elseif op == "rmi" then
+					cmd = "docker rmi " .. target
+				else
+					cmd = "docker " .. op .. " " .. target
+				end
+				local rc = sys.call(cmd .. " >/dev/null 2>&1")
+				kp_write_json({ code = rc == 0 and 0 or 1, msg = rc == 0 and "已执行" or "执行失败（详见 docker 日志）" })
+				return true
+			end
+
+			kp_write_json({ code = 1, msg = "未知操作" })
 			return true
 		end
 

@@ -1,0 +1,4 @@
+mediatek/mt7622|5.4.238-1-47d9db9ab6891c0a5b7b5fe85cc2f265|kmod-veth_5.4.238-1_aarch64_cortex-a53.ipk
+mvebu/cortexa53|5.4.238-1-27397dde6ceae627208b7671063050e7|kmod-veth_5.4.238-1_aarch64_cortex-a53.ipk
+mediatek/mt7623|5.4.238-1-058bff77ea2da2522e60bf1794afab12|kmod-veth_5.4.238-1_arm_cortex-a7_neon-vfpv4.ipk
+mediatek/mt7629|5.4.238-1-231d6669647cf31b2556b47214ec8428|kmod-veth_5.4.238-1_arm_cortex-a7.ipk

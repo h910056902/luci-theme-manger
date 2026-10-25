@@ -16,16 +16,10 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const CASES = [
   {
-    name: 'ocspeed_8080',
+    name: 'docker_page',
     start: 'http://192.168.66.1:8080/',
-    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/services/openclash/ocspeed',
-    shot: 'verify_ocspeed.png'
-  },
-  {
-    name: 'panel_details',
-    start: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/details',
-    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/details',
-    shot: 'verify_panel.png'
+    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/docker',
+    shot: 'verify_docker.png'
   }
 ];
 
