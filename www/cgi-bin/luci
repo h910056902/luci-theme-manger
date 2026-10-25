@@ -16,6 +16,32 @@ local private_viewdir = instance_root .. "/usr/lib/lua/luci/view"
 require "luci.cacheloader"
 require "luci.sgi.cgi"
 
+-- 插件安装/卸载后，本实例的调度树缓存会过期（缓存文件比控制器目录旧），
+-- 表现为新装的页面访问时提示「未注册任何页面」（如 /admin/services/kaiplus）。
+-- 这里在建树之前主动失效：控制器 / menu.d / CBI model 任一目录比缓存新就删缓存。
+do
+	local ok_n, fs = pcall(require, "nixio.fs")
+	if ok_n and fs then
+		local cache = "/tmp/luci-indexcache-bootstrap"
+		local cst = fs.stat(cache)
+		if cst then
+			local cmt = tonumber(cst.mtime) or 0
+			for _, d in ipairs({
+				"/usr/lib/lua/luci/controller",
+				"/usr/lib/lua/luci/model/cbi",
+				"/usr/share/luci/menu.d",
+				"/overlay/nradio-apps/openwrt-luci-8080/usr/lib/lua/luci/view",
+			}) do
+				local dst = fs.stat(d)
+				if dst and (tonumber(dst.mtime) or 0) > cmt then
+					os.remove(cache)
+					break
+				end
+			end
+		end
+	end
+end
+
 local template = require "luci.template"
 local parser = require "luci.template.parser"
 local original_parse = parser.parse
