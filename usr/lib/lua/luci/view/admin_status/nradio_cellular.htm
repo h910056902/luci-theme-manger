@@ -1260,6 +1260,18 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 	</fieldset>
 
 	<fieldset class="cbi-section">
+		<h3>一键备份<span class="cell-live" id="kpc-bak-note">—</span></h3>
+		<div class="cell-sec">
+			<div class="cell-actions" style="flex-wrap:wrap;gap:8px">
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-bak-make">生成备份</button>
+				<span class="cell-tip" id="kpc-bak-msg" style="margin:0"></span>
+			</div>
+			<div id="kpc-bak-list" style="margin-top:10px;font-size:.8rem"></div>
+			<p class="cell-tip">一个包带走：<strong>全部插件配置</strong>（<code>sysupgrade -k -b</code>，含 <code>/etc/config</code> 与短信转发模板）、<strong>已装插件清单</strong>（<code>packages.txt</code> + <code>installed_packages.txt</code>）、<strong>面板 ipk</strong>、<strong>restore.sh</strong> 恢复脚本。不包含交换文件与面板运行目录（后者由 ipk 提供）。文件存在 <code>/tmp</code>，重启后清空，请及时下载。</p>
+		</div>
+	</fieldset>
+
+	<fieldset class="cbi-section">
 		<h3>系统维护<span class="cell-live" id="kpc-swap-note">—</span></h3>
 		<div class="cell-sec">
 			<div class="cell-grid">
@@ -2020,6 +2032,72 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		});
 	}
 
+	/* ---- 一键备份 ---- */
+	function fmtMB(n) {
+		n = Number(n) || 0;
+		return n >= 1073741824 ? (n / 1073741824).toFixed(2) + ' GB' : (n / 1048576).toFixed(1) + ' MB';
+	}
+
+	function bakLoad() {
+		fetch(URL_BASE + '?action=backup_list&t=' + Date.now(), { credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				var box = document.getElementById('kpc-bak-list');
+				var note = document.getElementById('kpc-bak-note');
+				if (!box || !d || d.code !== 0) return;
+				var items = d.items || [];
+				if (note) note.textContent = items.length ? (items.length + ' 份') : '暂无';
+				if (!items.length) {
+					box.innerHTML = '<span class="cell-tip">还没有备份文件，点「生成备份」创建。</span>';
+					return;
+				}
+				box.innerHTML = items.map(function (it) {
+					return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06)">'
+						+ '<a href="' + URL_BASE + '?action=backup_get&name=' + encodeURIComponent(it.name) + '">' + it.name + '</a>'
+						+ '<span style="opacity:.6">' + fmtMB(it.size) + '</span>'
+						+ '<a href="#" data-bakdel="' + it.name + '" style="margin-left:auto;color:#c23b22">删除</a>'
+						+ '</div>';
+				}).join('');
+				Array.prototype.slice.call(box.querySelectorAll('[data-bakdel]')).forEach(function (a) {
+					a.addEventListener('click', function (ev) {
+						ev.preventDefault();
+						var name = a.getAttribute('data-bakdel');
+						if (!confirm('删除 ' + name + '？')) return;
+						var fd = new FormData();
+						fd.append('name', name);
+						fetch(URL_BASE + '?action=backup_del', { method: 'POST', credentials: 'same-origin', body: fd })
+							.then(function () { bakLoad(); });
+					});
+				});
+			})
+			.catch(function () {});
+	}
+
+	var _bakMake = document.getElementById('kpc-bak-make');
+	if (_bakMake) {
+		_bakMake.addEventListener('click', function () {
+			var msg = document.getElementById('kpc-bak-msg');
+			_bakMake.disabled = true;
+			if (msg) msg.textContent = '正在打包（配置 + 插件清单 + ipk）…';
+			fetch(URL_BASE + '?action=backup_full', { method: 'POST', credentials: 'same-origin' })
+				.then(function (r) { return r.json(); })
+				.then(function (d) {
+					_bakMake.disabled = false;
+					if (!d || d.code !== 0) {
+						if (msg) msg.textContent = '失败：' + (d && d.msg);
+						return;
+					}
+					if (msg) msg.textContent = '完成 ' + fmtMB(d.size) + (d.ipk ? '' : '（未找到 ipk）');
+					bakLoad();
+					window.location.href = URL_BASE + '?action=backup_get&name=' + encodeURIComponent(d.name);
+				})
+				.catch(function (e) {
+					_bakMake.disabled = false;
+					if (msg) msg.textContent = '失败：' + e;
+				});
+		});
+	}
+
 	/* ---- 系统维护：swap / 卡锁 ---- */
 	function fmtKB(kb) {
 		kb = Number(kb) || 0;
@@ -2231,6 +2309,7 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 	hnatLoad();
 	loadSwap();
 	loadLock();
+	bakLoad();
 
 	document.getElementById('kpc-diag').addEventListener('click', function () {
 		window.location.href = URL_BASE + '?action=diag&t=' + Date.now();

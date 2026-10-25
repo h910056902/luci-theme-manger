@@ -1854,7 +1854,8 @@ do
 			      devices = true, qos_apply = true, qos_reset = true,
 			      web_listen = true, web_listen_apply = true,
 			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
-			      swap = true, simlock = true }
+			      swap = true, simlock = true,
+			      backup_full = true, backup_list = true, backup_get = true, backup_del = true }
 			or  { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
 		if not actions[action] then return false end
 
@@ -2234,6 +2235,133 @@ do
 				zram = (kp_trim(sys.exec("ls -d /sys/block/zram0 2>/dev/null")) ~= ""),
 				swappiness = tonumber(kp_trim(sys.exec("cat /proc/sys/vm/swappiness 2>/dev/null"))) or 60,
 			})
+			return true
+		end
+
+		-- ===== 一键备份：配置 + 插件清单 + 面板 ipk =====
+		-- 产物：/tmp/kp-backup-<时间戳>.tar.gz
+		--   config.tar.gz       sysupgrade -k -b（含 /etc/config 全量 + installed_packages.txt）
+		--   packages.txt        opkg list-installed（人工核对）
+		--   nradio-luci-8080.ipk 面板安装包（找不到就跳过，MANIFEST 里会写）
+		--   MANIFEST.txt / restore.sh
+		if action == "backup_full" then
+			local sys = require "luci.sys"
+			local ts = os.date("%Y%m%d-%H%M%S")
+			local dir = "/tmp/kpbackup-" .. ts
+			sys.call("rm -rf " .. dir .. "; mkdir -p " .. dir)
+
+			local cfg_rc = sys.call("sysupgrade -k -b " .. dir .. "/config.tar.gz >/dev/null 2>&1")
+			sys.call("opkg list-installed > " .. dir .. "/packages.txt 2>/dev/null")
+
+			local ipk = kp_trim(sys.exec("ls -t /tmp/nradio-luci-8080_*.ipk 2>/dev/null | head -1"))
+			if ipk == "" then
+				ipk = kp_trim(sys.exec("ls -t /root/pkgs/nradio-luci-8080_*.ipk 2>/dev/null | head -1"))
+			end
+			local has_ipk = false
+			if ipk ~= "" then
+				has_ipk = (sys.call("cp " .. ipk .. " " .. dir .. "/nradio-luci-8080.ipk 2>/dev/null") == 0)
+			end
+
+			local model = kp_trim(sys.exec("cat /tmp/sysinfo/model 2>/dev/null"))
+			local fw = kp_trim(sys.exec(". /etc/openwrt_release 2>/dev/null; echo -n \"$DISTRIB_DESCRIPTION\""))
+			local npkg = tonumber(kp_trim(sys.exec("opkg list-installed 2>/dev/null | wc -l"))) or 0
+
+			local mf = io.open(dir .. "/MANIFEST.txt", "w")
+			if mf then
+				mf:write("NRadio 8080 一键备份\n")
+				mf:write("生成时间: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n")
+				mf:write("设备型号: " .. (model ~= "" and model or "未知") .. "\n")
+				mf:write("固件版本: " .. (fw ~= "" and fw or "未知") .. "\n")
+				mf:write("已装插件: " .. npkg .. " 个\n")
+				mf:write("配置备份: " .. (cfg_rc == 0 and "成功" or "失败") .. "\n")
+				mf:write("面板 ipk: " .. (has_ipk and "已包含" or "未包含") .. "\n")
+				mf:write("\n恢复步骤见 restore.sh\n")
+				mf:close()
+			end
+
+			local rs = io.open(dir .. "/restore.sh", "w")
+			if rs then
+				rs:write("#!/bin/sh\n")
+				rs:write("# 一键恢复：把本目录放到路由器 /tmp 下，执行 sh restore.sh\n")
+				rs:write('D=$(cd "$(dirname "$0")" && pwd)\n')
+				rs:write('echo "[1/3] 恢复配置..."\n')
+				rs:write('tar -xzf "$D/config.tar.gz" -C / && echo "  配置已还原"\n')
+				rs:write('echo "[2/3] 重装面板..."\n')
+				rs:write('[ -f "$D/nradio-luci-8080.ipk" ] && opkg install --force-reinstall "$D/nradio-luci-8080.ipk"\n')
+				rs:write('echo "[3/3] 重启服务..."\n')
+				rs:write('/etc/init.d/uhttpd restart >/dev/null 2>&1\n')
+				rs:write('/etc/init.d/kpsmsfwd restart >/dev/null 2>&1\n')
+				rs:write('/etc/init.d/kpswap start >/dev/null 2>&1\n')
+				rs:write('echo "完成：http://$(uci -q get network.lan.ipaddr):8080/"\n')
+				rs:close()
+				sys.call("chmod 755 " .. dir .. "/restore.sh")
+			end
+
+			local name = "kp-backup-" .. ts .. ".tar.gz"
+			local rc = sys.call("cd /tmp && tar czf " .. name .. " -C " .. dir .. " . 2>/dev/null")
+			local size = tonumber(kp_trim(sys.exec("wc -c < /tmp/" .. name .. " 2>/dev/null")))
+			sys.call("rm -rf " .. dir)
+
+			if rc ~= 0 or not size or size <= 0 then
+				kp_write_json({ code = 1, msg = "打包失败（磁盘空间不足？）" })
+				return true
+			end
+			kp_write_json({ code = 0, name = name, size = size, ipk = has_ipk, pkgs = npkg })
+			return true
+		end
+
+		if action == "backup_list" then
+			local sys = require "luci.sys"
+			local items = {}
+			-- 本固件 busybox 没有 stat applet，只能走 wc -c
+			local out = sys.exec("for f in /tmp/kp-backup-*.tar.gz; do [ -f $f ] && echo $(wc -c < $f)\\|$f; done 2>/dev/null") or ""
+			for line in out:gmatch("[^\n]+") do
+				local size, path = line:match("^(%d+)|(.+)$")
+				if path then
+					local base = path:match("([^/]+)$") or path
+					items[#items + 1] = { name = base, size = tonumber(size) or 0 }
+				end
+			end
+			-- 文件名里带时间戳，按名字倒序即最新在前
+			table.sort(items, function(a, b) return a.name > b.name end)
+			kp_write_json({ code = 0, items = items })
+			return true
+		end
+
+		if action == "backup_get" then
+			local name = kp_trim(form.name)
+			if not name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") then
+				kp_write_json({ code = 1, msg = "文件名非法" })
+				return true
+			end
+			local f = io.open("/tmp/" .. name, "rb")
+			if not f then
+				kp_write_json({ code = 1, msg = "备份文件不存在" })
+				return true
+			end
+			local size = f:seek("end") or 0
+			f:seek("set", 0)
+			io.write("Content-Type: application/gzip\r\n")
+			io.write('Content-Disposition: attachment; filename="' .. name .. '"\r\n')
+			io.write("Content-Length: " .. size .. "\r\n")
+			io.write("Cache-Control: no-store\r\n\r\n")
+			while true do
+				local chunk = f:read(65536)
+				if not chunk then break end
+				io.write(chunk)
+			end
+			f:close()
+			return true
+		end
+
+		if action == "backup_del" then
+			local name = kp_trim(form.name)
+			if not name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") then
+				kp_write_json({ code = 1, msg = "文件名非法" })
+				return true
+			end
+			os.remove("/tmp/" .. name)
+			kp_write_json({ code = 0, msg = "已删除" })
 			return true
 		end
 
