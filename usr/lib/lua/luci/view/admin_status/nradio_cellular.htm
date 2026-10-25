@@ -1263,11 +1263,12 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		<h3>一键备份<span class="cell-live" id="kpc-bak-note">—</span></h3>
 		<div class="cell-sec">
 			<div class="cell-actions" style="flex-wrap:wrap;gap:8px">
-				<button class="cbi-button cbi-button-action" type="button" id="kpc-bak-make">生成备份</button>
+				<button class="cbi-button cbi-button-action" type="button" id="kpc-bak-make">生成备份 (tar.gz)</button>
+				<button class="cbi-button cbi-button-apply" type="button" id="kpc-bak-ipk">生成恢复包 (ipk)</button>
 				<span class="cell-tip" id="kpc-bak-msg" style="margin:0"></span>
 			</div>
 			<div id="kpc-bak-list" style="margin-top:10px;font-size:.8rem"></div>
-			<p class="cell-tip">一个包带走：<strong>全部插件配置</strong>（<code>sysupgrade -k -b</code>，含 <code>/etc/config</code> 与短信转发模板）、<strong>已装插件清单</strong>（<code>packages.txt</code> + <code>installed_packages.txt</code>）、<strong>面板 ipk</strong>、<strong>restore.sh</strong> 恢复脚本。不包含交换文件与面板运行目录（后者由 ipk 提供）。文件存在 <code>/tmp</code>，重启后清空，请及时下载。</p>
+			<p class="cell-tip">两种格式内容一致：<strong>全部插件配置</strong>（<code>sysupgrade -k -b</code>，含 <code>/etc/config</code> 与短信转发模板）、<strong>已装插件清单</strong>、<strong>面板 ipk</strong>、<strong>restore.sh</strong>。<br><code>.tar.gz</code> 适合手动解包恢复；<code>.ipk</code> 是恢复包，传到路由器后可直接用应用商店安装或 <code>opkg install</code>，<strong>安装即自动还原配置并重装面板</strong>。<br>文件存在 <code>/tmp</code>，重启后清空，请及时下载。</p>
 		</div>
 	</fieldset>
 
@@ -2073,30 +2074,37 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 			.catch(function () {});
 	}
 
-	var _bakMake = document.getElementById('kpc-bak-make');
-	if (_bakMake) {
-		_bakMake.addEventListener('click', function () {
-			var msg = document.getElementById('kpc-bak-msg');
-			_bakMake.disabled = true;
-			if (msg) msg.textContent = '正在打包（配置 + 插件清单 + ipk）…';
-			fetch(URL_BASE + '?action=backup_full', { method: 'POST', credentials: 'same-origin' })
-				.then(function (r) { return r.json(); })
-				.then(function (d) {
-					_bakMake.disabled = false;
-					if (!d || d.code !== 0) {
-						if (msg) msg.textContent = '失败：' + (d && d.msg);
-						return;
-					}
-					if (msg) msg.textContent = '完成 ' + fmtMB(d.size) + (d.ipk ? '' : '（未找到 ipk）');
-					bakLoad();
-					window.location.href = URL_BASE + '?action=backup_get&name=' + encodeURIComponent(d.name);
-				})
-				.catch(function (e) {
-					_bakMake.disabled = false;
-					if (msg) msg.textContent = '失败：' + e;
-				});
-		});
+	function bakMake(action, btn, label) {
+		var msg = document.getElementById('kpc-bak-msg');
+		var all = ['kpc-bak-make', 'kpc-bak-ipk'];
+		all.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = true; });
+		if (msg) msg.textContent = '正在打包 ' + label + '（配置 + 插件清单 + 面板）…';
+		fetch(URL_BASE + '?action=' + action, { method: 'POST', credentials: 'same-origin' })
+			.then(function (r) { return r.json(); })
+			.then(function (d) {
+				all.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = false; });
+				if (!d || d.code !== 0) {
+					if (msg) msg.textContent = '失败：' + (d && d.msg);
+					return;
+				}
+				if (msg) msg.textContent = '完成 ' + fmtMB(d.size) + (d.ipk ? '' : '（未找到面板 ipk）');
+				bakLoad();
+				window.location.href = URL_BASE + '?action=backup_get&name=' + encodeURIComponent(d.name);
+			})
+			.catch(function (e) {
+				all.forEach(function (id) { var b = document.getElementById(id); if (b) b.disabled = false; });
+				if (msg) msg.textContent = '失败：' + e;
+			});
 	}
+
+	var _bakMake = document.getElementById('kpc-bak-make');
+	if (_bakMake) _bakMake.addEventListener('click', function () {
+		bakMake('backup_full', _bakMake, 'tar.gz');
+	});
+	var _bakIpk = document.getElementById('kpc-bak-ipk');
+	if (_bakIpk) _bakIpk.addEventListener('click', function () {
+		bakMake('backup_ipk', _bakIpk, 'ipk');
+	});
 
 	/* ---- 系统维护：swap / 卡锁 ---- */
 	function fmtKB(kb) {

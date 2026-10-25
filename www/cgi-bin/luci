@@ -1855,7 +1855,8 @@ do
 			      web_listen = true, web_listen_apply = true,
 			      at_raw = true, modem_reboot = true, terminal = true, hnat = true,
 			      swap = true, simlock = true,
-			      backup_full = true, backup_list = true, backup_get = true, backup_del = true }
+			      backup_full = true, backup_ipk = true, backup_list = true,
+			      backup_get = true, backup_del = true }
 			or  { sms_send = true, sms_fwd_get = true, sms_fwd_set = true }
 		if not actions[action] then return false end
 
@@ -2310,11 +2311,121 @@ do
 			return true
 		end
 
+		-- 一键恢复包（ipk）：可直接在应用商店 / opkg 安装，安装即恢复
+		-- 注意：本固件 opkg 只认 gzip(tar(debian-binary, control.tar.gz, data.tar.gz))
+		if action == "backup_ipk" then
+			local sys = require "luci.sys"
+			local ts = os.date("%Y%m%d-%H%M%S")
+			local ver = os.date("%Y.%m.%d-%H%M%S")
+			local W = "/tmp/kpbipk-" .. ts
+			local DATA = W .. "/data/etc/kp-backup"
+			sys.call("rm -rf " .. W .. "; mkdir -p " .. W .. "/control " .. DATA)
+
+			local cfg_rc = sys.call("sysupgrade -k -b " .. DATA .. "/config.tar.gz >/dev/null 2>&1")
+			sys.call("opkg list-installed > " .. DATA .. "/packages.txt 2>/dev/null")
+
+			local ipk = kp_trim(sys.exec("ls -t /tmp/nradio-luci-8080_*.ipk 2>/dev/null | head -1"))
+			if ipk == "" then
+				ipk = kp_trim(sys.exec("ls -t /root/pkgs/nradio-luci-8080_*.ipk 2>/dev/null | head -1"))
+			end
+			local has_ipk = false
+			if ipk ~= "" then
+				has_ipk = (sys.call("cp " .. ipk .. " " .. DATA .. "/nradio-luci-8080.ipk 2>/dev/null") == 0)
+			end
+
+			local model = kp_trim(sys.exec("cat /tmp/sysinfo/model 2>/dev/null"))
+			local fw = kp_trim(sys.exec(". /etc/openwrt_release 2>/dev/null; echo -n \"$DISTRIB_DESCRIPTION\""))
+			local npkg = tonumber(kp_trim(sys.exec("opkg list-installed 2>/dev/null | wc -l"))) or 0
+
+			local function wf(path, text, mode)
+				local f = io.open(path, "w")
+				if f then f:write(text); f:close() end
+				if mode then sys.call("chmod " .. mode .. " " .. path) end
+			end
+
+			wf(DATA .. "/MANIFEST.txt", table.concat({
+				"NRadio 8080 恢复包\n",
+				"生成时间: " .. os.date("%Y-%m-%d %H:%M:%S") .. "\n",
+				"设备型号: " .. (model ~= "" and model or "未知") .. "\n",
+				"固件版本: " .. (fw ~= "" and fw or "未知") .. "\n",
+				"已装插件: " .. npkg .. " 个\n",
+				"配置备份: " .. (cfg_rc == 0 and "成功" or "失败") .. "\n",
+				"面板 ipk: " .. (has_ipk and "已包含" or "未包含") .. "\n",
+				"\n安装方式：把本 ipk 传到路由器后\n",
+				"  ubus call appcenter local '{\"file\":\"<路径>\"}'\n",
+				"或 opkg install <路径>\n",
+				"安装后自动还原配置并重装面板。\n",
+			}, ""))
+
+			wf(DATA .. "/restore.sh", table.concat({
+				"#!/bin/sh\n",
+				"# 手动恢复：sh /etc/kp-backup/restore.sh\n",
+				"D=/etc/kp-backup\n",
+				"echo \"[1/3] 恢复配置...\"\n",
+				"tar -xzf \"$D/config.tar.gz\" -C / && echo \"  配置已还原\"\n",
+				"echo \"[2/3] 还原面板...\"\n",
+				"[ -f \"$D/nradio-luci-8080.ipk\" ] && tar -xzf \"$D/nradio-luci-8080.ipk\" -C /tmp data.tar.gz && tar -xzf /tmp/data.tar.gz -C /\n",
+				"echo \"[3/3] 重启服务...\"\n",
+				"/etc/init.d/uhttpd restart >/dev/null 2>&1\n",
+				"/etc/init.d/kpsmsfwd restart >/dev/null 2>&1\n",
+				"echo \"完成：http://$(uci -q get network.lan.ipaddr):8080/\"\n",
+			}, ""), "755")
+
+			-- 注意：不能写「Depends: 」空值 —— 本固件 opkg 解析空依赖会直接段错误
+			wf(W .. "/control/control", table.concat({
+				"Package: kp-backup\n",
+				"Version: " .. ver .. "\n",
+				"Architecture: all\n",
+				"Maintainer: NRadio 8080\n",
+				"Section: utils\n",
+				"Priority: optional\n",
+				"Description: NRadio 8080 one-click restore package (config + packages + panel)\n",
+			}, ""))
+
+			wf(W .. "/control/postinst", table.concat({
+				"#!/bin/sh\n",
+				"D=/etc/kp-backup\n",
+				"[ -f \"$D/config.tar.gz\" ] && tar -xzf \"$D/config.tar.gz\" -C / >/dev/null 2>&1 && echo \"kp-backup: 配置已还原\"\n",
+				"# 面板直接用解包方式还原，避免在 opkg 事务里嵌套调用 opkg 造成锁冲突\n",
+				"if [ -f \"$D/nradio-luci-8080.ipk\" ]; then\n",
+				"  tar -xzf \"$D/nradio-luci-8080.ipk\" -C /tmp data.tar.gz 2>/dev/null && tar -xzf /tmp/data.tar.gz -C / 2>/dev/null\n",
+				"  rm -f /tmp/data.tar.gz\n",
+				"  chmod 755 /overlay/nradio-apps/openwrt-luci-8080/www/cgi-bin/luci 2>/dev/null\n",
+				"  echo \"kp-backup: 面板已还原\"\n",
+				"fi\n",
+				"rm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null\n",
+				"/etc/init.d/uhttpd restart >/dev/null 2>&1\n",
+				"/etc/init.d/kpsmsfwd restart >/dev/null 2>&1\n",
+				"/etc/init.d/kpswap start >/dev/null 2>&1\n",
+				"echo \"kp-backup: 恢复完成，访问 http://$(uci -q get network.lan.ipaddr 2>/dev/null):8080/\"\n",
+				"exit 0\n",
+			}, ""), "755")
+
+			wf(W .. "/control/postrm", "#!/bin/sh\nrm -rf /etc/kp-backup\nrm -rf /tmp/luci-indexcache* /tmp/luci-modulecache 2>/dev/null\nexit 0\n", "755")
+
+			local name = "kp-backup-" .. ts .. ".ipk"
+			local rc = sys.call(
+				"cd " .. W ..
+				" && echo 2.0 > debian-binary" ..
+				" && tar -C control -czf control.tar.gz ." ..
+				" && tar -C data -czf data.tar.gz ." ..
+				" && tar -czf /tmp/" .. name .. " debian-binary control.tar.gz data.tar.gz 2>/dev/null")
+			local size = tonumber(kp_trim(sys.exec("wc -c < /tmp/" .. name .. " 2>/dev/null")))
+			sys.call("rm -rf " .. W)
+
+			if rc ~= 0 or not size or size <= 0 then
+				kp_write_json({ code = 1, msg = "打包 ipk 失败" })
+				return true
+			end
+			kp_write_json({ code = 0, name = name, size = size, ipk = has_ipk, pkgs = npkg })
+			return true
+		end
+
 		if action == "backup_list" then
 			local sys = require "luci.sys"
 			local items = {}
 			-- 本固件 busybox 没有 stat applet，只能走 wc -c
-			local out = sys.exec("for f in /tmp/kp-backup-*.tar.gz; do [ -f $f ] && echo $(wc -c < $f)\\|$f; done 2>/dev/null") or ""
+			local out = sys.exec("for f in /tmp/kp-backup-*.tar.gz /tmp/kp-backup-*.ipk; do [ -f $f ] && echo $(wc -c < $f)\\|$f; done 2>/dev/null") or ""
 			for line in out:gmatch("[^\n]+") do
 				local size, path = line:match("^(%d+)|(.+)$")
 				if path then
@@ -2330,7 +2441,7 @@ do
 
 		if action == "backup_get" then
 			local name = kp_trim(form.name)
-			if not name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") then
+			if not (name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") or name:match("^kp%-backup%-[%d%-]+%.ipk$")) then
 				kp_write_json({ code = 1, msg = "文件名非法" })
 				return true
 			end
@@ -2341,7 +2452,8 @@ do
 			end
 			local size = f:seek("end") or 0
 			f:seek("set", 0)
-			io.write("Content-Type: application/gzip\r\n")
+			local ctype = name:match("%.ipk$") and "application/vnd.debian.binary-package" or "application/gzip"
+			io.write("Content-Type: " .. ctype .. "\r\n")
 			io.write('Content-Disposition: attachment; filename="' .. name .. '"\r\n')
 			io.write("Content-Length: " .. size .. "\r\n")
 			io.write("Cache-Control: no-store\r\n\r\n")
@@ -2356,7 +2468,7 @@ do
 
 		if action == "backup_del" then
 			local name = kp_trim(form.name)
-			if not name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") then
+			if not (name:match("^kp%-backup%-[%d%-]+%.tar%.gz$") or name:match("^kp%-backup%-[%d%-]+%.ipk$")) then
 				kp_write_json({ code = 1, msg = "文件名非法" })
 				return true
 			end
