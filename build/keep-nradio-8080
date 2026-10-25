@@ -1,0 +1,15 @@
+# 8080 面板与配套插件的保留清单（sysupgrade / 备份 都会读这里）
+# 说明：/etc/config/ 下的配置本就被 base-files 的 keep.d 覆盖，
+#       这里显式列出，避免将来 base 规则调整后静默丢失。
+/etc/config/kpnet
+/etc/config/kpsmsfwd
+/etc/config/ttyd
+/etc/config/kaiplus
+
+# 短信转发模板：不在 /etc/config 下，默认不会被备份
+/etc/kpsmsfwd.body
+
+# 注意：以下内容刻意不备份
+#   /overlay/nradio-apps/openwrt-luci-8080/   面板程序本体，7.5 MB，重装 ipk 即可
+#   /etc/ttyd/index.html                      终端主题页，715 KB，可由脚本重新生成
+#   /overlay/swapfile                         512 MB 交换文件，恢复后按需重建

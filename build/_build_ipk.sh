@@ -26,7 +26,7 @@ done
 
 echo "== 收集系统级脚本（监听地址同步 / 短信转发） =="
 # 注意：这些脚本落在系统路径，不在 8080 实例目录下
-for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/init.d/kpsmsfwd etc/init.d/kpswap; do
+for f in usr/bin/kp8080-listen etc/init.d/kp8080-listen usr/bin/kpsmsfwd etc/init.d/kpsmsfwd etc/init.d/kpswap lib/upgrade/keep.d/nradio-luci-8080; do
     src=""
     if [ -f "/$f" ]; then
         src="/$f"
@@ -116,6 +116,15 @@ chmod 755 /etc/init.d/kpsmsfwd 2>/dev/null
 chmod 755 /etc/init.d/kpswap 2>/dev/null
 [ -x /etc/init.d/kpswap ] && [ -f /overlay/swapfile ] && /etc/init.d/kpswap enable 2>/dev/null
 [ -x /etc/init.d/kpswap ] && /etc/init.d/kpswap start >/dev/null 2>&1
+
+# 备份保留清单：让「系统 → 备份/恢复」把本插件的配置一起打包
+if [ -f /lib/upgrade/keep.d/nradio-luci-8080 ]; then
+	chmod 644 /lib/upgrade/keep.d/nradio-luci-8080
+else
+	printf '/etc/config/kpnet\n/etc/config/kpsmsfwd\n/etc/kpsmsfwd.body\n/etc/config/ttyd\n/etc/config/kaiplus\n' \
+		> /lib/upgrade/keep.d/nradio-luci-8080
+	chmod 644 /lib/upgrade/keep.d/nradio-luci-8080
+fi
 
 # 内嵌终端前提：关闭 ttyd 的 check_origin（跨端口 WebSocket 才通）
 uci -q get ttyd.@server[0] >/dev/null 2>&1 && {
