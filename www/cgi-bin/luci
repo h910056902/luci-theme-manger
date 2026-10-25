@@ -2299,16 +2299,94 @@ do
 				local run  = tonumber(kp_trim(sys.exec("docker ps -q 2>/dev/null | wc -l"))) or 0
 				local all  = tonumber(kp_trim(sys.exec("docker ps -aq 2>/dev/null | wc -l"))) or 0
 				local imgs = tonumber(kp_trim(sys.exec("docker images -q 2>/dev/null | wc -l"))) or 0
+				local nnet = tonumber(kp_trim(sys.exec("docker network ls -q 2>/dev/null | wc -l"))) or 0
+				local nvol = tonumber(kp_trim(sys.exec("docker volume ls -q 2>/dev/null | wc -l"))) or 0
 				local up   = kp_trim(sys.exec("pidof dockerd 2>/dev/null"))
+				local kver = kp_trim(sys.exec("uname -r"))
+				local api  = kp_trim(sys.exec("docker version --format '{{.Server.APIVersion}}' 2>/dev/null"))
+				local rtime= kp_trim(sys.exec("docker info --format '{{.DefaultRuntime}}' 2>/dev/null"))
 				kp_write_json({
 					code = 0, running = (up ~= ""), pid = up,
 					version = ver, driver = drv, root = root,
 					containers = all, running_containers = run, images = imgs,
+					networks = nnet, volumes = nvol,
+					kernel = kver, apiver = api, runtime = rtime,
 				})
 				return true
 			end
 
-			if op == "start" or op == "stop" or op == "restart" or op == "rm" or op == "rmi" then
+			-- 磁盘占用（对应 dockerman 概览页的系统占用）
+			if op == "df" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker system df --format '{{.Type}}|{{.TotalCount}}|{{.Active}}|{{.Size}}|{{.Reclaimable}}' 2>/dev/null"))) do
+					local ty, total, act, size, recl = l:match("^([^|]*)|([^|]*)|([^|]*)|([^|]*)|(.*)$")
+					if ty and ty ~= "" then
+						items[#items + 1] = { type = ty, total = total, active = act, size = size, reclaimable = recl }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			if op == "networks" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker network ls --format '{{.Name}}|{{.Driver}}|{{.Scope}}|{{.ID}}' 2>/dev/null"))) do
+					local name, drv, scope, id = l:match("^([^|]*)|([^|]*)|([^|]*)|(.*)$")
+					if name and name ~= "" then
+						local subnet = kp_trim(sys.exec("docker network inspect -f '{{range .IPAM.Config}}{{.Subnet}} {{end}}' " ..
+							name .. " 2>/dev/null"))
+						items[#items + 1] = { name = name, driver = drv, scope = scope, id = id, subnet = subnet }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			if op == "volumes" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker volume ls --format '{{.Name}}|{{.Driver}}|{{.Mountpoint}}' 2>/dev/null"))) do
+					local name, drv, mp = l:match("^([^|]*)|([^|]*)|(.*)$")
+					if name and name ~= "" then
+						items[#items + 1] = { name = name, driver = drv, mountpoint = mp }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			-- 最近事件（对应 dockerman 的 Events 页）
+			if op == "events" then
+				local items = {}
+				for _, l in ipairs(lines(sys.exec(
+					"docker events --since 2h --until 0s --format '{{.Time}}|{{.Type}}|{{.Action}}|{{.Actor.Attributes.name}}' 2>/dev/null | tail -60"))) do
+					local t, ty, act, nm = l:match("^([^|]*)|([^|]*)|([^|]*)|(.*)$")
+					if t and t ~= "" then
+						items[#items + 1] = { time = t, type = ty, action = act, name = nm }
+					end
+				end
+				kp_write_json({ code = 0, items = items })
+				return true
+			end
+
+			-- 配置只读视图（对应 dockerman 的 Configuration，仅展示关键项）
+			if op == "config" then
+				local raw = sys.exec("cat /etc/docker/daemon.json 2>/dev/null") or ""
+				local uci = {
+					alt = kp_trim(sys.exec("uci -q get dockerd.globals.alt_config_file 2>/dev/null")),
+					root = kp_trim(sys.exec("uci -q get dockerd.globals.data_root 2>/dev/null")),
+					host = kp_trim(sys.exec("uci -q get dockerd.globals.host 2>/dev/null")),
+					ipt  = kp_trim(sys.exec("uci -q get dockerd.globals.iptables 2>/dev/null")),
+					pool = kp_trim(sys.exec("uci -q get dockerd.globals.bip 2>/dev/null")),
+				}
+				kp_write_json({ code = 0, daemon_json = raw, uci = uci })
+				return true
+			end
+
+			if op == "start" or op == "stop" or op == "restart" or op == "rm" or op == "rmi"
+				or op == "rmnet" or op == "rmvol" then
 				if kp_trim(form.confirm) ~= "1" then
 					kp_write_json({ code = 1, msg = "需要确认" })
 					return true
@@ -2323,6 +2401,10 @@ do
 					cmd = "docker rm -f " .. target
 				elseif op == "rmi" then
 					cmd = "docker rmi " .. target
+				elseif op == "rmnet" then
+					cmd = "docker network rm " .. target
+				elseif op == "rmvol" then
+					cmd = "docker volume rm " .. target
 				else
 					cmd = "docker " .. op .. " " .. target
 				end

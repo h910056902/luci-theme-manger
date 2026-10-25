@@ -1,0 +1,690 @@
+{
+  "sha": "6fd9937954e0b080bf07967182d714ea21fe7eb1",
+  "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/6fd9937954e0b080bf07967182d714ea21fe7eb1",
+  "tree": [
+    {
+      "path": ".github",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "00756256bb45f62ad4e721a6b84f361ce9e1b430",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/00756256bb45f62ad4e721a6b84f361ce9e1b430"
+    },
+    {
+      "path": ".github/FUNDING.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3365cd63cb1e6418cab0bc31c68615ab26633025",
+      "size": 679,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/3365cd63cb1e6418cab0bc31c68615ab26633025"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "837573187b7c87ff459862c358fb160006003186",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/837573187b7c87ff459862c358fb160006003186"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug---.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e5820975dce0e140709be99b8c7caee44c77e648",
+      "size": 327,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/e5820975dce0e140709be99b8c7caee44c77e648"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2cfc3292595ae5a33d5829c930be423b32005ff0",
+      "size": 337,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/2cfc3292595ae5a33d5829c930be423b32005ff0"
+    },
+    {
+      "path": ".github/workflows",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ba641a55ebb9bb517019ac37d347e4db7e11a045",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/ba641a55ebb9bb517019ac37d347e4db7e11a045"
+    },
+    {
+      "path": ".github/workflows/build.yml",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d0ce6a642529c23d76eeaadec6fb54f43a9445c8",
+      "size": 4311,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/d0ce6a642529c23d76eeaadec6fb54f43a9445c8"
+    },
+    {
+      "path": "LICENSE",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "67f7d057957541a55e5c689f391c50888a42c971",
+      "size": 35182,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/67f7d057957541a55e5c689f391c50888a42c971"
+    },
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5024f192f27ae106fda3edfb5eb1830b7f5dd47a",
+      "size": 3109,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/5024f192f27ae106fda3edfb5eb1830b7f5dd47a"
+    },
+    {
+      "path": "applications",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "0cf632c1a494ae29536daccf12ee93ad062cce53",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/0cf632c1a494ae29536daccf12ee93ad062cce53"
+    },
+    {
+      "path": "applications/luci-app-dockerman",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "901360af97294581104b6663c3b6a8138e19baae",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/901360af97294581104b6663c3b6a8138e19baae"
+    },
+    {
+      "path": "applications/luci-app-dockerman/Makefile",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "98005a257cc043b0faea39afde0f44f1a80d18e6",
+      "size": 418,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/98005a257cc043b0faea39afde0f44f1a80d18e6"
+    },
+    {
+      "path": "applications/luci-app-dockerman/depends.lst",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8a62f6a74b8eb8b940c6377307903b7f3aed2ee5",
+      "size": 15,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/8a62f6a74b8eb8b940c6377307903b7f3aed2ee5"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e53754700f663736961136aebeb88c6b42f0dfb1",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/e53754700f663736961136aebeb88c6b42f0dfb1"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "b91a1a3c1429884e483f6b7037ba38d9d0a20275",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/b91a1a3c1429884e483f6b7037ba38d9d0a20275"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "565619c2381614379fa5c8197739a4df4dd4f5cd",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/565619c2381614379fa5c8197739a4df4dd4f5cd"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "6daf5258ccdfe2da0673de8507187af8b158deed",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/6daf5258ccdfe2da0673de8507187af8b158deed"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/containers.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4165f90bdc35e17a06ed69860eccd767c2761679",
+      "size": 1100,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/4165f90bdc35e17a06ed69860eccd767c2761679"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/file-icon.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f156dc1c7ce823b64401a62e249a377a52b20518",
+      "size": 1098,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/f156dc1c7ce823b64401a62e249a377a52b20518"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/file-manager.css",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "911693b62d9c8bafd150d8c956fa354ca62f30fb",
+      "size": 1759,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/911693b62d9c8bafd150d8c956fa354ca62f30fb"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/folder-icon.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1370df3ad554fcb4d11aa0a72510dd3011cb816b",
+      "size": 1292,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/1370df3ad554fcb4d11aa0a72510dd3011cb816b"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/images.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "90ca5a1c7d17f3b35b00e16792dc3b4b340f646e",
+      "size": 3067,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/90ca5a1c7d17f3b35b00e16792dc3b4b340f646e"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/link-icon.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "03cc82cdfabae20c1036959e6244ba5039f74697",
+      "size": 1622,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/03cc82cdfabae20c1036959e6244ba5039f74697"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/networks.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3eb12a39365bb067322a4c29802237662258694b",
+      "size": 1270,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/3eb12a39365bb067322a4c29802237662258694b"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/tar.min.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d9c06667f61689e6e1de0363f0fba86d3f65a960",
+      "size": 15441,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/d9c06667f61689e6e1de0363f0fba86d3f65a960"
+    },
+    {
+      "path": "applications/luci-app-dockerman/htdocs/luci-static/resources/dockerman/volumes.svg",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "50292a20259531f7fc1a053417e368b9bde8d8aa",
+      "size": 6547,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/50292a20259531f7fc1a053417e368b9bde8d8aa"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "28577d85d11565b1eac33925d24340162c49eacd",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/28577d85d11565b1eac33925d24340162c49eacd"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/controller",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "06f5aaffb499cd951a419ec2c723ad44edc071a1",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/06f5aaffb499cd951a419ec2c723ad44edc071a1"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/controller/dockerman.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5ca7204333a2e3773f323d4e4d357932804b0aea",
+      "size": 23834,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/5ca7204333a2e3773f323d4e4d357932804b0aea"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "4bdafbbb25f58565349c93a1bb1823f32657138b",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/4bdafbbb25f58565349c93a1bb1823f32657138b"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7146881ed87349797963cd59ee6491a57c0294e8",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/7146881ed87349797963cd59ee6491a57c0294e8"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "22c522f67acd40384e6dc746ccb37f02125460ee",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/22c522f67acd40384e6dc746ccb37f02125460ee"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/configuration.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f62650fe5857b935baf892699fce9d609b133ba0",
+      "size": 5697,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/f62650fe5857b935baf892699fce9d609b133ba0"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/container.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b875811d9806383757fedf8321af2e734b1ed5aa",
+      "size": 22197,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/b875811d9806383757fedf8321af2e734b1ed5aa"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/containers.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c86f8635d45d80d875652996358351637b9a0b70",
+      "size": 10953,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/c86f8635d45d80d875652996358351637b9a0b70"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/images.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c06c1640a1de56ae938aaf918b2336e1a4cdceaf",
+      "size": 8395,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/c06c1640a1de56ae938aaf918b2336e1a4cdceaf"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/networks.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8ad5690fe6eeffad546d2b41f13916502ef7a262",
+      "size": 4285,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/8ad5690fe6eeffad546d2b41f13916502ef7a262"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/newcontainer.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b26d0267a4cb2f405978e17aa24b440ba39656df",
+      "size": 25949,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/b26d0267a4cb2f405978e17aa24b440ba39656df"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/newnetwork.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c87678b85faa0dbc093193768078239b7ae49201",
+      "size": 6788,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/c87678b85faa0dbc093193768078239b7ae49201"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/overview.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c6e4b1771f1a4830968a8ddd0b4227234c347e87",
+      "size": 5930,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/c6e4b1771f1a4830968a8ddd0b4227234c347e87"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/cbi/dockerman/volumes.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "c74e34314ac4e6fa4552fa0149f7f9d8eff5d0d3",
+      "size": 3891,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/c74e34314ac4e6fa4552fa0149f7f9d8eff5d0d3"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/model/docker.lua",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2a902912a202709ae71271e5e4dc9f475ce39a74",
+      "size": 14378,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/2a902912a202709ae71271e5e4dc9f475ce39a74"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c32e4ab076b9eb7fab24abc497e1f317542e7ace",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/c32e4ab076b9eb7fab24abc497e1f317542e7ace"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "a80c4e06582be4d215426efdc627749dff643bc9",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/a80c4e06582be4d215426efdc627749dff643bc9"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/apply_widget.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "f96b2d72a23b947e13c4fc83e543a7599e8d5fd6",
+      "size": 4338,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/f96b2d72a23b947e13c4fc83e543a7599e8d5fd6"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/cbi",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "ce03a27f1da2eefb609d0ac5710bdee43c0e9b74",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/ce03a27f1da2eefb609d0ac5710bdee43c0e9b74"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/cbi/inlinebutton.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "a061a6dba64534dfd473a44c71858224f497fd76",
+      "size": 350,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/a061a6dba64534dfd473a44c71858224f497fd76"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/cbi/inlinevalue.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e4b0cf7a080bc253346201df8c9466efd6540bec",
+      "size": 1590,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/e4b0cf7a080bc253346201df8c9466efd6540bec"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/cbi/namedsection.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "244d2c10ad5464a8938a04ea4764bb9041fcd9e9",
+      "size": 347,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/244d2c10ad5464a8938a04ea4764bb9041fcd9e9"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/cbi/xfvalue.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "04f7bc2ee865b729f6c43af7a60576ad8a2d8931",
+      "size": 513,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/04f7bc2ee865b729f6c43af7a60576ad8a2d8931"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/container.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "9f05d9d58944172710bc1e02a2092c570f3e8c69",
+      "size": 1397,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/9f05d9d58944172710bc1e02a2092c570f3e8c69"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/container_console.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "1a4dc2a6b8610b6b8c5d5fd9b8fdba991d3f37d9",
+      "size": 291,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/1a4dc2a6b8610b6b8c5d5fd9b8fdba991d3f37d9"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/container_file_manager.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2e0650d9df7d4a37f6fe16c0b2403d6c0f9e94d1",
+      "size": 11608,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/2e0650d9df7d4a37f6fe16c0b2403d6c0f9e94d1"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/container_stats.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bbcd633e7d18445d5a46166f982fd69ac897b6cb",
+      "size": 3118,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/bbcd633e7d18445d5a46166f982fd69ac897b6cb"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/containers_running_stats.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d88e28be98cc4f0bc96bd44b154fc0abf21f5669",
+      "size": 4214,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/d88e28be98cc4f0bc96bd44b154fc0abf21f5669"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/images_import.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0ad6e0fce029699dc4c812f12a85c12c9d584717",
+      "size": 3172,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/0ad6e0fce029699dc4c812f12a85c12c9d584717"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/images_load.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b201510ac0e48d7858c2c96535f90849a0ea65e8",
+      "size": 1353,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/b201510ac0e48d7858c2c96535f90849a0ea65e8"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/logs.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3897c74220943dd434e233ea1e16c5304282190f",
+      "size": 1893,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/3897c74220943dd434e233ea1e16c5304282190f"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/newcontainer_resolve.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "338fd59d5f77a3a1a821b678403fe721cb56b87f",
+      "size": 3258,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/338fd59d5f77a3a1a821b678403fe721cb56b87f"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/overview.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e491fc5126f3bf7f74cae45e900d824322797f35",
+      "size": 5116,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/e491fc5126f3bf7f74cae45e900d824322797f35"
+    },
+    {
+      "path": "applications/luci-app-dockerman/luasrc/view/dockerman/volume_size.htm",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "dc024734b5700d4d3bc8548e69dba95ed7ee7f4f",
+      "size": 712,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/dc024734b5700d4d3bc8548e69dba95ed7ee7f4f"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e3f840af56cb8e3b7acab801695c1ff634cada25",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/e3f840af56cb8e3b7acab801695c1ff634cada25"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po/templates",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "c8126899b83f1b5e1cc37c0bfddce6e26363d096",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/c8126899b83f1b5e1cc37c0bfddce6e26363d096"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po/templates/dockerman.pot",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "0d6a5de985b3b31925ad05d389816602a87abf67",
+      "size": 33109,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/0d6a5de985b3b31925ad05d389816602a87abf67"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po/zh-cn",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "7ef55b12d6e3f56f9270dd13de4060cbd87ae0c6",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/7ef55b12d6e3f56f9270dd13de4060cbd87ae0c6"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po/zh-cn/dockerman.po",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "4959bb0d12b37b013db4e53e37fced4a4cd2aa02",
+      "size": 40356,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/4959bb0d12b37b013db4e53e37fced4a4cd2aa02"
+    },
+    {
+      "path": "applications/luci-app-dockerman/po/zh_Hans",
+      "mode": "120000",
+      "type": "blob",
+      "sha": "41451e4a19c465672ff675371a2bc27cf25a3083",
+      "size": 5,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/41451e4a19c465672ff675371a2bc27cf25a3083"
+    },
+    {
+      "path": "applications/luci-app-dockerman/postinst",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b0db1cb8939b3a96c64ca159f040470e62b1fc12",
+      "size": 912,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/b0db1cb8939b3a96c64ca159f040470e62b1fc12"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "9eec8b4e4de8bb3a561bb16ab3bf8eeffc3b620c",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/9eec8b4e4de8bb3a561bb16ab3bf8eeffc3b620c"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/etc",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "2c760a642a6d89f674c3b1281e37e98edf51b81c",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/2c760a642a6d89f674c3b1281e37e98edf51b81c"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/etc/init.d",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "95f1233e8ab775dd9ff6ec19379b82bd7eac9157",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/95f1233e8ab775dd9ff6ec19379b82bd7eac9157"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/etc/init.d/dockerman",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "80309aeab7735e83ac0f4b42e526417c61fdbef3",
+      "size": 3506,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/80309aeab7735e83ac0f4b42e526417c61fdbef3"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/etc/uci-defaults",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "24c91308bb3ed2bf25761dced38c2d69ea8285f2",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/24c91308bb3ed2bf25761dced38c2d69ea8285f2"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/etc/uci-defaults/luci-app-dockerman",
+      "mode": "100755",
+      "type": "blob",
+      "sha": "44bcca86dc5043dd098bc0e46ea1c2f702c5b539",
+      "size": 1365,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/44bcca86dc5043dd098bc0e46ea1c2f702c5b539"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/usr",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "184271c309d9172d3bedba7d3d3b75e4852df714",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/184271c309d9172d3bedba7d3d3b75e4852df714"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/usr/share",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "e7334c9812fddfbfea5efe9544e123b58bdcfa53",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/e7334c9812fddfbfea5efe9544e123b58bdcfa53"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/usr/share/rpcd",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "18f8838780ed3ff7319075d53c4b6182ffaba50c",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/18f8838780ed3ff7319075d53c4b6182ffaba50c"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/usr/share/rpcd/acl.d",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "d14e3268a41660f907f3fb4868a75a06dd975029",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/d14e3268a41660f907f3fb4868a75a06dd975029"
+    },
+    {
+      "path": "applications/luci-app-dockerman/root/usr/share/rpcd/acl.d/luci-app-dockerman.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "78c2c641835fe2e6e42eb5049327037f7ee923d3",
+      "size": 174,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/78c2c641835fe2e6e42eb5049327037f7ee923d3"
+    },
+    {
+      "path": "doc",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "fa2f04eb9966fd0201c4e56e0e2baf7b316791c4",
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/trees/fa2f04eb9966fd0201c4e56e0e2baf7b316791c4"
+    },
+    {
+      "path": "doc/container_edit.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "2f4187245c724124ac73658da4da52b90498af21",
+      "size": 45863,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/2f4187245c724124ac73658da4da52b90498af21"
+    },
+    {
+      "path": "doc/container_info.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "55292bb95c24584ebb91bff8cd3959ee24aa0594",
+      "size": 116307,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/55292bb95c24584ebb91bff8cd3959ee24aa0594"
+    },
+    {
+      "path": "doc/container_logs.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "53c3e817785a539f1714f49febeb493190508a82",
+      "size": 34036,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/53c3e817785a539f1714f49febeb493190508a82"
+    },
+    {
+      "path": "doc/container_stats.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8538146a98dc9cf3b4255ba501101b32db2bc008",
+      "size": 52770,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/8538146a98dc9cf3b4255ba501101b32db2bc008"
+    },
+    {
+      "path": "doc/containers.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d38e5666586057ec39eb4e8de095e5a9413161aa",
+      "size": 77132,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/d38e5666586057ec39eb4e8de095e5a9413161aa"
+    },
+    {
+      "path": "doc/images.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34cddfc1dca0c2a3d39abfba56232c48a0a8f5ab",
+      "size": 63900,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/34cddfc1dca0c2a3d39abfba56232c48a0a8f5ab"
+    },
+    {
+      "path": "doc/networks.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "bccd7dd44380e9857be3f2546a7aa973d9367ab5",
+      "size": 29581,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/bccd7dd44380e9857be3f2546a7aa973d9367ab5"
+    },
+    {
+      "path": "doc/new_container.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7aa1aaf23535b248c6a268b5aa15b8a9d6d7f77",
+      "size": 107017,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/d7aa1aaf23535b248c6a268b5aa15b8a9d6d7f77"
+    },
+    {
+      "path": "doc/new_network.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "e932f27ccbe9527f015a3f79fe0465126b9bc94f",
+      "size": 41097,
+      "url": "https://api.github.com/repos/lisaac/luci-app-dockerman/git/blobs/e932f27ccbe9527f015a3f79fe0465126b9bc94f"
+    }
+  ],
+  "truncated": false
+}
