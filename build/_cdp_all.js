@@ -18,7 +18,7 @@ const CASES = [
   {
     name: 'docker_page',
     start: 'http://192.168.66.1:8080/',
-    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/status/docker',
+    after: 'http://192.168.66.1:8080/cgi-bin/luci/admin/docker',
     shot: 'verify_docker.png'
   }
 ];

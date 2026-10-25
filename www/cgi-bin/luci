@@ -274,14 +274,8 @@ function luci.dispatcher.createtree()
 				order = 5,
 				leaf = true
 			}
-			-- Docker 管理（引擎状态 / 容器 / 镜像）
-			status.nodes.docker = {
-				nodes = {},
-				target = luci.dispatcher.template("admin_status/nradio_docker"),
-				title = "Docker",
-				order = 6,
-				leaf = true
-			}
+			-- Docker 已提升为顶层菜单，注册在 controller：
+			-- /usr/lib/lua/luci/controller/kp_docker.lua → /admin/docker
 			-- KP-CELLULAR-MENU-END
 		end
 		-- KP-QUICKSTART-MENU-BEGIN
@@ -290,6 +284,8 @@ function luci.dispatcher.createtree()
 		--   argon 侧栏对有子节点的顶类目渲染成下拉分组，「首页」的直接链接
 		--   就消失了（v1 教训，用户实测反馈）。深链接由 wizard.htm 的
 		--   history.replaceState 预写 URL 实现，无需任何子节点。
+		-- Docker 菜单改由 controller 注册（/usr/lib/lua/luci/controller/kp_docker.lua），
+		-- 这里不再手工挂节点，避免 createtree() 与手工节点各注册一次造成重复条目。
 		admin.nodes.quickstart = {
 			nodes = {},
 			target = luci.dispatcher.template("quickstart/home"),
@@ -1855,6 +1851,7 @@ do
 		local kind = nil
 		if path_info:match("^/admin/status/cellular/?$") then kind = "cellular"
 		elseif path_info:match("^/admin/status/sms/?$") then kind = "sms"
+		elseif path_info:match("^/admin/docker/?$") then kind = "docker"
 		elseif path_info:match("^/admin/status/docker/?$") then kind = "docker" end
 		if not kind then return false end
 
