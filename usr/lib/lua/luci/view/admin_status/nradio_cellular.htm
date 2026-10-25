@@ -78,7 +78,9 @@
 	end
 
 	local function fmt_dur(sec)
-		local s = tonumber(sec) or 0
+		-- /proc/uptime 是浮点；%d 不接受浮点，必须取整，
+		-- 否则「运行不足 1 小时」分支会 500（bad argument #3 to 'format'）
+		local s = math.floor(tonumber(sec) or 0)
 		if s <= 0 then return "-" end
 		local d = math.floor(s / 86400)
 		local h = math.floor((s % 86400) / 3600)

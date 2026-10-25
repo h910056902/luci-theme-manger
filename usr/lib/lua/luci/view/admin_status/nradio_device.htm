@@ -35,7 +35,10 @@
 	end
 
 	local function fmt_dur(sec)
-		local s = tonumber(sec) or 0
+		-- /proc/uptime 是浮点（如 268733.42）；%d 不接受浮点，
+		-- 早期版本在「运行不足 1 小时」分支里对 s % 60 用了 %d，
+		-- 导致刚重启时整页 500。这里统一取整，后续所有分支都安全。
+		local s = math.floor(tonumber(sec) or 0)
 		if s <= 0 then return "-" end
 		local d = math.floor(s / 86400)
 		local h = math.floor((s % 86400) / 3600)
