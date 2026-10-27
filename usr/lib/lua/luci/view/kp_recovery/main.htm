@@ -20,6 +20,8 @@
 			sys.call("(sleep 2; reboot) >/dev/null 2>&1 &")
 		elseif act == "firstboot" then
 			sys.call("(sleep 2; firstboot -y; reboot) >/dev/null 2>&1 &")
+		elseif act == "probe" then
+			sys.exec("/usr/bin/kp-uboot caps > /tmp/.kp-uboot-caps 2>/dev/null")
 		end
 		http.redirect(BASE .. "?done=" .. act)
 		return
@@ -66,7 +68,28 @@
 		env       = "U-Boot 环境已导出到 /tmp/uboot-env.txt。",
 		reboot    = "设备将在 2 秒后重启，请稍候重新连接。",
 		firstboot = "已触发 firstboot（清空配置）并重启，设备会恢复到初始状态。",
+		probe     = "已重新探测 U-Boot 能力（下方卡片已更新）。",
 	}
+
+	-- U-Boot 能力：有缓存读缓存，没有就探测一次
+	local capsRaw = sys.exec("cat /tmp/.kp-uboot-caps 2>/dev/null") or ""
+	if capsRaw == "" then
+		sys.exec("/usr/bin/kp-uboot caps > /tmp/.kp-uboot-caps 2>/dev/null")
+		capsRaw = sys.exec("cat /tmp/.kp-uboot-caps 2>/dev/null") or ""
+	end
+	local caps = { cmd = {} }
+	for line in capsRaw:gmatch("[^\r\n]+") do
+		local k, v = line:match("^([%w_]+)=(.*)$")
+		if k == "cmd" then
+			local name, n = v:match("^([%w_]+):(%d+)$")
+			if name then caps.cmd[name] = tonumber(n) or 0 end
+		elseif k then
+			caps[k] = v
+		end
+	end
+
+	local function has(name) return (caps.cmd[name] or 0) > 0 end
+	local ubVer = caps.version or "unknown"
 %>
 
 <style type="text/css">
@@ -192,6 +215,63 @@ pre.kpr-code{display:block;padding:10px 12px;border-radius:8px;overflow:auto;max
 		<p class="kpr-note">
 			建议把备份目录整体拷到电脑保留一份：<code>/overlay/kp-fw-backup/</code>。
 			只保留在设备上，一旦 overlay 损坏就一起没了。
+		</p>
+	</div>
+</div>
+
+<div class="kpr-card">
+	<h3>U-Boot 能力（实测）
+		<span class="kpr-row" style="margin-left:auto">
+			<a class="kpr-btn" href="<%=pcdata(BASE)%>?do=probe">重新探测</a>
+		</span>
+	</h3>
+	<div class="kpr-body">
+		<table class="kpr-tbl">
+			<thead><tr><th>能力</th><th>状态</th><th>说明</th></tr></thead>
+			<tbody>
+				<tr>
+					<td><strong>版本</strong></td>
+					<td class="mono"><%=pcdata(ubVer)%></td>
+					<td>从 FIP（mtd4）里读出的真实版本</td>
+				</tr>
+				<tr>
+					<td><strong>bootmenu</strong></td>
+					<td><%= (caps.cmd.bootmenu or 0) > 0 and "✅ 已编译" or "❌ 缺失" %></td>
+					<td>可做启动菜单（需串口才能看到）</td>
+				</tr>
+				<tr>
+					<td><strong>tftpboot / ping</strong></td>
+					<td><%= (caps.cmd.tftpboot or 0) > 0 and "✅ 可用" or "❌ 缺失" %>
+						<%= (caps.cmd.dhcp or 0) > 0 and "· dhcp ✅" or "· dhcp ❌" %></td>
+					<td>TFTP 恢复走静态 IP（<code>192.168.1.88</code>），无 DHCP</td>
+				</tr>
+				<tr>
+					<td><strong>httpd / wget</strong></td>
+					<td><%= ((caps.cmd.httpd or 0) + (caps.cmd.wget or 0)) > 0 and "✅ 有" or "❌ 均无" %></td>
+					<td>没有网页恢复，所以恢复模式下 <code>192.168.1.1</code> 不出网页</td>
+				</tr>
+				<tr>
+					<td><strong>FIT 签名校验</strong></td>
+					<td><%= (tonumber(caps.fitsig or 0) or 0) > 0 and "✅ 存在" or "未知" %></td>
+					<td>自定义固件必须签名 —— 这是 Breed 不可行的技术根因</td>
+				</tr>
+				<tr>
+					<td><strong>env 冗余</strong></td>
+					<td>❌ 单份 64 KB</td>
+					<td>写坏没有备份可回退，务必先导出 env</td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="kpr-note">命令行工具（默认 dry-run，加 <code>--apply</code> 才真正写入）：</p>
+		<pre class="kpr-code">/usr/bin/kp-uboot status          # 当前 env / 关键变量
+/usr/bin/kp-uboot caps            # 从 FIP 探测 U-Boot 能力
+/usr/bin/kp-uboot delay 5 --apply # 等待窗口 2s → 5s（风险最低）
+/usr/bin/kp-uboot menu --apply    # 装启动菜单（preboot=bootmenu，需串口）
+/usr/bin/kp-uboot menu-remove --apply
+/usr/bin/kp-uboot env-restore /overlay/kp-fw-backup/uboot-env/env-*.txt --apply</pre>
+		<p class="kpr-note">
+			<strong>为什么没有直接替你写：</strong>env 是单份且无冗余，而 bootmenu 只有在<strong>串口控制台</strong>下才看得见。
+			在没接串口的情况下改 <code>preboot</code>，一旦渲染异常就只能拆机；所以这里只提供工具与命令，由你决定何时执行。
 		</p>
 	</div>
 </div>

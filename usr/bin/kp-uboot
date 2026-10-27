@@ -1,0 +1,145 @@
+#!/bin/sh
+# kp-uboot —— U-Boot 能力探测与安全操作（HC-WT9500 / MT7987）
+#
+# 背景：
+#   * U-Boot 位于 mtd4(FIP)，1 MB；env 位于 mtd1，64 KB，**单份无冗余**。
+#   * 固件带 FIT 签名校验，改 U-Boot 本体 = 不启动。
+#   * 所以本工具只做两件事：探测能力、在明确确认后改 env（bootdelay / bootmenu）。
+#
+# 默认全部是 dry-run，只有加 --apply 才真正写。
+
+FIP=/dev/mtd4
+ENVD=/dev/mtd1
+ENVCFG=/etc/fw_env.config
+BAK=/overlay/kp-fw-backup/uboot-env
+
+need_envcfg() {
+	[ -f "$ENVCFG" ] || printf '/dev/mtd1 0x0 0x10000 0x10000\n' > "$ENVCFG"
+}
+
+env_backup() {
+	need_envcfg
+	mkdir -p "$BAK"
+	ts=$(date +%Y%m%d-%H%M%S)
+	fw_printenv > "$BAK/env-$ts.txt" 2>/dev/null
+	dd if="$ENVD" of="$BAK/mtd1-$ts.bin" bs=64k 2>/dev/null
+	echo "backup=$BAK/env-$ts.txt"
+	echo "raw=$BAK/mtd1-$ts.bin"
+}
+
+case "$1" in
+status)
+	echo "== 环境 =="
+	echo "board=$(cat /tmp/sysinfo/board_name 2>/dev/null)"
+	echo "model=$(cat /tmp/sysinfo/model 2>/dev/null)"
+	echo "== env 配置 =="
+	need_envcfg
+	cat "$ENVCFG"
+	echo "== env 关键项 =="
+	for k in bootdelay ipaddr serverip baudrate boot_system boot_from_sd; do
+		printf "  %-14s %s\n" "$k" "$(fw_printenv "$k" 2>/dev/null | sed "s/^$k=//")"
+	done
+	echo "== 备份 =="
+	ls -1 "$BAK" 2>/dev/null | tail -4 || echo "  无"
+	;;
+
+caps)
+	# 从 FIP 里读真实能力（只读，约 1MB）
+	t=/tmp/.kp-uboot-fip.bin
+	dd if="$FIP" of="$t" bs=64k 2>/dev/null
+	ver=$(strings "$t" 2>/dev/null | grep -m1 -oE 'U-Boot 20[0-9]{2}\.[0-9]{2}(-rc[0-9]+)?')
+	echo "version=${ver:-unknown}"
+	for c in bootmenu tftpboot ping dhcp saveenv setenv bootm booti mtdparts httpd wget fastboot; do
+		n=$(strings "$t" 2>/dev/null | grep -cw "$c")
+		echo "cmd=$c:$n"
+	done
+	# 签名校验线索
+	sig=$(strings "$t" 2>/dev/null | grep -ciE 'signature|verified-boot|rsa')
+	echo "fitsig=$sig"
+	rm -f "$t"
+	;;
+
+delay)
+	# kp-uboot delay 5 [--apply]
+	v="$2"
+	[ -n "$v" ] || { echo "usage: kp-uboot delay <seconds> [--apply]"; exit 1; }
+	cur=$(fw_printenv bootdelay 2>/dev/null | sed 's/^bootdelay=//')
+	echo "current_bootdelay=${cur:-unknown}"
+	echo "target_bootdelay=$v"
+	if [ "$3" != "--apply" ]; then
+		echo "DRY-RUN：未写入。确认要写时加 --apply"
+		exit 0
+	fi
+	need_envcfg
+	env_backup >/dev/null
+	fw_setenv bootdelay "$v" && echo "written"
+	fw_printenv bootdelay
+	;;
+
+menu)
+	# kp-uboot menu [--apply]
+	# 装一个 5 秒超时的启动菜单：继续启动 / U-Boot 控制台 / 重启
+	echo "计划写入的变量："
+	cat <<'EOF'
+  bootmenu_delay = 5
+  bootmenu_0     = 1. 继续启动 (默认)   ->  (空命令，直接继续)
+  bootmenu_1     = 2. U-Boot 控制台     ->  exit
+  bootmenu_2     = 3. 重启              ->  reset
+  preboot        = bootmenu
+EOF
+	echo
+	echo "说明：preboot 在 bootcmd 之前执行；bootmenu 超时或出错都会落到正常启动，"
+	echo "      比直接改 bootcmd 安全，但仍然需要串口才能看到菜单。"
+	if [ "$2" != "--apply" ]; then
+		echo
+		echo "DRY-RUN：未写入。确认要写时加 --apply"
+		exit 0
+	fi
+	need_envcfg
+	env_backup >/dev/null
+	fw_setenv bootmenu_delay 5
+	fw_setenv bootmenu_0 "1. Continue boot="
+	fw_setenv bootmenu_1 "2. U-Boot console=exit"
+	fw_setenv bootmenu_2 "3. Reboot=reset"
+	fw_setenv preboot bootmenu
+	echo "written:"
+	for k in preboot bootmenu_delay bootmenu_0 bootmenu_1 bootmenu_2; do
+		fw_printenv "$k" 2>/dev/null
+	done
+	;;
+
+menu-remove)
+	# 撤销菜单，恢复默认启动
+	if [ "$2" != "--apply" ]; then
+		echo "DRY-RUN：将清除 preboot/bootmenu_* 并恢复 bootdelay=2"
+		exit 0
+	fi
+	need_envcfg
+	env_backup >/dev/null
+	for k in preboot bootmenu_delay bootmenu_0 bootmenu_1 bootmenu_2; do
+		fw_setenv "$k" 2>/dev/null
+	done
+	fw_setenv bootdelay 2
+	echo "reverted:"
+	fw_printenv bootdelay 2>/dev/null
+	;;
+
+env-restore)
+	# kp-uboot env-restore <file> --apply
+	f="$2"
+	[ -f "$f" ] || { echo "usage: kp-uboot env-restore <file> --apply"; exit 1; }
+	[ "$3" = "--apply" ] || { echo "DRY-RUN：将从 $f 恢复 env，加 --apply 执行"; exit 0; }
+	need_envcfg
+	while IFS='=' read -r k v; do
+		[ -n "$k" ] || continue
+		case "$k" in \#*) continue ;; esac
+		fw_setenv "$k" "$v" 2>/dev/null
+	done < "$f"
+	echo "restored from $f"
+	;;
+
+*)
+	echo "usage: kp-uboot {status|caps|delay N [--apply]|menu [--apply]|menu-remove [--apply]|env-restore FILE --apply}"
+	exit 1
+	;;
+esac
