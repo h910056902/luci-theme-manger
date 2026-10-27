@@ -1,0 +1,99 @@
+#!/bin/sh
+# kp-recovery —— 分区级备份 / U-Boot 环境导出（为「不死」提供救砖资本）
+# 只读操作；不写任何分区。
+#
+# 用法：
+#   kp-recovery list             列出 /proc/mtd
+#   kp-recovery backup [目录]    后台备份全部分区（默认 /overlay/kp-fw-backup/<时间戳>）
+#   kp-recovery status           读取备份进度
+#   kp-recovery env [文件]       导出 U-Boot 环境变量
+#   kp-recovery envset K V       写 U-Boot 变量（危险，需显式调用）
+
+STATE=/tmp/kp-recovery.state
+LOCK=/tmp/kp-recovery.lock
+DEFDIR=/overlay/kp-fw-backup
+
+case "$1" in
+list)
+	awk 'NR>1 { gsub(":", "", $1); n=$4; gsub(/"/, "", n); printf "%s|%s|%s|%s\n", $1, $2, $3, n }' /proc/mtd
+	;;
+
+status)
+	[ -f "$STATE" ] && cat "$STATE" || echo "stage=idle"
+	;;
+
+env)
+	out=${2:-/tmp/uboot-env.txt}
+	[ -f /etc/fw_env.config ] || printf '/dev/mtd1 0x0 0x10000 0x10000\n' > /etc/fw_env.config
+	fw_printenv > "$out" 2>/dev/null
+	echo "count=$(wc -l < "$out" 2>/dev/null || echo 0)"
+	echo "file=$out"
+	;;
+
+envset)
+	# 谨慎：写错 bootcmd 会导致无法启动
+	[ -n "$2" ] && [ -n "$3" ] || { echo "usage: kp-recovery envset KEY VALUE"; exit 1; }
+	[ -f /etc/fw_env.config ] || printf '/dev/mtd1 0x0 0x10000 0x10000\n' > /etc/fw_env.config
+	fw_setenv "$2" "$3" && echo "ok"
+	;;
+
+backup)
+	if [ -f "$LOCK" ]; then
+		echo "busy $(cat "$LOCK" 2>/dev/null)"
+		exit 0
+	fi
+	dest="$2"
+	[ -n "$dest" ] || dest="$DEFDIR/$(date +%Y%m%d-%H%M%S)"
+	mkdir -p "$dest" || exit 1
+	echo $$ > "$LOCK"
+
+	(
+		total=$(awk 'NR>1' /proc/mtd | wc -l)
+		i=0
+		ok=0
+		fail=0
+		echo "stage=run i=0 ok=0 fail=0 total=$total dir=$dest" > "$STATE"
+
+		# 先导出 U-Boot 环境（很小的文本，价值最高）
+		[ -f /etc/fw_env.config ] || printf '/dev/mtd1 0x0 0x10000 0x10000\n' > /etc/fw_env.config
+		fw_printenv > "$dest/u-boot-env.txt" 2>/dev/null
+
+		for dev in $(awk 'NR>1 { gsub(":", "", $1); print $1 }' /proc/mtd); do
+			name=$(awk -v d="${dev}:" '$1==d { gsub(":", "", $1); n=$4; gsub(/"/, "", n); print n }' /proc/mtd)
+			i=$((i + 1))
+			m="/dev/mtd${dev#mtd}"
+			f="$dest/${dev}-${name}.bin"
+			if dd if="$m" of="$f" bs=64k 2>/dev/null; then
+				sha=$(sha256sum "$f" 2>/dev/null | cut -d' ' -f1)
+				echo "$sha  ${dev}-${name}.bin" >> "$dest/SHA256SUMS"
+				ok=$((ok + 1))
+			else
+				fail=$((fail + 1))
+			fi
+			echo "stage=run i=$i ok=$ok fail=$fail total=$total dir=$dest cur=$dev" > "$STATE"
+		done
+
+		{
+			echo "NRadio 分区备份"
+			echo "时间: $(date '+%Y-%m-%d %H:%M:%S')"
+			echo "型号: $(cat /tmp/sysinfo/model 2>/dev/null)"
+			echo "板型: $(cat /tmp/sysinfo/board_name 2>/dev/null)"
+			echo "内核: $(uname -r) / $(uname -m)"
+			echo "固件: $(. /etc/openwrt_release 2>/dev/null; echo "$DISTRIB_DESCRIPTION")"
+			echo
+			echo "分区："
+			awk 'NR>1 { gsub(":", "", $1); printf "  %s  %s  %s\n", $1, $2, $4 }' /proc/mtd
+		} > "$dest/README.txt"
+
+		echo "stage=done i=$i ok=$ok fail=$fail total=$total dir=$dest" > "$STATE"
+		rm -f "$LOCK"
+	) >/dev/null 2>&1 &
+
+	echo "started dir=$dest"
+	;;
+
+*)
+	echo "usage: kp-recovery {list|backup [dir]|status|env [file]|envset KEY VALUE}"
+	exit 1
+	;;
+esac

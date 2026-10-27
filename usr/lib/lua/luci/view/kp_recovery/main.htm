@@ -1,0 +1,230 @@
+<%#
+ 恢复与备份（官方 LuCI / 80 端口）
+ 目的：这台机器无法使用 Breed，改用「分区级全盘备份 + 恢复指引」提供救砖能力。
+ 动作：?do=backup | env | reboot | firstboot（执行后 302 回本页，避免刷新重复触发）
+-%>
+<%
+	local http = require "luci.http"
+	local sys  = require "luci.sys"
+	local dispatcher = require "luci.dispatcher"
+
+	local BASE = dispatcher.build_url("admin", "system", "recovery")
+	local act  = http.formvalue("do")
+
+	if act and act ~= "" then
+		if act == "backup" then
+			sys.exec("/usr/bin/kp-recovery backup >/dev/null 2>&1")
+		elseif act == "env" then
+			sys.exec("/usr/bin/kp-recovery env /tmp/uboot-env.txt >/dev/null 2>&1")
+		elseif act == "reboot" then
+			sys.call("(sleep 2; reboot) >/dev/null 2>&1 &")
+		elseif act == "firstboot" then
+			sys.call("(sleep 2; firstboot -y; reboot) >/dev/null 2>&1 &")
+		end
+		http.redirect(BASE .. "?done=" .. act)
+		return
+	end
+
+	local done = http.formvalue("done") or ""
+
+	local mtd = sys.exec("/usr/bin/kp-recovery list 2>/dev/null") or ""
+	local st  = sys.exec("/usr/bin/kp-recovery status 2>/dev/null") or "stage=idle"
+	local envtxt = sys.exec("head -22 /tmp/uboot-env.txt 2>/dev/null") or ""
+	local board  = (sys.exec("cat /tmp/sysinfo/board_name 2>/dev/null") or ""):gsub("%s+$", "")
+	local model  = (sys.exec("cat /tmp/sysinfo/model 2>/dev/null") or ""):gsub("%s+$", "")
+	local arch   = (sys.exec("uname -m 2>/dev/null") or ""):gsub("%s+$", "")
+	local kver   = (sys.exec("uname -r 2>/dev/null") or ""):gsub("%s+$", "")
+
+	local parts = {}
+	for line in mtd:gmatch("[^\r\n]+") do
+		local id, size, erase, name = line:match("^([^|]+)|([^|]+)|([^|]+)|(.+)$")
+		if id then
+			parts[#parts + 1] = { id = id, size = size, erase = erase, name = name }
+		end
+	end
+
+	local function kb(hex)
+		local n = tonumber(hex, 16) or 0
+		if n >= 1048576 then return string.format("%.1f MB", n / 1048576) end
+		if n >= 1024 then return string.format("%.0f KB", n / 1024) end
+		return n .. " B"
+	end
+
+	local stt = {}
+	for k, v in st:gmatch("(%w+)=([^%s]*)") do stt[k] = v end
+
+	local bakdir = stt.dir or ""
+	local bakfiles = ""
+	if bakdir ~= "" then
+		local n = tonumber((sys.exec("ls " .. bakdir .. "/*.bin 2>/dev/null | wc -l") or "0"):match("%d+")) or 0
+		local sz = (sys.exec("du -sm " .. bakdir .. " 2>/dev/null | cut -f1") or "0"):gsub("%s", "")
+		bakfiles = tostring(n) .. " 个文件 / " .. sz .. " MB"
+	end
+
+	local notes = {
+		backup    = "已开始备份（后台执行，下拉查看进度）。",
+		env       = "U-Boot 环境已导出到 /tmp/uboot-env.txt。",
+		reboot    = "设备将在 2 秒后重启，请稍候重新连接。",
+		firstboot = "已触发 firstboot（清空配置）并重启，设备会恢复到初始状态。",
+	}
+%>
+
+<style type="text/css">
+.kpr-wrap{max-width:980px}
+.kpr-card{border:1px solid rgba(15,23,32,.10);border-radius:12px;background:#fff;
+	box-shadow:0 2px 10px rgba(15,23,32,.04);margin-bottom:16px;overflow:hidden}
+.kpr-card > h3{margin:0;padding:11px 16px;font-size:14px;font-weight:600;color:#344054;
+	background:linear-gradient(180deg,#fbfcfd,#f5f7fa);border-bottom:1px solid rgba(15,23,32,.08);
+	display:flex;align-items:center;gap:10px}
+.kpr-body{padding:12px 16px 14px}
+.kpr-kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-bottom:14px}
+.kpr-kv > div{border:1px solid rgba(15,23,32,.10);border-radius:10px;padding:10px 12px;background:#fff}
+.kpr-kv span{display:block;font-size:11.5px;color:#667085}
+.kpr-kv b{font-size:15px;color:#101828;font-weight:600}
+table.kpr-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+table.kpr-tbl th{text-align:left;font-size:11px;letter-spacing:.03em;text-transform:uppercase;color:#667085;
+	font-weight:600;padding:8px 10px;background:#f8fafc;border-bottom:1px solid rgba(15,23,32,.10)}
+table.kpr-tbl td{padding:8px 10px;border-bottom:1px solid rgba(15,23,32,.06);
+	font-variant-numeric:tabular-nums}
+table.kpr-tbl td.mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#475467}
+.kpr-btn{display:inline-block;border:1px solid rgba(15,23,32,.16);background:#fff;color:#344054;
+	font-size:12.5px;padding:4px 12px;border-radius:7px;cursor:pointer;text-decoration:none;
+	transition:background .16s ease,border-color .16s ease}
+.kpr-btn:hover{background:#f2f5f9;border-color:rgba(15,23,32,.28)}
+.kpr-btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.kpr-btn.primary:hover{background:#1858c9}
+.kpr-btn.danger{color:#c23b22;border-color:rgba(194,59,34,.30)}
+.kpr-btn.danger:hover{background:rgba(194,59,34,.08)}
+.kpr-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.kpr-note{font-size:12px;color:#8a93a0;line-height:1.75;margin:10px 0 0}
+.kpr-note code,pre.kpr-code{background:rgba(15,23,32,.05);padding:1px 5px;border-radius:4px;font-size:11.5px}
+pre.kpr-code{display:block;padding:10px 12px;border-radius:8px;overflow:auto;max-height:240px;
+	margin:0;font-family:ui-monospace,Menlo,Consolas,monospace;line-height:1.6}
+.kpr-msg{border-radius:10px;padding:9px 13px;font-size:12.5px;margin-bottom:14px;
+	background:rgba(34,160,107,.10);border:1px solid rgba(34,160,107,.28);color:#1d8a5b}
+.kpr-warn{border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:14px;
+	background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.30);color:#8a5a00}
+.kpr-bar{height:6px;border-radius:3px;background:rgba(15,23,32,.08);overflow:hidden;margin:8px 0 6px}
+.kpr-bar > i{display:block;height:100%;background:linear-gradient(90deg,#34d399,#22a06b);border-radius:3px}
+</style>
+
+<h2 name="content">恢复与备份</h2>
+<div class="kpr-wrap">
+
+<% if notes[done] then %>
+<div class="kpr-msg"><%=notes[done]%></div>
+<% end %>
+
+<div class="kpr-warn">
+	<strong>关于 Breed：</strong>本机是 <code><%=pcdata(arch)%></code>（MT7987 / BL2 + FIP 引导链），
+	Breed 只有 MIPS 移植版（mt7620/mt7621 等），<strong>架构不兼容、无法安装</strong>；
+	强行刷入 FIP 分区会直接变砖。
+	所以这里用<strong>分区级全盘备份</strong>替代——有完整备份就能救砖。
+</div>
+
+<div class="kpr-kv">
+	<div><span>型号 / 板型</span><b><%=pcdata(model)%> · <%=pcdata(board)%></b></div>
+	<div><span>架构 / 内核</span><b><%=pcdata(arch)%> · <%=pcdata(kver)%></b></div>
+	<div><span>备份状态</span><b><%=pcdata(stt.stage or "idle")%></b></div>
+	<div><span>上次备份</span><b><%=bakdir ~= "" and bakfiles or "无"%></b></div>
+</div>
+
+<div class="kpr-card">
+	<h3>分区表
+		<span class="kpr-row" style="margin-left:auto">
+			<a class="kpr-btn primary" href="<%=pcdata(BASE)%>?do=backup"
+			   onclick="return confirm('开始备份全部分区到 /overlay/kp-fw-backup？约 60 MB，需要 1-2 分钟。')">备份全部分区</a>
+			<a class="kpr-btn" href="<%=pcdata(BASE)%>?do=env">导出 U-Boot 环境</a>
+		</span>
+	</h3>
+	<div class="kpr-body">
+		<table class="kpr-tbl">
+			<thead><tr><th>设备</th><th>名称</th><th>大小</th><th>块大小</th></tr></thead>
+			<tbody>
+			<% for _, p in ipairs(parts) do %>
+				<tr>
+					<td class="mono"><%=pcdata(p.id)%></td>
+					<td><strong><%=pcdata(p.name)%></strong></td>
+					<td><%=kb(p.size)%></td>
+					<td class="mono"><%=pcdata(p.erase)%></td>
+				</tr>
+			<% end %>
+			</tbody>
+		</table>
+
+		<% if stt.stage == "run" then
+			local i = tonumber(stt.i) or 0
+			local total = tonumber(stt.total) or 0
+			local pct = total > 0 and math.floor(i * 100 / total) or 0 %>
+		<div class="kpr-bar"><i style="width:<%=pct%>%"></i></div>
+		<div class="kpr-note">备份中 <%=i%>/<%=total%>（<%=pcdata(stt.cur or "")%>）· 刷新页面查看进度</div>
+		<% elseif bakdir ~= "" then %>
+		<div class="kpr-note">备份目录：<code><%=pcdata(bakdir)%></code>（<%=bakfiles%>，含 SHA256SUMS 与 README.txt）</div>
+		<% end %>
+	</div>
+</div>
+
+<div class="kpr-card">
+	<h3>救砖通道（这台机器真实可用的）</h3>
+	<div class="kpr-body">
+		<table class="kpr-tbl">
+			<thead><tr><th>方式</th><th>怎么进</th><th>说明</th></tr></thead>
+			<tbody>
+				<tr>
+					<td><strong>U-Boot TFTP</strong></td>
+					<td class="mono">PC 设 192.168.1.88 / 255.255.255.0<br>上电 2 秒内打断</td>
+					<td>U-Boot 里 <code>ipaddr=192.168.1.1</code>、<code>serverip=192.168.1.88</code>，
+						<code>bootdelay=2</code>。需要串口才能可靠打断。</td>
+				</tr>
+				<tr>
+					<td><strong>OpenWrt Failsafe</strong></td>
+					<td>上电后指示灯快闪时按 Reset</td>
+					<td>设备变为 192.168.1.1，<code>telnet 192.168.1.1</code> 进
+						（本机已装 failsafe dropbear，也可 SSH）。</td>
+				</tr>
+				<tr>
+					<td><strong>分区回写</strong></td>
+					<td>在 failsafe 或正常系统里</td>
+					<td><code>dd if=备份.bin of=/dev/mtdX</code>，按 SHA256SUMS 校验后再回写。</td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="kpr-note">
+			建议把备份目录整体拷到电脑保留一份：<code>/overlay/kp-fw-backup/</code>。
+			只保留在设备上，一旦 overlay 损坏就一起没了。
+		</p>
+	</div>
+</div>
+
+<div class="kpr-card">
+	<h3>U-Boot 环境变量（前 22 行）</h3>
+	<div class="kpr-body">
+		<% if envtxt ~= "" then %>
+		<pre class="kpr-code"><%=pcdata(envtxt)%></pre>
+		<% else %>
+		<p class="kpr-note">尚未导出。点上面的「导出 U-Boot 环境」。</p>
+		<% end %>
+		<p class="kpr-note">
+			<code>bootdelay=2</code> 表示只有 2 秒窗口可以打断启动。想留更长窗口可执行
+			<code>fw_setenv bootdelay 5</code>（需谨慎，串口下操作最安全）。
+		</p>
+	</div>
+</div>
+
+<div class="kpr-card">
+	<h3>危险操作</h3>
+	<div class="kpr-body">
+		<div class="kpr-row">
+			<a class="kpr-btn danger" href="<%=pcdata(BASE)%>?do=reboot"
+			   onclick="return confirm('确定重启设备？')">重启设备</a>
+			<a class="kpr-btn danger" href="<%=pcdata(BASE)%>?do=firstboot"
+			   onclick="return confirm('firstboot 会清空全部配置（含网络、OpenClash 订阅）并重启，确定？')">恢复出厂设置（firstboot）</a>
+		</div>
+		<p class="kpr-note">
+			firstboot 只清 overlay（配置与已装插件），不动 BL2/FIP 与分区表；执行前请先做一次分区备份。
+		</p>
+	</div>
+</div>
+
+</div>
+<%+footer%>
