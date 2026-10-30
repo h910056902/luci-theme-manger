@@ -21,3 +21,10 @@ build/_fw*/
 *.bin
 
 
+
+# 临时调试产物（CDP 配置副本 / 远程快照 / 截图目录）
+build/.chrome-*/
+build/_remote/
+build/_shots/
+build/_dk_shots/
+build/*.png

@@ -351,16 +351,19 @@ function luci.dispatcher.createtree()
 			admin.nodes.istorerouter = {
 				nodes = {},
 				target = function()
+					-- 25.12(3.0.0) 固件没有 luci-app-istorerouter，控制器与视图都不存在，
+					-- 原逻辑会 500。改为跳到厂商应用中心（80 端口的 nradioadv/appcenter），
+					-- 那个页面功能是完整的（检测新版本 / 手动安装 / 已安装 / 所有应用）。
 					local ok, ctl = pcall(require, "luci.controller.istorerouter")
 					if ok and type(ctl) == "table" and type(ctl.istorerouter_template) == "function" then
 						ctl.istorerouter_template()
-					else
-						-- 兜底：controller 不可用时退回裸渲染（会比官方少 id/model，
-						-- 但至少不会 500；正常路径永远走不到这里）。
-						luci.template.render("istorerouter/main")
+						return
 					end
+					local http = require "luci.http"
+					local host = (http.getenv("HTTP_HOST") or ""):match("^([^:]+)") or "192.168.66.1"
+					http.redirect("http://" .. host .. "/cgi-bin/luci/nradioadv/system/appcenter")
 				end,
-				title = "iStoreRouter",
+				title = "应用商店",
 				order = 3,
 				leaf = true
 			}
