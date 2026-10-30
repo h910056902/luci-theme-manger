@@ -57,6 +57,7 @@ function parser.parse(path, ...)
 		local kp_whitelist = name:match("^themes/bootstrap/")
 			or name == "admin_status/nradio_details.htm"
 			or name == "admin_status/kp_sim_card.htm"
+			or name == "admin_status/kp_wizard.htm"
 			or name == "admin_status/nradio_cellular.htm"
 			or name == "admin_status/nradio_device.htm"
 			or name == "admin_status/nradio_sms.htm"
@@ -310,11 +311,13 @@ function luci.dispatcher.createtree()
 						dhcp = { hidden = true, nodes = {}, target = luci.dispatcher.template("quickstart/wizard"), leaf = true },
 						gateway = { hidden = true, nodes = {}, target = luci.dispatcher.template("quickstart/wizard"), leaf = true }
 					},
-					target = luci.dispatcher.template("quickstart/wizard"),
+					-- KP-WIZARD v1: 主路由改为自建「三步向导」（Wi-Fi / SIM 切换 / OpenClash 订阅）；
+					-- 原厂 Vue 向导保留在 pppoe/dhcp/gateway 深链，由 kp_wizard 页脚链接进入。
+					target = luci.dispatcher.template("admin_status/kp_wizard"),
 					leaf = true
 				}
 			},
-			target = luci.dispatcher.template("quickstart/wizard"),
+			target = luci.dispatcher.template("admin_status/kp_wizard"),
 			title = "网络设置向导",
 			order = 2,
 			leaf = true
