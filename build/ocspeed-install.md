@@ -269,6 +269,23 @@ rm -f  /tmp/luci-indexcache /tmp/luci-indexcache.*; rm -rf /tmp/luci-modulecache
 
 ---
 
+## 7.5 主题（2026-10-30 起）
+
+线上 `ocspeed.htm` 已被改成**固件对齐版**（`build/ocspeed/ocspeed.htm`，
+样式块带 `KP-THEME v2` 标记）：面板 `#292932`、卡片 `#1F2937` + `#6B7280` 描边、
+圆角 6/8/10、正文 12px `#CED0D1`、主色 `#00D5FF`、继承固件字体栈——
+与 OpenClash 页/固件壳实测值一致，替换掉了上游的纯黑 Apple Pro 层。
+
+⚠️ **`kp-ocspeed.sh` 从 GitHub 拉取的是上游原版**，重装后会被覆盖回纯黑版。
+重装完补一步：
+
+```sh
+# PC 侧
+pscp -scp build/ocspeed/ocspeed.htm root@192.168.66.1:/tmp/_up_ocspeed.htm
+# 设备侧
+sh /tmp/_oc_theme_apply.sh
+```
+
 ## 8. 完成后
 
 1. `md5sum` 比对设备上四件套与 `offline/ocspeed/`（本地按 LF 归一化后再算）
