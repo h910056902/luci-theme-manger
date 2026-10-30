@@ -254,6 +254,19 @@
 		}
 	end
 
+	-- KP-LIVE-CACHE v1（读）: ?refresh=1 命中 2 秒缓存直接回放，不再执行 collect_live_status()
+	-- 缓存体 = live JSON 加 _ts 前缀字段，客户端只读已知字段不受影响。
+	-- 缓存写入在 stats 构建完成后的 refresh 输出分支（见下文 KP-LIVE-CACHE v1（写））。
+	local LIVE_VERSION = "20261018-1"
+	if http.formvalue("refresh") == "1" then
+		http.header("Cache-Control", "no-store")
+		local raw = read("/tmp/kp-live-cache.json")
+		local ts = raw and tonumber(raw:match('^%s*%{"_ts":(%d+)')) or nil
+		if ts and (os.time() - ts) < 2 and raw:find('"version"', 1, true) then
+			http.write(raw)
+			return
+		end
+	end
 	local live = collect_live_status()
 	local plugin_links = safe_table(luci.dispatcher.context.nradio_8080_links)
 	local network_module = safe_table(safe_call(require, "luci.model.network"))
@@ -396,7 +409,7 @@
 		}
 	end
 
-	live.version = "20261018-1"
+	live.version = LIVE_VERSION
 	live.stats = build_stats()
 
 	-- 展示用：机型品牌 / 显示名 / 整机图
@@ -457,8 +470,16 @@
 	end
 
 	if http.formvalue("refresh") == "1" then
-		http.header("Cache-Control", "no-store")
-		http.write_json(live)
+		-- KP-LIVE-CACHE v1（写）: stats 构建完成，序列化 + 打 _ts 戳 + 原子落盘（tmp+rename）
+		local body = util.serialize_json(live)
+		body = body:gsub("^%{", '{"_ts":' .. tostring(os.time()) .. ',', 1)
+		http.write(body)
+		local fp = io.open("/tmp/kp-live-cache.json.tmp", "w")
+		if fp then
+			fp:write(body)
+			fp:close()
+			os.rename("/tmp/kp-live-cache.json.tmp", "/tmp/kp-live-cache.json")
+		end
 		return
 	end
 	local initial_json = util.serialize_json(live):gsub("<", "\\u003c"):gsub("&", "\\u0026"):gsub("\226\128\168", "\\u2028"):gsub("\226\128\169", "\\u2029")
@@ -660,6 +681,54 @@
 		end
 	end
 
+	-- KP-SIM-CARD v1: 组装蜂窝/SIM 卡片数据（不带 local，供 kp_sim_card 局部模板读取）
+	local function cell_num(value)
+		if value == nil then return nil end
+		return tonumber(tostring(value):match("([%-]?%d+%.?%d*)"))
+	end
+	local function cell_temp(value)
+		local n = cell_num(value)
+		if n and n >= 30 and n <= 120 then return n end
+		return nil
+	end
+	local function l2_mode_short(mode)
+		local m = tostring(mode or ""):upper()
+		if m:find("NR", 1, true) then
+			if m:find("SA", 1, true) then return "5G SA" end
+			return "5G NSA"
+		end
+		if m:find("LTE", 1, true) or m:find("4G", 1, true) then return "4G LTE" end
+		return tostring(mode or "") ~= "" and tostring(mode) or "蜂窝"
+	end
+	local sim_line2 = (live.lines and live.lines[2]) or nil
+	sim_card = {
+		none = (live.lines == nil or #live.lines == 0),
+		up = hero_up,
+		identified = (not hero_up) and hero_cell ~= nil and trim(hero_cell.plmn or "") ~= "",
+		level = hero_level, level_text = hero_level_text, color = hero_color,
+		operator = hero_operator, status = hero_status,
+		mode_short = hero_mode_short, mode = hero_mode, band = hero_band,
+		sim = hero_sim, pci = hero_pci, earfcn = hero_earfcn, mon = hero_mon_txt,
+		rsrp = hero_rsrp, rsrq = hero_rsrq, sinr = hero_sinr,
+		sig_pct = hero_sig_pct, rsrq_pct = hero_rsrq_pct, sinr_pct = hero_sinr_pct,
+		bars = hero_bars,
+		temp = (hero_cell and cell_temp(hero_cell.temperature)) or cell_temp(rt_cpe.model_temp),
+		more_url = luci.dispatcher.build_url("admin", "status", "cellular"),
+		line2 = nil
+	}
+	if sim_line2 then
+		local l2_op = operator_cn(sim_line2.plmn, sim_line2.operator)
+		if l2_op == "" or l2_op == "-" then l2_op = "副线路" end
+		sim_card.line2 = {
+			operator = l2_op,
+			badge = l2_mode_short(sim_line2.mode) .. ((sim_line2.band or "") ~= "" and (" · " .. sim_line2.band) or ""),
+			connection = sim_line2.connection or "未连接",
+			up = sim_line2.up or false,
+			ipaddr = (sim_line2.ipaddr and sim_line2.ipaddr ~= "-") and sim_line2.ipaddr or "--",
+			default_route = sim_line2.default_route or false
+		}
+	end
+
 -%>
 
 <%+header%>
@@ -675,52 +744,10 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 </style>
 
 <link rel="stylesheet" href="/fontawesome/all.min.css?v=1">
-<link rel="stylesheet" href="/luci-static/bootstrap/css/mwrt-home-custom.css?v=1">
+<link rel="stylesheet" href="/luci-static/bootstrap/css/mwrt-home-custom.css?v=2">
 
 <div class="P" id="P">
-<div class="hero"><div class="hero-sig <%=hero_up and "is-up" or "is-down"%>">
-	<div class="h-id">
-		<div class="h-brand"><i class="fas fa-broadcast-tower" aria-hidden="true"></i></div>
-		<div class="h-id-t">
-			<div class="h-op-row"><div class="h-op-name" data-nradio-hero="op"><%=pcdata(hero_operator)%></div><div class="h-bdg"><b class="h-badge" data-nradio-hero="badge"><%=pcdata(hero_mode_short .. (hero_band ~= "" and (" · " .. hero_band) or ""))%></b></div></div>
-			<div class="h-op-sub"><span class="h-dot"></span><span data-nradio-hero="status"><%=pcdata(hero_status)%></span><span class="h-sep">·</span><span class="h-mode" data-nradio-hero="mode"><%=pcdata(hero_mon_txt ~= "" and ("本月 " .. hero_mon_txt) or "本月 --")%></span><span class="h-sep">·</span><span class="h-simname" data-nradio-hero="simname"><%=pcdata(hero_sim)%></span></div>
-		</div>
-	</div>
-	<div class="h-mx">
-		<div class="h-m" data-nradio-hero="rsrq">
-			<div class="h-mk"><span><i class="fas fa-chart-bar"></i>RSRQ</span></div>
-			<div class="h-mv"><span class="n" data-nradio-hero="rsrq-v"><%=hero_rsrq ~= 0 and hero_rsrq or "--"%></span><small>dB</small></div>
-			<span class="h-mb"><span data-nradio-hero="rsrq-bar" style="width:<%=string.format("%.0f", hero_rsrq_pct)%>%"></span></span>
-		</div>
-		<div class="h-m" data-nradio-hero="sinr">
-			<div class="h-mk"><span><i class="fas fa-bullseye"></i>SINR</span></div>
-			<div class="h-mv"><span class="n" data-nradio-hero="sinr-v"><%=hero_sinr ~= 0 and hero_sinr or "--"%></span><small>dB</small></div>
-			<span class="h-mb"><span data-nradio-hero="sinr-bar" style="width:<%=string.format("%.0f", hero_sinr_pct)%>%"></span></span>
-		</div>
-		<div class="h-m">
-			<div class="h-mk"><span><i class="fas fa-wave-square"></i>频段 Band</span></div>
-			<div class="h-mv" data-nradio-hero="band"><%=pcdata(hero_band ~= "" and hero_band or "--")%></div>
-			<div class="h-ms" data-nradio-hero="band-s"><%=pcdata(hero_earfcn ~= "" and ("频点 " .. hero_earfcn) or "--")%></div>
-		</div>
-		<div class="h-m">
-			<div class="h-mk"><span><i class="fas fa-sim-card"></i>卡槽 SIM</span></div>
-			<div class="h-mv h-mv-t" data-nradio-hero="sim"><%=pcdata(hero_sim)%></div>
-			<div class="h-ms h-sim" data-nradio-hero="pci"><%=pcdata("PCI " .. (hero_pci ~= "" and hero_pci or "--") .. " · 频点 " .. (hero_earfcn ~= "" and hero_earfcn or "--"))%></div>
-		</div>
-	</div>
-	<div class="h-sig">
-		<div class="sig-rg">
-			<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="sr-tk" cx="50" cy="50" r="46"/><circle class="sr-bg" cx="50" cy="50" r="38"/><circle class="sr-fg" data-nradio-hero="ring" cx="50" cy="50" r="38" stroke-dasharray="238.8" stroke-dashoffset="<%=string.format("%.1f", 238.8 * (1 - hero_sig_pct / 100))%>" stroke="<%=hero_color%>"/></svg>
-			<div class="ct"><span class="v" data-nradio-hero="rsrp"><%=hero_rsrp ~= 0 and hero_rsrp or "--"%></span><span class="l">dBm</span></div>
-		</div>
-		<div class="sig-nfo">
-			<div class="sig-k">RSRP · 信号强度</div>
-			<div class="sig-lv <%=hero_level%>" data-nradio-hero="lv"><%=hero_level_text%></div>
-			<div class="sig-bars" data-nradio-hero="bars"><% for i = 1, 5 do %><span class="<%=i <= hero_bars and "g" or ""%>" style="height:<%=8 + i * 4%>px"></span><% end %></div>
-			<div class="sl" data-nradio-hero="sl"><%=pcdata(hero_status .. (hero_mode ~= "" and (" · " .. hero_mode) or "") .. (hero_band ~= "" and (" · " .. hero_band) or ""))%></div>
-		</div>
-	</div>
-</div></div>
+<%+admin_status/kp_sim_card%>
 
 	<div class="cd dv-card">
 		<div class="dv-body">
@@ -830,14 +857,24 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		return n >= 1073741824 ? (n / 1073741824).toFixed(1) + ' GB' : Math.round(n / 1048576) + ' MB';
 	}
 	function updateHero(lines) {
-		if (!lines || !lines.length) return;
+		var heroEl0 = document.querySelector('.hero-sig');
+		var guide = document.querySelector('[data-nradio-guide]');
+		if (!lines || !lines.length) {
+			if (heroEl0) heroEl0.classList.add('is-none');
+			if (guide) guide.style.display = 'flex';
+			return;
+		}
+		if (heroEl0) heroEl0.classList.remove('is-none');
+		if (guide) guide.style.display = 'none';
 		var c = lines[0] || {};
+		var conn = c.connection || '未连接';
+		if (!c.up && String(c.plmn || '').trim() !== '') conn = '已识别运营商 · 未注册网络';
 		var op = opName(c.plmn, c.operator) || '无蜂窝模组';
 		if (op === '' || op === '-') op = '无蜂窝模组';
 		var sim = c.sim_name || 'SIM 卡';
 		if (sim === '' || sim === '-') sim = 'SIM 卡';
 		heroSet('op', op);
-		heroSet('status', c.connection || '未连接');
+		heroSet('status', conn);
 		// 制式合并进徽标，副标题位置改显示本月流量
 		var badge = [shortMode(c.mode), c.band || ''].filter(Boolean).join(' · ');
 		heroSet('badge', badge || '蜂窝');
@@ -853,7 +890,7 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		heroSet('band-s', c.earfcn ? ('频点 ' + c.earfcn) : '--');
 		heroSet('sim', sim);
 		heroSet('pci', 'PCI ' + (c.pci || '--') + ' · 频点 ' + (c.earfcn || '--'));
-		heroSet('sl', (c.connection || '未连接') + (c.mode ? (' · ' + c.mode) : '') + (c.band ? (' · ' + c.band) : ''));
+		heroSet('sl', conn + (c.mode ? (' · ' + c.mode) : '') + (c.band ? (' · ' + c.band) : ''));
 		var pct = rsrp ? heroPct(rsrp, -140, -44) : 0;
 		var ring = heroNode('ring');
 		if (ring) ring.setAttribute('stroke-dashoffset', String(238.8 * (1 - pct / 100)));
@@ -872,6 +909,30 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		if (snBar) snBar.style.width = heroPct(sinr, -10, 30) + '%';
 		var heroEl = document.querySelector('.hero-sig');
 		if (heroEl) { heroEl.classList.toggle('is-up', !!c.up); heroEl.classList.toggle('is-down', !c.up); }
+		var tnum = heroNum(c.temperature);
+		var tempEl = document.querySelector('[data-nradio-temp]');
+		if (tempEl) {
+			if (tnum >= 55) {
+				tempEl.style.display = '';
+				tempEl.innerHTML = '<i class="fas fa-thermometer-half" aria-hidden="true"></i>' + Math.round(tnum) + '℃';
+			} else { tempEl.style.display = 'none'; }
+		}
+	}
+	function updateLine2(lines) {
+		var row = document.querySelector('[data-nradio-line2]');
+		if (!row) return;
+		var l2 = lines && lines[1];
+		if (!l2) { row.style.display = 'none'; return; }
+		row.style.display = '';
+		function lset(n, v) { var el = row.querySelector('[data-nradio-line2="' + n + '"]'); if (el) el.textContent = text(v); }
+		var op2 = opName(l2.plmn, l2.operator);
+		if (op2 === '' || op2 === '-') op2 = '副线路';
+		lset('op', op2);
+		lset('badge', [shortMode(l2.mode), l2.band || ''].filter(Boolean).join(' · ') || '蜂窝');
+		var conn2 = l2.connection || '未连接';
+		if (!l2.up && String(l2.plmn || '').trim() !== '') conn2 = '已识别运营商 · 未注册网络';
+		lset('status', conn2);
+		lset('ip', (l2.ipaddr && l2.ipaddr !== '-') ? l2.ipaddr : '--');
 	}
 	var chartCtx = null, chartRx = [], chartTx = [], chartLast = null, chartW = 0, chartH = 0;
 	function chartResize() {
@@ -965,6 +1026,7 @@ html.kp-idle *,html.kp-idle *::before,html.kp-idle *::after{animation-play-state
 		lastUpdated = text(st.current_time);
 		statusEl.textContent = '已更新 ' + lastUpdated + ' · 每 10 秒自动刷新';
 		updateHero(data.lines);
+		updateLine2(data.lines);
 		chartPush(st);
 	}
 	function schedule() {

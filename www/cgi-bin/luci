@@ -56,6 +56,7 @@ function parser.parse(path, ...)
 		-- the official new one -> white screen).
 		local kp_whitelist = name:match("^themes/bootstrap/")
 			or name == "admin_status/nradio_details.htm"
+			or name == "admin_status/kp_sim_card.htm"
 			or name == "admin_status/nradio_cellular.htm"
 			or name == "admin_status/nradio_device.htm"
 			or name == "admin_status/nradio_sms.htm"
