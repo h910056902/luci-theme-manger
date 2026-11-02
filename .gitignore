@@ -28,3 +28,7 @@ build/_remote/
 build/_shots/
 build/_dk_shots/
 build/*.png
+
+# 8080 实例整包快照（13MB，按需重新拉取；内容已同步为仓库工作区真实文件）
+build/_snap8080/
+build/_snap8080.tar.gz

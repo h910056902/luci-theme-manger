@@ -16,13 +16,34 @@ local private_viewdir = instance_root .. "/usr/lib/lua/luci/view"
 require "luci.cacheloader"
 require "luci.sgi.cgi"
 
+-- KP-MYOS-SWITCH v1: /etc/config/argon 的 ui_theme 决定 8080 实例的界面风格
+--   manper(默认) = 本实例定制层(官方 bootstrap 主题 + mwrt 定制, 驾驶舱首页, 星空登录页)
+--   myos         = 官方 MYOS 固件原生界面 1:1:
+--                  媒体 /luci-static/nradio、模板 themes/nradio、
+--                  原厂登录页 sysauth、**保留完整原厂调度树**(nradio/nradioadv 不裁剪)
+local active_theme = "manper"
+local active_media = "/luci-static/bootstrap"
+do
+	local ok_mu, m_uci = pcall(require, "luci.model.uci")
+	if ok_mu and m_uci then
+		pcall(function()
+			if m_uci.cursor():get("argon", "@global[0]", "ui_theme") == "myos" then
+				active_theme = "myos"
+				-- MYOS 仓库主题 MYOS UI (luci-theme-c2000max-ui) 的静态资源
+				active_media = "/luci-static/c2000max-ui"
+			end
+		end)
+	end
+end
+
 -- 插件安装/卸载后，本实例的调度树缓存会过期（缓存文件比控制器目录旧），
 -- 表现为新装的页面访问时提示「未注册任何页面」（如 /admin/services/kaiplus）。
 -- 这里在建树之前主动失效：控制器 / menu.d / CBI model 任一目录比缓存新就删缓存。
 do
 	local ok_n, fs = pcall(require, "nixio.fs")
 	if ok_n and fs then
-		local cache = "/tmp/luci-indexcache-bootstrap"
+		-- 缓存按模式分键: 切换 ui_theme 后自然走另一份缓存,切换即时生效
+		local cache = "/tmp/luci-indexcache-" .. active_theme
 		local cst = fs.stat(cache)
 		if cst then
 			local cmt = tonumber(cst.mtime) or 0
@@ -54,7 +75,17 @@ function parser.parse(path, ...)
 		-- So official view upgrades are followed automatically by removing
 		-- the same-named private file (prevents stale private view shadowing
 		-- the official new one -> white screen).
-		local kp_whitelist = name:match("^themes/bootstrap/")
+		-- KP-MYOS-SWITCH: myos 模式下, 实例私有视图仍然优先(它们才是本机能用的页面),
+		-- 只排除「驾驶舱首页」与 manper 旧外壳(避免抢走官方总览/主题)。
+		-- 这样 kp_docker/quickstart/istorerouter/ttyd 等只在实例里存在的页面才不会 404。
+		local kp_whitelist = false
+		if active_theme == "myos" then
+			local kp_excluded = (name == "admin_status/index.htm")
+				or name:match("^themes/bootstrap/")
+				or name:match("^themes/argon/")
+			kp_whitelist = not kp_excluded
+		else
+		kp_whitelist = name:match("^themes/bootstrap/")
 			or name == "admin_status/nradio_details.htm"
 			or name == "admin_status/kp_sim_card.htm"
 			or name == "admin_status/kp_wizard.htm"
@@ -76,6 +107,7 @@ function parser.parse(path, ...)
 			or name == "istorerouter/index.htm"
 			or name == "istorerouter/main.htm"
 			or name == "istorerouter/main_dev.htm"
+		end
 		if kp_whitelist then
 			local kp_priv = private_viewdir .. "/" .. name
 			if require("nixio.fs").access(kp_priv) then
@@ -86,7 +118,7 @@ function parser.parse(path, ...)
 		-- ttyd 终端页改用实例私有视图：共享视图的运行判据（tonumber("running")=nil）
 		-- 与终端地址（host:8080:7681）在 8080 独立实例下均不成立。
 		-- 私有视图缺失时静默回退共享视图，不会 500。
-		if name == "ttyd/overview.htm" then
+		if active_theme ~= "myos" and name == "ttyd/overview.htm" then
 			local kp_ttyd_view = private_viewdir .. "/" .. name
 			if require("nixio.fs").access(kp_ttyd_view) then
 				path = kp_ttyd_view
@@ -213,7 +245,7 @@ local function inject_plugin_menu(tree, admin)
 end
 
 local function set_bootstrap_theme(node)
-	node.mediaurlbase = "/luci-static/bootstrap"
+	node.mediaurlbase = active_media
 	for _, child in pairs(node.nodes or {}) do
 		if type(child) == "table" then set_bootstrap_theme(child) end
 	end
@@ -221,6 +253,38 @@ end
 
 function luci.dispatcher.createtree()
 	local tree = original_createtree()
+	-- KP-MYOS-SWITCH: myos 模式 = 原厂界面 1:1
+	--   不裁剪 nradio/nradioadv/authcheck、不注入任何 manper 定制节点,
+	--   调度树与原厂固件完全一致 → 原厂导航(首页/蜂窝/上网/Wi-Fi/终端/应用商店/更多)全部可用。
+	--   仅补两处: 原厂登录页 + 8080 固定入口 /admin/status/details 落地原厂首页。
+	if active_theme == "myos" then
+		local m_admin = tree.nodes and tree.nodes.admin
+		if m_admin then
+			-- 登录页随主题: 主题模板缺失时自动回退原厂登录页(登录是生命线,不能 500)
+			local ok_fs, lfs = pcall(require, "nixio.fs")
+			local theme_login = "/usr/lib/lua/luci/view/themes/c2000max-ui/sysauth.htm"
+			local priv_login = private_viewdir .. "/themes/c2000max-ui/sysauth.htm"
+			local has_login = ok_fs and lfs and (lfs.access(theme_login) or lfs.access(priv_login))
+			m_admin.sysauth_template = has_login
+				and "themes/c2000max-ui/sysauth"
+				or "sysauth"
+			m_admin.nodes = m_admin.nodes or {}
+			local m_status = m_admin.nodes.status
+			if m_status then
+				m_status.nodes = m_status.nodes or {}
+				-- 首页 = MYOS 仪表盘(移植自仓库主题);其余菜单走原厂页面
+				m_status.nodes.details = {
+					nodes = {},
+					target = luci.dispatcher.template("admin_status/myos_ui"),
+					title = "概览",
+					order = 1,
+					leaf = true
+				}
+			end
+		end
+		set_bootstrap_theme(tree)
+		return tree
+	end
 	local admin = tree.nodes and tree.nodes.admin
 	if admin then
 		admin.nodes = admin.nodes or {}
@@ -399,23 +463,32 @@ end
 
 function luci.dispatcher.httpdispatch(request, prefix)
 	local config = require "luci.config"
-	config.main.mediaurlbase = "/luci-static/bootstrap"
-	config.themes = { Bootstrap = "/luci-static/bootstrap" }
+	config.main.mediaurlbase = active_media
+	config.themes = {
+		Bootstrap = "/luci-static/bootstrap",
+		["NRadio 原生(MYOS)"] = "/luci-static/nradio",
+	}
 	return original_httpdispatch(request, prefix)
 end
 
 local path_info = os.getenv("PATH_INFO") or ""
 local request_method = os.getenv("REQUEST_METHOD") or ""
 
+-- KP-MYOS-SWITCH: 根路径/管理入口始终重定向到实例首页
+--   原因: /cgi-bin/luci/ 在未登录时只渲染主题外壳(无登录表单), 会让"退出登录"落到空页面;
+--         /admin/status/details 未登录时才会走 sysauth 渲染登录页。
+-- 厂商路由(/nradio*、/nradioadv*)仅在 manper 模式下拦截(隐藏), myos 模式放行。
 if request_method == "GET" and (
 	path_info == "" or
 	path_info == "/" or
 	path_info == "/admin" or
 	path_info == "/admin/" or
-	path_info == "/nradio" or
-	path_info:match("^/nradio/") or
-	path_info == "/nradioadv" or
-	path_info:match("^/nradioadv/")
+	(active_theme ~= "myos" and (
+		path_info == "/nradio" or
+		path_info:match("^/nradio/") or
+		path_info == "/nradioadv" or
+		path_info:match("^/nradioadv/")
+	))
 ) then
 	io.write("Status: 302 Found\r\n")
 	io.write("Location: /cgi-bin/luci/admin/status/details\r\n")
@@ -4313,7 +4386,7 @@ do
 				pcall(function() i18n = require "luci.i18n" end)
 				if not ok_u or type(util) ~= "table" then util = {} end
 
-				local media = "/luci-static/bootstrap"
+				local media = active_media
 				pcall(function()
 					media = require("luci.config").main.mediaurlbase or media
 				end)
@@ -4368,5 +4441,5 @@ do
 end
 -- KP-QUICKSTART-VIEWNS v3 END ============================================
 
-luci.dispatcher.indexcache = "/tmp/luci-indexcache-bootstrap"
+luci.dispatcher.indexcache = "/tmp/luci-indexcache-" .. active_theme
 luci.sgi.cgi.run()

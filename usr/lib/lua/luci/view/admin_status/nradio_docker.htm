@@ -150,8 +150,8 @@ body.dark table.kdm-tbl th{background:#22262e;color:#98a2b3}
 				<tr><td>宿主内核</td><td id="kdm-i-kern">—</td></tr>
 			</table>
 			<p class="kdm-hint">
-				本机内核未编入 <strong>veth / macvlan / ipvlan</strong>，容器只能用 host 网络：
-				<code>docker run --network host …</code>；<code>-p</code> 端口映射不可用。
+				已加载自编译 <strong>veth</strong> 模块（内核未编入，由 <code>kp-veth</code> 开机加载），
+				<code>bridge</code> 网络可用、<code>-p</code> 端口映射正常；macvlan / ipvlan 仍不可用。
 			</p>
 		</div>
 	</fieldset>
@@ -188,7 +188,7 @@ body.dark table.kdm-tbl th{background:#22262e;color:#98a2b3}
 		</h3>
 		<div class="kdm-body">
 			<div id="kdm-nets"><div class="kdm-empty">加载中…</div></div>
-			<p class="kdm-hint">内置 <code>bridge</code> 网络不可用（无 veth），容器请使用 <code>--network host</code>。</p>
+			<p class="kdm-hint">内置 <code>bridge</code> 网络可用（自编译 veth 模块）；容器也可用 <code>--network host</code>。</p>
 		</div>
 	</fieldset>
 </div>

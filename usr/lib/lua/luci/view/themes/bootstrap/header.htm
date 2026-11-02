@@ -754,7 +754,7 @@
 			var freePct = '', freeSize = '';
 			var mm = bodyText.match(/空闲空间[:：]?\s*(\d+)%\s*\(([^)]+)\)/);
 			if (mm) { freePct = mm[1]; freeSize = mm[2].trim(); }
-			var sourceSynced = bodyText.indexOf('无可用软件列表') < 0;
+			var sourceSynced = !Array.prototype.some.call(cont.querySelectorAll('.cbi-value'), function (v) { return (v.textContent || '').indexOf('无可用软件列表') >= 0; }); /* patched: 原实现用 cont.textContent 判断，会匹配到本脚本自身源码中的关键词，导致恒为未同步 */
 			if (!cont.querySelector('.mwrt-pkg-stats')) {
 				var stats = document.createElement('div');
 				stats.className = 'mwrt-pkg-stats';

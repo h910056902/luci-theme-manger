@@ -1,0 +1,10 @@
+﻿/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/argon|bootstrap
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/iform|/www/luci-static/iform
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/istore|/www/luci-static/istore
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/istorerouter|/www/luci-static/istorerouter
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/linkeasefile|/www/luci-static/linkeasefile
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/natpierce|/www/luci-static/natpierce
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/nradio|/www/luci-static/nradio
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/openclash|/www/luci-static/openclash
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/quickstart|/www/luci-static/quickstart
+/overlay/nradio-apps/openwrt-luci-8080/www/luci-static/resources|/www/luci-static/resources
